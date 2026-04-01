@@ -36,6 +36,15 @@ function formatDate(d: string | Date | null) {
 
 type Busy = null | "preview" | "pdf" | "mail";
 
+const REGENERATE_PRESETS: { label: string; text: string }[] = [
+  { label: "Kürzer", text: "Bitte kürzer fassen" },
+  { label: "Formeller", text: "Bitte formeller formulieren" },
+  {
+    label: "Einfacher",
+    text: "Bitte einfacher und verständlicher schreiben",
+  },
+];
+
 export default function ProtokollAnsichtPage() {
   const params = useParams();
   const id = String(params.id);
@@ -45,7 +54,9 @@ export default function ProtokollAnsichtPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [kiTextDraft, setKiTextDraft] = useState("");
-  const [feedbackDraft, setFeedbackDraft] = useState("");
+  /** Text im „Neu generieren“-Panel (Quick-Chips + Freitext). */
+  const [regenerateFeedback, setRegenerateFeedback] = useState("");
+  const [regeneratePanelOpen, setRegeneratePanelOpen] = useState(false);
   const [stepPdf, setStepPdf] = useState(false);
   const [pdfCacheBust, setPdfCacheBust] = useState(0);
 
@@ -117,13 +128,13 @@ export default function ProtokollAnsichtPage() {
     }
   }
 
-  /** Neu aus Notiz (ohne Feedback) oder mit Feedback + aktuellem Text an die Preview-API. */
-  async function postPreviewRegenerate() {
+  /** Aus dem Panel: mit oder ohne Feedback (leer = komplett aus Notiz neu). */
+  async function postPreviewRegenerateFromPanel() {
     setBannerError(null);
     setBannerSuccess(null);
     setBusy("preview");
     try {
-      const fb = feedbackDraft.trim();
+      const fb = regenerateFeedback.trim();
       const reqInit: RequestInit = { method: "POST" };
       if (fb) {
         reqInit.headers = { "Content-Type": "application/json" };
@@ -144,7 +155,8 @@ export default function ProtokollAnsichtPage() {
       }
       if (typeof j.kiText === "string") {
         setKiTextDraft(j.kiText);
-        setFeedbackDraft("");
+        setRegenerateFeedback("");
+        setRegeneratePanelOpen(false);
         setBannerSuccess(
           fb
             ? "Protokolltext wurde an dein Feedback angepasst."
@@ -157,6 +169,17 @@ export default function ProtokollAnsichtPage() {
     } finally {
       setBusy(null);
     }
+  }
+
+  function openRegeneratePanel() {
+    setRegenerateFeedback("");
+    setRegeneratePanelOpen(true);
+    setBannerError(null);
+  }
+
+  function closeRegeneratePanel() {
+    setRegeneratePanelOpen(false);
+    setRegenerateFeedback("");
   }
 
   async function postGenerate(sendMail: boolean) {
@@ -320,39 +343,21 @@ export default function ProtokollAnsichtPage() {
               className="w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-base leading-relaxed text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               placeholder="Protokolltext…"
             />
-            <div>
-              <label
-                htmlFor="ki-feedback"
-                className="text-sm text-slate-600"
-              >
-                Feedback / Änderungswunsch
-              </label>
-              <textarea
-                id="ki-feedback"
-                value={feedbackDraft}
-                onChange={(e) => setFeedbackDraft(e.target.value)}
-                rows={3}
-                placeholder="Was soll geändert werden? z.B. 'Bitte kürzer fassen' oder 'Ölwechsel erwähnen'"
-                className="mt-1.5 w-full resize-y rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              />
-            </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
                 variant="outline"
                 className="min-h-12 gap-2 text-base"
-                disabled={
-                  busy !== null ||
-                  (feedbackDraft.trim() !== "" && !kiTextDraft.trim())
+                disabled={busy !== null || regeneratePanelOpen}
+                onClick={openRegeneratePanel}
+                title={
+                  regeneratePanelOpen
+                    ? "Schließe das Panel über „Abbrechen“ oder starte die Generierung."
+                    : undefined
                 }
-                onClick={() => void postPreviewRegenerate()}
               >
-                {busy === "preview" ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-5 w-5" />
-                )}
-                {busy === "preview" ? "Wird erstellt…" : "Text neu generieren"}
+                <RefreshCw className="h-5 w-5" />
+                Text neu generieren
               </Button>
               <Button
                 type="button"
@@ -363,6 +368,72 @@ export default function ProtokollAnsichtPage() {
                 Weiter zu PDF
               </Button>
             </div>
+
+            {regeneratePanelOpen ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-100/90 px-4 py-4 text-slate-800 shadow-sm">
+                <p className="text-sm font-medium text-slate-700">
+                  Was soll geändert werden?
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {REGENERATE_PRESETS.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      disabled={busy !== null}
+                      onClick={() => setRegenerateFeedback(p.text)}
+                      className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <label htmlFor="regenerate-feedback" className="sr-only">
+                  Eigener Änderungswunsch
+                </label>
+                <textarea
+                  id="regenerate-feedback"
+                  value={regenerateFeedback}
+                  onChange={(e) => setRegenerateFeedback(e.target.value)}
+                  rows={3}
+                  disabled={busy !== null}
+                  placeholder='Oder eigenen Wunsch eingeben, z.B. "Ölwechsel erwähnen"'
+                  className="mt-3 w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:opacity-50"
+                />
+                <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 text-sm"
+                    disabled={busy !== null}
+                    onClick={closeRegeneratePanel}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    type="button"
+                    className="min-h-11 gap-2 text-sm"
+                    disabled={
+                      busy !== null ||
+                      (regenerateFeedback.trim() !== "" &&
+                        !kiTextDraft.trim())
+                    }
+                    onClick={() => void postPreviewRegenerateFromPanel()}
+                  >
+                    {busy === "preview" ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Wird generiert…
+                      </>
+                    ) : (
+                      <>
+                        Neu generieren
+                        <span aria-hidden> →</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </Card>
