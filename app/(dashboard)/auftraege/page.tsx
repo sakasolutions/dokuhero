@@ -16,7 +16,7 @@ const STATUS_OPTIONS: { value: AuftragStatus | "alle"; label: string }[] = [
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     offen: "bg-amber-100 text-amber-900 ring-amber-200",
-    in_bearbeitung: "bg-blue-100 text-blue-900 ring-blue-200",
+    in_bearbeitung: "bg-teal-100 text-teal-900 ring-teal-200",
     abgeschlossen: "bg-emerald-100 text-emerald-900 ring-emerald-200",
   };
   const labels: Record<string, string> = {
@@ -86,7 +86,7 @@ export default function AuftraegeListePage() {
         </div>
         <Link
           href="/auftraege/neu"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Neuer Auftrag

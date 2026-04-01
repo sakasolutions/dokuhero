@@ -112,11 +112,11 @@ function buildHtml(
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-size: 11pt; color: #111; margin: 24px; line-height: 1.45; }
-    .header { border-bottom: 2px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .header { border-bottom: 2px solid #0d9488; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
     .header-text { flex: 1; min-width: 0; }
     .logo-wrap { flex-shrink: 0; max-width: 160px; }
     .logo-wrap img { max-height: 56px; max-width: 160px; width: auto; height: auto; object-fit: contain; display: block; }
-    .betrieb { font-size: 22pt; font-weight: 800; color: #1e40af; letter-spacing: -0.02em; }
+    .betrieb { font-size: 22pt; font-weight: 800; color: #115e59; letter-spacing: -0.02em; }
     .subtitle { font-size: 12pt; color: #64748b; margin-top: 4px; font-weight: 600; }
     .info { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
     .info-row { margin: 4px 0; }
