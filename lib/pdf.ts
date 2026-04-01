@@ -86,8 +86,12 @@ export async function generatePDF(data: ProtokollData): Promise<Buffer> {
   await ensurePdfsUploadDir();
 
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    executablePath: "/usr/bin/chromium-browser",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
   });
 
   try {
