@@ -16,6 +16,7 @@ interface AuftragRow extends RowDataPacket {
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
   kunde_name: string | null;
+  protokoll_id: number | null;
 }
 
 const createSchema = z.object({
@@ -33,7 +34,11 @@ export async function GET() {
     const pool = getPool();
     const [rows] = await pool.execute<AuftragRow[]>(
       `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am,
-              k.name AS kunde_name
+              k.name AS kunde_name,
+              (SELECT pr.id FROM protokolle pr
+               WHERE pr.auftrag_id = a.id
+               ORDER BY pr.erstellt_am DESC, pr.id DESC
+               LIMIT 1) AS protokoll_id
        FROM auftraege a
        LEFT JOIN kunden k ON k.id = a.kunde_id AND k.betrieb_id = a.betrieb_id
        WHERE a.betrieb_id = ?

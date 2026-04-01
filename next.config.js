@@ -5,6 +5,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "25mb",
     },
+    serverComponentsExternalPackages: ["puppeteer"],
   },
 };
 

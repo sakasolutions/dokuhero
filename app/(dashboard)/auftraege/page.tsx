@@ -152,12 +152,23 @@ export default function AuftraegeListePage() {
                       {formatDate(a.erstellt_am)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/auftraege/${a.id}`}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        Bearbeiten
-                      </Link>
+                      <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end sm:gap-3">
+                        {a.status === "in_bearbeitung" &&
+                        a.protokoll_id != null ? (
+                          <Link
+                            href={`/protokoll/${a.protokoll_id}`}
+                            className="text-sm font-medium text-primary hover:underline"
+                          >
+                            Protokoll ansehen
+                          </Link>
+                        ) : null}
+                        <Link
+                          href={`/auftraege/${a.id}`}
+                          className="text-sm font-medium text-primary hover:underline"
+                        >
+                          Bearbeiten
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -186,12 +197,23 @@ export default function AuftraegeListePage() {
                   <p className="text-xs text-slate-500">
                     {formatDate(a.erstellt_am)}
                   </p>
-                  <Link
-                    href={`/auftraege/${a.id}`}
-                    className="text-sm font-medium text-primary hover:underline"
-                  >
-                    Bearbeiten
-                  </Link>
+                  <div className="flex flex-wrap gap-3">
+                    {a.status === "in_bearbeitung" &&
+                    a.protokoll_id != null ? (
+                      <Link
+                        href={`/protokoll/${a.protokoll_id}`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        Protokoll ansehen
+                      </Link>
+                    ) : null}
+                    <Link
+                      href={`/auftraege/${a.id}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Bearbeiten
+                    </Link>
+                  </div>
                 </div>
               </Card>
             ))}

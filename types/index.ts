@@ -37,6 +37,7 @@ export interface Auftrag {
 /** API-Liste GET /api/auftraege */
 export interface AuftragMitKunde extends Auftrag {
   kunde_name: string | null;
+  protokoll_id: number | null;
 }
 
 export interface Protokoll {

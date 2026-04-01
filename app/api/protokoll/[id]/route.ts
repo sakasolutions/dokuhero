@@ -6,7 +6,7 @@ import type { RowDataPacket } from "mysql2";
 
 export const dynamic = "force-dynamic";
 
-interface ProtokollRow extends RowDataPacket {
+interface JoinRow extends RowDataPacket {
   id: number;
   auftrag_id: number;
   notiz: string | null;
@@ -14,6 +14,9 @@ interface ProtokollRow extends RowDataPacket {
   pdf_pfad: string | null;
   gesendet_am: Date | null;
   erstellt_am: Date;
+  kunde_name: string | null;
+  kunde_email: string | null;
+  auftrag_beschreibung: string | null;
 }
 
 interface FotoRow extends RowDataPacket {
@@ -40,19 +43,32 @@ export async function GET(_request: Request, context: RouteContext) {
 
     const pool = getPool();
 
-    const [prows] = await pool.execute<ProtokollRow[]>(
-      `SELECT p.id, p.auftrag_id, p.notiz, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am
+    const [prows] = await pool.execute<JoinRow[]>(
+      `SELECT p.id, p.auftrag_id, p.notiz, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am,
+              k.name AS kunde_name, k.email AS kunde_email,
+              a.beschreibung AS auftrag_beschreibung
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
+       LEFT JOIN kunden k ON a.kunde_id = k.id
        WHERE p.id = ? AND a.betrieb_id = ?
        LIMIT 1`,
       [protokollId, session.user.betrieb_id]
     );
 
-    const protokoll = prows[0];
-    if (!protokoll) {
+    const j = prows[0];
+    if (!j) {
       return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
     }
+
+    const protokoll = {
+      id: j.id,
+      auftrag_id: j.auftrag_id,
+      notiz: j.notiz,
+      ki_text: j.ki_text,
+      pdf_pfad: j.pdf_pfad,
+      gesendet_am: j.gesendet_am,
+      erstellt_am: j.erstellt_am,
+    };
 
     const [frows] = await pool.execute<FotoRow[]>(
       `SELECT id, protokoll_id, datei_pfad, dateiname, erstellt_am FROM fotos
@@ -61,7 +77,13 @@ export async function GET(_request: Request, context: RouteContext) {
       [protokollId]
     );
 
-    return NextResponse.json({ protokoll, fotos: frows });
+    return NextResponse.json({
+      protokoll,
+      kunde_name: j.kunde_name,
+      kunde_email: j.kunde_email,
+      auftrag_beschreibung: j.auftrag_beschreibung,
+      fotos: frows,
+    });
   } catch (error) {
     console.error("Protokoll GET Fehler:", error);
     return NextResponse.json({ error: "Fehler" }, { status: 500 });
