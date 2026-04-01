@@ -110,7 +110,7 @@ export default function AdminProtokollePage() {
                     </td>
                     <td className="px-4 py-3">
                       {r.gesendet_am ? (
-                        <span className="text-emerald-700">Gesendet</span>
+                        <span className="text-primary">Gesendet</span>
                       ) : (
                         <span className="text-slate-500">Nein</span>
                       )}

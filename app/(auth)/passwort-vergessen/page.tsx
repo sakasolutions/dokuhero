@@ -55,7 +55,7 @@ export default function PasswortVergessenPage() {
       <Card>
         {done ? (
           <p
-            className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+            className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-dark"
             role="status"
           >
             Wenn ein Konto mit dieser E-Mail existiert, erhältst du gleich einen

@@ -101,9 +101,9 @@ export default function ProtokollNeuPage() {
             <div
               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${
                 step === s
-                  ? "bg-primary text-white ring-2 ring-accent ring-offset-2"
+                  ? "bg-primary text-white ring-2 ring-primary ring-offset-2"
                   : step > s
-                    ? "bg-emerald-500 text-white"
+                    ? "bg-primary text-white"
                     : "bg-slate-200 text-slate-600"
               }`}
             >
@@ -111,7 +111,7 @@ export default function ProtokollNeuPage() {
             </div>
             {s < STEPS ? (
               <div
-                className={`h-1 w-8 rounded-full ${step > s ? "bg-emerald-400" : "bg-slate-200"}`}
+                className={`h-1 w-8 rounded-full ${step > s ? "bg-primary/60" : "bg-slate-200"}`}
               />
             ) : null}
           </div>

@@ -39,7 +39,7 @@ export function NeinFeedbackForm({ token }: { token: string }) {
 
   if (done) {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-6 text-center text-emerald-900">
+      <div className="rounded-lg border border-primary/25 bg-primary/10 px-4 py-6 text-center text-dark">
         <p className="text-lg font-semibold">Vielen Dank</p>
         <p className="mt-2 text-sm">
           Ihr Feedback wurde übermittelt. Der Betrieb wurde informiert.

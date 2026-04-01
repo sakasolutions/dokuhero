@@ -275,7 +275,7 @@ export default function EinstellungenPage() {
         </p>
       ) : null}
       {formOk ? (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-dark">
           {formOk}
         </p>
       ) : null}
@@ -342,7 +342,7 @@ export default function EinstellungenPage() {
               <p className="mt-2 text-sm text-red-600">{logoErr}</p>
             ) : null}
             {logoMsg ? (
-              <p className="mt-2 text-sm text-emerald-800">{logoMsg}</p>
+              <p className="mt-2 text-sm text-primary">{logoMsg}</p>
             ) : null}
             <div className="mt-3">
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">

@@ -66,7 +66,7 @@ export function LoginForm() {
       <Card>
         {registered ? (
           <p
-            className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+            className="mb-4 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-dark"
             role="status"
           >
             Konto erstellt! Bitte einloggen.
@@ -74,7 +74,7 @@ export function LoginForm() {
         ) : null}
         {resetOk ? (
           <p
-            className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+            className="mb-4 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-dark"
             role="status"
           >
             Passwort wurde geändert. Du kannst dich jetzt anmelden.

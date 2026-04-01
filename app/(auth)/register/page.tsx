@@ -182,10 +182,10 @@ export default function RegisterPage() {
                           ? strength <= 1
                             ? "bg-red-400"
                             : strength === 2
-                              ? "bg-accent"
+                              ? "bg-primary/45"
                               : strength === 3
-                                ? "bg-lime-500"
-                                : "bg-emerald-500"
+                                ? "bg-primary/75"
+                                : "bg-primary"
                           : "bg-slate-200"
                       }`}
                     />

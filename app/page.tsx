@@ -93,11 +93,11 @@ export default function LandingPage() {
                   key={n}
                   className="relative rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-sm"
                 >
-                  <div className="absolute -top-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-accent text-sm font-bold text-dark shadow-sm">
+                  <div className="absolute -top-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-sm">
                     {n}
                   </div>
                   <div
-                    className="mx-auto mt-4 flex h-14 w-14 items-center justify-center rounded-xl bg-accent/25 text-primary"
+                    className="mx-auto mt-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary"
                     aria-hidden
                   >
                     <Icon className="h-7 w-7" strokeWidth={2} />
@@ -141,7 +141,7 @@ export default function LandingPage() {
                   key={title}
                   className="rounded-2xl border border-slate-200/80 bg-surface p-6 shadow-sm"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/30 text-primary">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" strokeWidth={2} />
                   </div>
                   <h3 className="mt-4 font-semibold text-dark">{title}</h3>
@@ -190,7 +190,7 @@ export default function LandingPage() {
                   key={title}
                   className="flex gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/30 text-primary">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="h-6 w-6" strokeWidth={2} />
                   </div>
                   <div>

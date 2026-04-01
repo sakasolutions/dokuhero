@@ -16,8 +16,8 @@ const STATUS_OPTIONS: { value: AuftragStatus | "alle"; label: string }[] = [
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     offen: "bg-primary/10 text-primary ring-primary/25",
-    in_bearbeitung: "bg-accent/25 text-dark ring-accent/40",
-    abgeschlossen: "bg-emerald-100 text-emerald-900 ring-emerald-200",
+    in_bearbeitung: "bg-primary/15 text-primary ring-primary/30",
+    abgeschlossen: "bg-primary/10 text-dark ring-primary/25",
   };
   const labels: Record<string, string> = {
     offen: "Offen",

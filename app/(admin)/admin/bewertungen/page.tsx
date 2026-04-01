@@ -107,7 +107,7 @@ export default function AdminBewertungenPage() {
                     <td className="px-4 py-3 tabular-nums">{r.protokoll_id ?? "–"}</td>
                     <td className="px-4 py-3">
                       {r.zufrieden === 1 ? (
-                        <span className="text-emerald-700">Ja</span>
+                        <span className="text-primary">Ja</span>
                       ) : r.zufrieden === 0 ? (
                         <span className="text-red-700">Nein</span>
                       ) : (

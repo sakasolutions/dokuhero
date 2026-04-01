@@ -281,7 +281,7 @@ export default function ProtokollAnsichtPage() {
       {bannerSuccess ? (
         <div
           role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+          className="rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-dark"
         >
           {bannerSuccess}
         </div>
