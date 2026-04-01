@@ -1,5 +1,6 @@
-import { writeFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
+import { fileURLToPath } from "url";
 import puppeteer from "puppeteer";
 import { ensurePdfsUploadDir, getPdfsUploadDir } from "@/lib/protokoll-upload";
 
@@ -12,9 +13,33 @@ export type ProtokollData = {
   auftragsnummer: string;
   beschreibung: string;
   kiText: string;
-  /** Absolute file://-URLs für <img src> */
+  /** file://-URLs oder Web-Pfade wie /uploads/fotos/… (relativ zu public/) */
   fotoPfade: string[];
 };
+
+function toDiskPath(fotoRef: string): string {
+  const p = fotoRef.trim();
+  if (p.startsWith("file:")) {
+    return fileURLToPath(p);
+  }
+  const rel = p.startsWith("/") ? p.slice(1) : p;
+  return join(process.cwd(), "public", rel);
+}
+
+async function loadFotosAsDataUris(fotoPfade: string[]): Promise<string[]> {
+  const uris: string[] = [];
+  for (const ref of fotoPfade.slice(0, 6)) {
+    try {
+      const diskPath = toDiskPath(ref);
+      const imageBuffer = await readFile(diskPath);
+      const base64 = imageBuffer.toString("base64");
+      uris.push(`data:image/jpeg;base64,${base64}`);
+    } catch (e) {
+      console.error("PDF: Foto konnte nicht gelesen werden:", ref, e);
+    }
+  }
+  return uris;
+}
 
 function esc(s: string): string {
   return s
@@ -24,9 +49,8 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function buildHtml(data: ProtokollData): string {
-  const fotos = data.fotoPfade.slice(0, 6);
-  const fotoCells = fotos
+function buildHtml(data: ProtokollData, fotoDataUris: string[]): string {
+  const fotoCells = fotoDataUris
     .map(
       (src) =>
         `<div class="foto-cell"><img src=${JSON.stringify(src)} alt="" /></div>`
@@ -73,7 +97,7 @@ function buildHtml(data: ProtokollData): string {
     <p class="arbeiten">${esc(data.kiText)}</p>
   </div>
   ${
-    fotos.length
+    fotoDataUris.length
       ? `<div class="block"><h2>Fotos</h2><div class="foto-grid">${fotoCells}</div></div>`
       : ""
   }
@@ -84,6 +108,8 @@ function buildHtml(data: ProtokollData): string {
 
 export async function generatePDF(data: ProtokollData): Promise<Buffer> {
   await ensurePdfsUploadDir();
+
+  const fotoDataUris = await loadFotosAsDataUris(data.fotoPfade);
 
   const browser = await puppeteer.launch({
     executablePath: "/usr/bin/chromium-browser",
@@ -96,22 +122,11 @@ export async function generatePDF(data: ProtokollData): Promise<Buffer> {
 
   try {
     const page = await browser.newPage();
-    const html = buildHtml(data);
+    const html = buildHtml(data, fotoDataUris);
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
-    await page.evaluate(() =>
-      Promise.all(
-        Array.from(document.images).map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          });
-        })
-      )
-    );
 
     const pdfUint8 = await page.pdf({
       format: "A4",
