@@ -62,18 +62,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // entspricht z. B. /var/www/dokuhero/public/uploads/fotos/ wenn cwd = Projektroot
     const uploadDir = await ensureFotosUploadDir();
     const ts = Date.now();
-    const kiText = notiz?.trim() ?? "";
+    const notizText = notiz?.trim() || null;
 
     const conn = await pool.getConnection();
     await conn.beginTransaction();
 
     try {
       const [pRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO protokolle (auftrag_id, ki_text, pdf_pfad, gesendet_am)
-         VALUES (?, ?, NULL, NULL)`,
-        [auftrag_id, kiText]
+        `INSERT INTO protokolle (auftrag_id, notiz, ki_text, pdf_pfad, gesendet_am, erstellt_am)
+         VALUES (?, ?, NULL, NULL, NULL, NOW())`,
+        [auftrag_id, notizText]
       );
       const protokollId = pRes.insertId;
 
@@ -84,17 +85,18 @@ export async function POST(request: Request) {
         const buf = Buffer.from(b64, "base64");
         if (buf.length === 0) continue;
 
-        const fname = `${auftrag_id}_${ts}_${fileIndex}.jpg`;
+        const dateiname = `${auftrag_id}_${ts}_${fileIndex}.jpg`;
         fileIndex += 1;
-        const fullPath = join(uploadDir, fname);
-        const webPath = `/uploads/fotos/${fname}`;
+        const fullPath = join(uploadDir, dateiname);
+        const dateiPfad = `/uploads/fotos/${dateiname}`;
 
         await writeFile(fullPath, buf);
         writtenFiles.push(fullPath);
 
         await conn.execute(
-          `INSERT INTO fotos (auftrag_id, pfad, erstellt_am) VALUES (?, ?, NOW())`,
-          [auftrag_id, webPath]
+          `INSERT INTO fotos (protokoll_id, datei_pfad, dateiname, erstellt_am)
+           VALUES (?, ?, ?, NOW())`,
+          [protokollId, dateiPfad, dateiname]
         );
       }
 

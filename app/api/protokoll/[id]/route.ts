@@ -9,15 +9,18 @@ export const dynamic = "force-dynamic";
 interface ProtokollRow extends RowDataPacket {
   id: number;
   auftrag_id: number;
+  notiz: string | null;
   ki_text: string | null;
   pdf_pfad: string | null;
   gesendet_am: Date | null;
+  erstellt_am: Date;
 }
 
 interface FotoRow extends RowDataPacket {
   id: number;
-  auftrag_id: number;
-  pfad: string;
+  protokoll_id: number;
+  datei_pfad: string;
+  dateiname: string;
   erstellt_am: Date;
 }
 
@@ -38,7 +41,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const pool = getPool();
 
     const [prows] = await pool.execute<ProtokollRow[]>(
-      `SELECT p.id, p.auftrag_id, p.ki_text, p.pdf_pfad, p.gesendet_am
+      `SELECT p.id, p.auftrag_id, p.notiz, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
        WHERE p.id = ? AND a.betrieb_id = ?
@@ -52,10 +55,10 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const [frows] = await pool.execute<FotoRow[]>(
-      `SELECT id, auftrag_id, pfad, erstellt_am FROM fotos
-       WHERE auftrag_id = ?
+      `SELECT id, protokoll_id, datei_pfad, dateiname, erstellt_am FROM fotos
+       WHERE protokoll_id = ?
        ORDER BY erstellt_am ASC, id ASC`,
-      [protokoll.auftrag_id]
+      [protokollId]
     );
 
     return NextResponse.json({ protokoll, fotos: frows });

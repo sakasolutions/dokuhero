@@ -42,15 +42,18 @@ export interface AuftragMitKunde extends Auftrag {
 export interface Protokoll {
   id: number;
   auftrag_id: number;
+  notiz: string | null;
   ki_text: string | null;
   pdf_pfad: string | null;
   gesendet_am: Date | null;
+  erstellt_am: Date;
 }
 
 export interface FotoEintrag {
   id: number;
-  auftrag_id: number;
-  pfad: string;
+  protokoll_id: number;
+  datei_pfad: string;
+  dateiname: string;
   erstellt_am: Date;
 }
 
