@@ -1,52 +1,58 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-export async function sendProtokolMail(
+export async function sendProtokollMail(
   to: string,
   betriebName: string,
   pdfBuffer: Buffer,
-  protokollId: number
+  kundeName: string
 ): Promise<void> {
-  const host = process.env.MAIL_HOST;
-  const port = Number(process.env.MAIL_PORT ?? "587");
-  const user = process.env.MAIL_USER;
-  const pass = process.env.MAIL_PASS;
+  const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
 
-  if (!host || !user || pass === undefined || !from) {
-    throw new Error(
-      "SMTP nicht konfiguriert (MAIL_HOST, MAIL_USER, MAIL_PASS, MAIL_FROM)."
-    );
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY ist nicht gesetzt.");
+  }
+  if (!from) {
+    throw new Error("MAIL_FROM ist nicht gesetzt.");
   }
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
+  const resend = new Resend(apiKey);
   const subject = `Ihr Serviceprotokoll von ${betriebName}`;
-  const text = `Guten Tag,
 
-anbei erhalten Sie Ihr Serviceprotokoll (Referenz #${protokollId}).
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8" /></head>
+<body style="font-family: system-ui, sans-serif; line-height: 1.5; color: #334155;">
+  <p>Guten Tag${kundeName ? ` ${escapeHtml(kundeName)}` : ""},</p>
+  <p>anbei erhalten Sie Ihr Serviceprotokoll von <strong>${escapeHtml(betriebName)}</strong>.</p>
+  <p>Bei Rückfragen stehen wir Ihnen gerne zur Verfügung.</p>
+  <p style="margin-top: 1.5rem;">Mit freundlichen Grüßen<br/><strong>${escapeHtml(betriebName)}</strong></p>
+  <p style="margin-top: 2rem; font-size: 0.85rem; color: #94a3b8;">Erstellt mit DokuHero</p>
+</body>
+</html>`;
 
-Mit freundlichen Grüßen
-${betriebName}
-
-—
-Diese Nachricht wurde mit DokuHero erstellt.`;
-
-  await transporter.sendMail({
+  const { error } = await resend.emails.send({
     from,
     to,
     subject,
-    text,
+    html,
     attachments: [
       {
-        filename: `protokoll-${protokollId}.pdf`,
+        filename: "protokoll.pdf",
         content: pdfBuffer,
-        contentType: "application/pdf",
       },
     ],
   });
+
+  if (error) {
+    throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

@@ -35,12 +35,16 @@ export async function GET() {
     const [rows] = await pool.execute<AuftragRow[]>(
       `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am,
               k.name AS kunde_name,
-              (SELECT pr.id FROM protokolle pr
-               WHERE pr.auftrag_id = a.id
-               ORDER BY pr.erstellt_am DESC, pr.id DESC
-               LIMIT 1) AS protokoll_id
+              pr.id AS protokoll_id
        FROM auftraege a
        LEFT JOIN kunden k ON k.id = a.kunde_id AND k.betrieb_id = a.betrieb_id
+       LEFT JOIN protokolle pr ON pr.auftrag_id = a.id
+         AND pr.id = (
+           SELECT pr2.id FROM protokolle pr2
+           WHERE pr2.auftrag_id = a.id
+           ORDER BY pr2.erstellt_am DESC, pr2.id DESC
+           LIMIT 1
+         )
        WHERE a.betrieb_id = ?
        ORDER BY a.erstellt_am DESC`,
       [session.user.betrieb_id]

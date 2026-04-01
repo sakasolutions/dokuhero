@@ -1,10 +1,11 @@
 import OpenAI from "openai";
 
-const SYSTEM_PROMPT = `Du bist ein professioneller Assistent für Handwerksbetriebe.
-Erstelle aus den Stichpunkten einen professionellen, höflichen Protokolltext auf Deutsch.
-Maximal 3 Absätze. Kein Kundenname, keine persönlichen Daten.`;
+const SYSTEM_PROMPT =
+  "Du bist ein professioneller Assistent für Handwerksbetriebe. " +
+  "Erstelle aus den Stichpunkten einen professionellen, höflichen Protokolltext " +
+  "auf Deutsch. Max 3 Absätze. Kein Kundenname, keine persönlichen Daten.";
 
-export async function generateProtokolText(
+export async function generateProtokollText(
   notiz: string,
   _betriebName: string
 ): Promise<string> {
@@ -20,7 +21,10 @@ export async function generateProtokolText(
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Stichpunkte:\n${stichpunkte}` },
+      {
+        role: "user",
+        content: `Stichpunkte des Monteurs: ${stichpunkte}`,
+      },
     ],
     max_tokens: 800,
     temperature: 0.4,

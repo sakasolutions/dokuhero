@@ -213,7 +213,7 @@ export default function ProtokollAnsichtPage() {
           ) : (
             <Send className="h-5 w-5" />
           )}
-          {generating ? "Wird erstellt…" : "PDF generieren & senden"}
+          {generating ? "Wird erstellt…" : "PDF generieren & per Mail senden"}
         </Button>
 
         {pdfHref ? (
@@ -224,9 +224,13 @@ export default function ProtokollAnsichtPage() {
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-50"
           >
             <FileDown className="h-5 w-5" />
-            PDF herunterladen
+            PDF öffnen / herunterladen
           </a>
-        ) : null}
+        ) : (
+          <p className="text-center text-sm text-slate-500">
+            Nach der Generierung erscheint hier der PDF-Link.
+          </p>
+        )}
       </div>
 
       {protokoll.gesendet_am ? (
