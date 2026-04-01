@@ -1,22 +1,24 @@
 import { NextResponse } from "next/server";
-import { join } from "path";
-import { pathToFileURL } from "url";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { generateProtokollText } from "@/lib/ai";
 import { generatePDF } from "@/lib/pdf";
 import { sendProtokollMail } from "@/lib/mail";
 import type { RowDataPacket } from "mysql2";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
+const bodySchema = z.object({
+  kiText: z.string(),
+  sendMail: z.boolean().optional().default(false),
+});
+
 interface LoadRow extends RowDataPacket {
   protokoll_id: number;
   auftrag_id: number;
-  notiz: string | null;
   protokoll_erstellt: Date;
   beschreibung: string | null;
   kunde_name: string | null;
@@ -28,15 +30,9 @@ interface FotoPfadRow extends RowDataPacket {
   datei_pfad: string;
 }
 
-function publicPathToFileUrl(webPath: string): string {
-  const rel = webPath.startsWith("/") ? webPath.slice(1) : webPath;
-  const abs = join(process.cwd(), "public", rel);
-  return pathToFileURL(abs).href;
-}
-
 type RouteContext = { params: { id: string } };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.betrieb_id) {
@@ -48,11 +44,27 @@ export async function POST(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });
     }
 
+    let json: unknown;
+    try {
+      json = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Ungültiger JSON-Body" }, { status: 400 });
+    }
+
+    const parsed = bodySchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const { kiText, sendMail } = parsed.data;
     const pool = getPool();
 
     const [rows] = await pool.execute<LoadRow[]>(
-      `SELECT p.id AS protokoll_id, p.auftrag_id, p.notiz, p.erstellt_am AS protokoll_erstellt,
-              a.beschreibung, a.kunde_id, a.betrieb_id,
+      `SELECT p.id AS protokoll_id, p.auftrag_id, p.erstellt_am AS protokoll_erstellt,
+              a.beschreibung,
               k.name AS kunde_name, k.email AS kunde_email,
               b.name AS betrieb_name
        FROM protokolle p
@@ -74,10 +86,7 @@ export async function POST(_request: Request, context: RouteContext) {
       [protokollId]
     );
 
-    const notizText = row.notiz ?? "";
-    const kiText = await generateProtokollText(notizText, row.betrieb_name);
-
-    const fotoPfade = fotoRows.map((f) => publicPathToFileUrl(f.datei_pfad));
+    const fotoPfade = fotoRows.map((f) => f.datei_pfad);
 
     const datumStr = new Date(row.protokoll_erstellt).toLocaleString("de-DE", {
       dateStyle: "long",
@@ -98,14 +107,24 @@ export async function POST(_request: Request, context: RouteContext) {
     const pdfUrl = `/uploads/pdfs/${protokollId}.pdf`;
 
     let emailSent = false;
-    const to = row.kunde_email?.trim();
-    const kundeName = row.kunde_name?.trim() ?? "";
-    if (to) {
+    let mailError: string | null = null;
+
+    if (sendMail) {
+      const to = row.kunde_email?.trim();
+      if (!to) {
+        return NextResponse.json(
+          { error: "Keine E-Mail-Adresse beim Kunden hinterlegt." },
+          { status: 400 }
+        );
+      }
+      const kundeName = row.kunde_name?.trim() ?? "";
       try {
         await sendProtokollMail(to, row.betrieb_name, pdfBuffer, kundeName);
         emailSent = true;
       } catch (e) {
         console.error("Mailversand fehlgeschlagen:", e);
+        mailError =
+          e instanceof Error ? e.message : "E-Mail konnte nicht gesendet werden.";
       }
     }
 
@@ -121,6 +140,7 @@ export async function POST(_request: Request, context: RouteContext) {
       success: true,
       pdfUrl,
       emailSent,
+      ...(mailError ? { mailError } : {}),
     });
   } catch (error) {
     console.error("Protokoll generate Fehler:", error);
