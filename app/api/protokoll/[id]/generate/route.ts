@@ -139,6 +139,15 @@ export async function POST(request: Request, context: RouteContext) {
       [kiText, pdfUrl, emailSent ? 1 : 0, protokollId]
     );
 
+    if (emailSent) {
+      await pool.execute(
+        `UPDATE auftraege
+         SET status = 'abgeschlossen', abgeschlossen_am = NOW()
+         WHERE id = ? AND betrieb_id = ?`,
+        [row.auftrag_id, session.user.betrieb_id]
+      );
+    }
+
     return NextResponse.json({
       success: true,
       pdfUrl,

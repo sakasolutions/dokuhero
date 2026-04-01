@@ -3,7 +3,11 @@ import { join } from "path";
 import { fileURLToPath } from "url";
 import puppeteer from "puppeteer";
 import { resolveLogoDiskPathFromWebPath } from "@/lib/logo-upload";
-import { ensurePdfsUploadDir, getPdfsUploadDir } from "@/lib/protokoll-upload";
+import {
+  ensurePdfsUploadDir,
+  getPdfsUploadDir,
+  resolveFotoDiskPathFromWebPath,
+} from "@/lib/protokoll-upload";
 
 export type ProtokollData = {
   protokollId: number;
@@ -23,13 +27,12 @@ export type ProtokollData = {
   betriebLogoPfad?: string | null;
 };
 
-function toDiskPath(fotoRef: string): string {
+function toFotoDiskPath(fotoRef: string): string {
   const p = fotoRef.trim();
   if (p.startsWith("file:")) {
     return fileURLToPath(p);
   }
-  const rel = p.startsWith("/") ? p.slice(1) : p;
-  return join(process.cwd(), "public", rel);
+  return resolveFotoDiskPathFromWebPath(p);
 }
 
 function bufferToImageDataUri(buf: Buffer): string {
@@ -66,12 +69,12 @@ async function loadBetriebLogoDataUri(
 async function loadFotosAsDataUris(fotoPfade: string[]): Promise<string[]> {
   const uris: string[] = [];
   for (const ref of fotoPfade.slice(0, 6)) {
+    const diskPath = toFotoDiskPath(ref);
     try {
-      const diskPath = toDiskPath(ref);
       const imageBuffer = await readFile(diskPath);
       uris.push(bufferToImageDataUri(imageBuffer));
-    } catch (e) {
-      console.error("PDF: Foto konnte nicht gelesen werden:", ref, e);
+    } catch {
+      console.error("Foto nicht gefunden:", diskPath);
     }
   }
   return uris;

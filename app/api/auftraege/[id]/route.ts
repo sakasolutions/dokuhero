@@ -16,6 +16,13 @@ interface AuftragRow extends RowDataPacket {
   kunde_name: string | null;
 }
 
+interface ProtokollKurzRow extends RowDataPacket {
+  id: number;
+  erstellt_am: Date;
+  gesendet_am: Date | null;
+  pdf_pfad: string | null;
+}
+
 const updateSchema = z.object({
   beschreibung: z.string().optional().nullable(),
   status: z.enum(["offen", "in_bearbeitung", "abgeschlossen"]),
@@ -55,7 +62,31 @@ export async function GET(
       return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
     }
 
-    return NextResponse.json(row);
+    const [pRows] = await pool.execute<ProtokollKurzRow[]>(
+      `SELECT p.id, p.erstellt_am, p.gesendet_am, p.pdf_pfad
+       FROM protokolle p
+       INNER JOIN auftraege a ON a.id = p.auftrag_id
+       WHERE p.auftrag_id = ? AND a.betrieb_id = ?
+       ORDER BY p.erstellt_am DESC, p.id DESC`,
+      [auftragId, session.user.betrieb_id]
+    );
+
+    const protokolle = pRows.map((p) => ({
+      id: p.id,
+      erstellt_am:
+        p.erstellt_am instanceof Date
+          ? p.erstellt_am.toISOString()
+          : String(p.erstellt_am),
+      gesendet_am:
+        p.gesendet_am instanceof Date
+          ? p.gesendet_am.toISOString()
+          : p.gesendet_am
+            ? String(p.gesendet_am)
+            : null,
+      pdf_pfad: p.pdf_pfad,
+    }));
+
+    return NextResponse.json({ ...row, protokolle });
   } catch (error) {
     console.error("Aufträge API Fehler:", error);
     return NextResponse.json({ error: "Fehler" }, { status: 500 });

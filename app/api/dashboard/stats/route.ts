@@ -53,21 +53,20 @@ export async function GET() {
       [betriebId]
     );
 
-    // Nur Spalten aus bekannten Tabellen; Woche über erstellt_am des Auftrags
     const protokolleDieseWoche = await countSafe(
       pool,
       `SELECT COUNT(*) AS c
        FROM protokolle p
-       INNER JOIN auftraege a ON p.auftrag_id = a.id
+       INNER JOIN auftraege a ON a.id = p.auftrag_id
        WHERE a.betrieb_id = ?
-         AND YEARWEEK(a.erstellt_am, 1) = YEARWEEK(CURDATE(), 1)`,
+         AND p.erstellt_am >= DATE_SUB(NOW(), INTERVAL 7 DAY)`,
       [betriebId]
     );
 
     const offeneAuftraege = await countSafe(
       pool,
       `SELECT COUNT(*) AS c FROM auftraege
-       WHERE betrieb_id = ? AND abgeschlossen_am IS NULL`,
+       WHERE betrieb_id = ? AND status = 'offen'`,
       [betriebId]
     );
 
@@ -93,7 +92,6 @@ export async function GET() {
       const [fbRows] = await pool.execute<FeedbackRow[]>(
         `SELECT b.feedback_text
          ${bewertungJoin}
-           AND b.zufrieden = 0
            AND b.feedback_text IS NOT NULL
            AND TRIM(b.feedback_text) <> ''
          ORDER BY b.erstellt_am DESC, b.id DESC

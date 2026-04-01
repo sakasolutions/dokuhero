@@ -176,3 +176,34 @@ Dein DokuHero Team`;
   });
   if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
 }
+
+/** Passwort zurücksetzen – Link mit Token. */
+export async function sendPasswortResetMail(
+  to: string,
+  resetUrl: string
+): Promise<void> {
+  const { resend, from } = getResendClient();
+  const subject = "Passwort zurücksetzen – DokuHero";
+
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8" /></head>
+<body style="font-family: system-ui, sans-serif; line-height: 1.6; color: #334155;">
+  <p>Hallo,</p>
+  <p>du hast ein neues Passwort für DokuHero angefordert. Klicke auf den folgenden Link (gültig 1 Stunde):</p>
+  <p><a href="${escapeHtml(resetUrl)}">${escapeHtml(resetUrl)}</a></p>
+  <p style="font-size:0.9rem;color:#64748b;">Wenn du diese Anfrage nicht gestellt hast, kannst du diese E-Mail ignorieren.</p>
+</body>
+</html>`;
+
+  const text = `Passwort zurücksetzen für DokuHero:\n\n${resetUrl}\n\nLink ist 1 Stunde gültig.`;
+
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject,
+    html,
+    text,
+  });
+  if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
+}

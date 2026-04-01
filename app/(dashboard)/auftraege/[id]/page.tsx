@@ -10,7 +10,11 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card } from "@/components/ui/Card";
-import type { AuftragMitKunde, AuftragStatus } from "@/types";
+import type {
+  AuftragMitProtokollen,
+  AuftragStatus,
+  ProtokollListeEintrag,
+} from "@/types";
 
 const schema = z.object({
   beschreibung: z.string().optional(),
@@ -36,6 +40,7 @@ export default function AuftragBearbeitenPage() {
     kunde_name: string | null;
     erstellt_am: string;
   } | null>(null);
+  const [protokolle, setProtokolle] = useState<ProtokollListeEintrag[]>([]);
 
   const {
     register,
@@ -55,7 +60,7 @@ export default function AuftragBearbeitenPage() {
           if (!cancelled) setFormError("Auftrag nicht gefunden.");
           return;
         }
-        const a = (await res.json()) as AuftragMitKunde;
+        const a = (await res.json()) as AuftragMitProtokollen;
         if (!cancelled) {
           setMeta({
             kunde_name: a.kunde_name,
@@ -64,6 +69,7 @@ export default function AuftragBearbeitenPage() {
                 ? a.erstellt_am
                 : String(a.erstellt_am),
           });
+          setProtokolle(Array.isArray(a.protokolle) ? a.protokolle : []);
           reset({
             beschreibung: a.beschreibung ?? "",
             status: a.status as AuftragStatus,
@@ -79,6 +85,17 @@ export default function AuftragBearbeitenPage() {
       cancelled = true;
     };
   }, [id, reset]);
+
+  function formatProtokollDatum(iso: string) {
+    try {
+      return new Date(iso).toLocaleString("de-DE", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    } catch {
+      return iso;
+    }
+  }
 
   async function onSubmit(data: FormValues) {
     setFormError(null);
@@ -109,7 +126,7 @@ export default function AuftragBearbeitenPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">
       <Link
         href="/auftraege"
         className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
@@ -179,6 +196,55 @@ export default function AuftragBearbeitenPage() {
             </Button>
           </div>
         </form>
+      </Card>
+
+      <Card>
+        <h2 className="text-lg font-semibold text-slate-900">
+          Protokolle zu diesem Auftrag
+        </h2>
+        {protokolle.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-600">
+            Noch keine Protokolle erfasst.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-slate-200">
+            {protokolle.map((p) => (
+              <li
+                key={p.id}
+                className="flex flex-col gap-2 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium text-slate-900">
+                    {formatProtokollDatum(p.erstellt_am)}
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    PDF gesendet:{" "}
+                    <span className="font-medium text-slate-800">
+                      {p.gesendet_am ? "Ja" : "Nein"}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/protokoll/${p.id}`}
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                  >
+                    Protokoll öffnen
+                  </Link>
+                  {p.pdf_pfad ? (
+                    <a
+                      href={p.pdf_pfad}
+                      download
+                      className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:opacity-95"
+                    >
+                      PDF herunterladen
+                    </a>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   );

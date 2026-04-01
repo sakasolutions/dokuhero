@@ -42,6 +42,18 @@ export interface AuftragMitKunde extends Auftrag {
   protokoll_id: number | null;
 }
 
+/** GET /api/auftraege/:id inkl. Protokoll-Liste */
+export interface ProtokollListeEintrag {
+  id: number;
+  erstellt_am: string;
+  gesendet_am: string | null;
+  pdf_pfad: string | null;
+}
+
+export interface AuftragMitProtokollen extends AuftragMitKunde {
+  protokolle: ProtokollListeEintrag[];
+}
+
 export interface Protokoll {
   id: number;
   auftrag_id: number;

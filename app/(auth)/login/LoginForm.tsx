@@ -22,6 +22,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "1";
+  const resetOk = searchParams.get("reset") === "1";
 
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -65,6 +66,14 @@ export function LoginForm() {
             Konto erstellt! Bitte einloggen.
           </p>
         ) : null}
+        {resetOk ? (
+          <p
+            className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+            role="status"
+          >
+            Passwort wurde geändert. Du kannst dich jetzt anmelden.
+          </p>
+        ) : null}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           {formError ? (
             <p
@@ -88,6 +97,14 @@ export function LoginForm() {
             error={errors.password?.message}
             {...register("password")}
           />
+          <p className="-mt-1 text-right">
+            <Link
+              href="/passwort-vergessen"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Passwort vergessen?
+            </Link>
+          </p>
           <Button
             type="submit"
             className="w-full min-h-11"

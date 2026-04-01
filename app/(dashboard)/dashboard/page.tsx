@@ -143,7 +143,7 @@ export default function DashboardPage() {
             className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
             role="status"
           >
-            <p className="font-medium text-amber-900">Neues Feedback</p>
+            <p className="font-medium text-amber-900">Letztes Feedback</p>
             <p className="mt-1 whitespace-pre-wrap text-amber-950/90">
               {stats.letztes_feedback}
             </p>
