@@ -16,7 +16,10 @@ export type ProtokollData = {
   kiText: string;
   /** file://-URLs oder Web-Pfade wie /uploads/fotos/… (relativ zu public/) */
   fotoPfade: string[];
-  /** Web-Pfad z. B. /uploads/logos/1.jpg – optional, oben rechts im PDF */
+  /**
+   * Web-Pfad z. B. `/uploads/logos/1.jpg` – wird per `resolveLogoDiskPathFromWebPath`
+   * gelesen (u. a. `DOKUHERO_PUBLIC_DIR=/var/www/dokuhero/public` oder `LOGO_UPLOAD_DIR`).
+   */
   betriebLogoPfad?: string | null;
 };
 

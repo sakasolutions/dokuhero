@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { Card } from "@/components/ui/Card";
 import { ClipboardList, FileText, Users, Wrench } from "lucide-react";
 import type { DashboardStats } from "@/types";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [betriebName, setBetriebName] = useState("Betrieb");
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +33,26 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const name = session?.user?.name ?? "Betrieb";
+  /** Betriebsname ausschließlich aus der API (nicht aus der Session). */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/einstellungen");
+        if (!res.ok) return;
+        const j = (await res.json()) as {
+          betrieb?: { name?: string };
+        };
+        const n = j.betrieb?.name?.trim();
+        if (!cancelled && n) setBetriebName(n);
+      } catch {
+        /* Fallback bleibt „Betrieb“ */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const cards = [
     {
@@ -63,7 +81,7 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
-          Hallo, {name}
+          Hallo, {betriebName}
         </h1>
         <p className="mt-1 text-slate-600">
           Hier ist deine Übersicht für heute.

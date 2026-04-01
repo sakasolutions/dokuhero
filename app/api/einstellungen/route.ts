@@ -159,7 +159,8 @@ export async function PUT(request: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true });
+    const savedName = d.name.trim();
+    return NextResponse.json({ ok: true, name: savedName });
   } catch (e) {
     console.error("PUT einstellungen:", e);
     const msg =

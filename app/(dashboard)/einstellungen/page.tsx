@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -79,10 +80,15 @@ function fileToJpegDataUrl(file: File): Promise<string> {
 }
 
 export default function EinstellungenPage() {
+  const { update } = useSession();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailReadonly, setEmailReadonly] = useState("");
-  const [logoPfad, setLogoPfad] = useState<string | null>(null);
+  /** Für Vorschau-URL: /uploads/logos/{id}.jpg */
+  const [betriebId, setBetriebId] = useState<number | null>(null);
+  /** Ob laut API ein Logo existiert (logo_pfad gesetzt). */
+  const [hasLogo, setHasLogo] = useState(false);
+  const [logoCacheBust, setLogoCacheBust] = useState(0);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoMsg, setLogoMsg] = useState<string | null>(null);
   const [logoErr, setLogoErr] = useState<string | null>(null);
@@ -118,7 +124,8 @@ export default function EinstellungenPage() {
     }
     const b = j.betrieb as BetriebApi;
     setEmailReadonly(b.email);
-    setLogoPfad(b.logo_pfad);
+    setBetriebId(b.id);
+    setHasLogo(Boolean(b.logo_pfad?.trim()));
     reset({
       name: b.name,
       telefon: b.telefon ?? "",
@@ -168,8 +175,9 @@ export default function EinstellungenPage() {
         );
         return;
       }
-      if (typeof j.logo_pfad === "string") {
-        setLogoPfad(`${j.logo_pfad}?t=${Date.now()}`);
+      if (j.ok) {
+        setHasLogo(true);
+        setLogoCacheBust((n) => n + 1);
       }
       setLogoMsg("Logo wurde gespeichert.");
     } catch (err) {
@@ -204,6 +212,15 @@ export default function EinstellungenPage() {
       setFormError(typeof j.error === "string" ? j.error : "Speichern fehlgeschlagen.");
       return;
     }
+    const neuerName =
+      typeof j.name === "string" && j.name.trim() !== ""
+        ? j.name.trim()
+        : data.name.trim();
+    try {
+      await update({ name: neuerName });
+    } catch {
+      /* JWT-Update optional; Dashboard lädt den Namen per GET */
+    }
     reset({
       ...data,
       neuesPasswort: "",
@@ -232,10 +249,10 @@ export default function EinstellungenPage() {
     );
   }
 
-  const logoSrc =
-    logoPfad && !logoPfad.includes("?")
-      ? `${logoPfad}?v=1`
-      : logoPfad ?? null;
+  const logoPreviewSrc =
+    betriebId != null && hasLogo
+      ? `/uploads/logos/${betriebId}.jpg?v=${logoCacheBust}`
+      : null;
 
   return (
     <div className="mx-auto max-w-xl space-y-6 pb-8">
@@ -309,11 +326,11 @@ export default function EinstellungenPage() {
                 …/uploads/logos/{"{betrieb_id}"}.jpg
               </code>
             </p>
-            {logoSrc ? (
+            {logoPreviewSrc ? (
               <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={logoSrc}
+                  src={logoPreviewSrc}
                   alt="Logo"
                   className="max-h-20 max-w-full object-contain"
                 />
