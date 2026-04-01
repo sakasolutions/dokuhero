@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import { FotoUpload } from "@/components/protokoll/FotoUpload";
+import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
 import type { AuftragMitKunde } from "@/types";
 
 const STEPS = 3;
@@ -207,15 +208,30 @@ export default function ProtokollNeuPage() {
         {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">Notiz</h2>
-            <Textarea
-              id="protokoll-notiz"
-              label="Beschreibung / Befunde"
-              placeholder="Was wurde gemacht? Befunde, Maßnahmen …"
-              value={notiz}
-              onChange={(e) => setNotiz(e.target.value)}
-              rows={10}
-              className="min-h-[220px] text-base"
-            />
+            <p className="text-sm text-slate-600">
+              Tippe oder sprich deine Notiz…
+            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <div className="min-w-0 flex-1">
+                <Textarea
+                  id="protokoll-notiz"
+                  label="Beschreibung / Befunde"
+                  placeholder="Was wurde gemacht? Befunde, Maßnahmen …"
+                  value={notiz}
+                  onChange={(e) => setNotiz(e.target.value)}
+                  rows={10}
+                  className="min-h-[220px] text-base"
+                />
+              </div>
+              <SprachEingabe
+                onTranscript={(t) =>
+                  setNotiz((n) => {
+                    const cur = n.trim();
+                    return cur ? `${cur} ${t}` : t;
+                  })
+                }
+              />
+            </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
