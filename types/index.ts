@@ -39,6 +39,21 @@ export interface AuftragMitKunde extends Auftrag {
   kunde_name: string | null;
 }
 
+export interface Protokoll {
+  id: number;
+  auftrag_id: number;
+  ki_text: string | null;
+  pdf_pfad: string | null;
+  gesendet_am: Date | null;
+}
+
+export interface FotoEintrag {
+  id: number;
+  auftrag_id: number;
+  pfad: string;
+  erstellt_am: Date;
+}
+
 export interface DashboardStats {
   kundenGesamt: number;
   auftraegeHeute: number;
