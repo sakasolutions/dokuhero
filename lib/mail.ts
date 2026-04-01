@@ -132,3 +132,47 @@ export async function sendNegativesFeedbackAnBetriebMail(
   });
   if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
 }
+
+function getLoginBaseUrl(): string {
+  const u =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    process.env.APP_URL?.trim() ||
+    "https://dokuhero.de";
+  return u.replace(/\/$/, "");
+}
+
+/** Willkommens-Mail nach Registrierung. */
+export async function sendWillkommenMail(
+  to: string,
+  betriebName: string
+): Promise<void> {
+  const { resend, from } = getResendClient();
+  const subject = "Willkommen bei DokuHero!";
+  const loginUrl = `${getLoginBaseUrl()}/login`;
+
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8" /></head>
+<body style="font-family: system-ui, sans-serif; line-height: 1.6; color: #334155;">
+  <p>Hallo ${escapeHtml(betriebName)},</p>
+  <p>dein Konto ist jetzt aktiv. Du kannst dich unter<br/>
+  <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a> einloggen.</p>
+  <p style="margin-top: 1.5rem;">Dein DokuHero Team</p>
+</body>
+</html>`;
+
+  const text = `Hallo ${betriebName},
+
+dein Konto ist jetzt aktiv. Du kannst dich unter ${loginUrl} einloggen.
+
+Dein DokuHero Team`;
+
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject,
+    html,
+    text,
+  });
+  if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
+}
