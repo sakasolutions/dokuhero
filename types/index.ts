@@ -64,4 +64,7 @@ export interface DashboardStats {
   auftraegeHeute: number;
   protokolleDieseWoche: number;
   offeneAuftraege: number;
+  bewertungen_positiv: number;
+  bewertungen_negativ: number;
+  letztes_feedback: string | null;
 }

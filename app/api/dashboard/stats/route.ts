@@ -11,6 +11,10 @@ interface CountRow extends RowDataPacket {
   c: number;
 }
 
+interface FeedbackRow extends RowDataPacket {
+  feedback_text: string | null;
+}
+
 async function countSafe(
   pool: Pool,
   sql: string,
@@ -67,11 +71,49 @@ export async function GET() {
       [betriebId]
     );
 
+    const bewertungJoin = `FROM bewertungen b
+       INNER JOIN protokolle p ON p.id = b.protokoll_id
+       INNER JOIN auftraege a ON a.id = p.auftrag_id
+       WHERE a.betrieb_id = ?`;
+
+    const bewertungen_positiv = await countSafe(
+      pool,
+      `SELECT COUNT(*) AS c ${bewertungJoin} AND b.zufrieden = 1`,
+      [betriebId]
+    );
+
+    const bewertungen_negativ = await countSafe(
+      pool,
+      `SELECT COUNT(*) AS c ${bewertungJoin} AND b.zufrieden = 0`,
+      [betriebId]
+    );
+
+    let letztes_feedback: string | null = null;
+    try {
+      const [fbRows] = await pool.execute<FeedbackRow[]>(
+        `SELECT b.feedback_text
+         ${bewertungJoin}
+           AND b.zufrieden = 0
+           AND b.feedback_text IS NOT NULL
+           AND TRIM(b.feedback_text) <> ''
+         ORDER BY b.erstellt_am DESC, b.id DESC
+         LIMIT 1`,
+        [betriebId]
+      );
+      const t = fbRows[0]?.feedback_text?.trim();
+      letztes_feedback = t && t.length > 0 ? t : null;
+    } catch (error) {
+      console.error("[dashboard/stats] letztes_feedback:", error);
+    }
+
     return NextResponse.json({
       kundenGesamt,
       auftraegeHeute,
       protokolleDieseWoche,
       offeneAuftraege,
+      bewertungen_positiv,
+      bewertungen_negativ,
+      letztes_feedback,
     });
   } catch (error) {
     console.error("[dashboard/stats]", error);

@@ -109,6 +109,47 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-slate-500">
+          Bewertungen
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Card padding={false} className="p-4">
+            <p className="text-sm text-slate-700">
+              <span className="mr-1.5" aria-hidden>
+                👍
+              </span>
+              <span className="font-semibold tabular-nums text-slate-900">
+                {stats?.bewertungen_positiv ?? "–"}
+              </span>{" "}
+              zufrieden
+            </p>
+          </Card>
+          <Card padding={false} className="p-4">
+            <p className="text-sm text-slate-700">
+              <span className="mr-1.5" aria-hidden>
+                👎
+              </span>
+              <span className="font-semibold tabular-nums text-slate-900">
+                {stats?.bewertungen_negativ ?? "–"}
+              </span>{" "}
+              Feedback
+            </p>
+          </Card>
+        </div>
+        {stats?.letztes_feedback ? (
+          <div
+            className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+            role="status"
+          >
+            <p className="font-medium text-amber-900">Neues Feedback</p>
+            <p className="mt-1 whitespace-pre-wrap text-amber-950/90">
+              {stats.letztes_feedback}
+            </p>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
