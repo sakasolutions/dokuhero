@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Building2,
@@ -103,10 +103,56 @@ const features = [
   },
 ];
 
+/** Dauer für Scroll-Einblendungen: mobil kürzer */
+const animD = "duration-[400ms] md:duration-700";
+
+function useInView(threshold = 0.1) {
+  const [inView, setInView] = useState(false);
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setInView(true);
+      },
+      { threshold }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node, threshold]);
+  const ref = useCallback((el: HTMLElement | null) => setNode(el), []);
+  return [ref, inView] as const;
+}
+
+function useCountUp(target: number, durationMs: number, enabled: boolean) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!enabled) {
+      setValue(0);
+      return;
+    }
+    let raf = 0;
+    let cancelled = false;
+    const start = performance.now();
+    const step = (now: number) => {
+      if (cancelled) return;
+      const t = Math.min((now - start) / durationMs, 1);
+      setValue(Math.round(target * t));
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [target, durationMs, enabled]);
+  return value;
+}
+
 function HeroMockCard() {
   return (
     <div
-      className="rounded-xl border border-slate-200 bg-white p-4 shadow-lg shadow-slate-200/60 md:p-5"
+      className="landing-mock-float w-full rounded-xl border border-slate-200 bg-white p-4 shadow-lg shadow-slate-200/60 md:p-5"
       aria-hidden
     >
       <div className="flex items-center gap-2 border-b border-slate-100 pb-3 text-left">
@@ -120,8 +166,8 @@ function HeroMockCard() {
         <span className="font-medium text-slate-800">Max Mustermann</span>
       </p>
       <div className="mt-3 flex gap-2">
-        <div className="h-16 w-20 shrink-0 rounded-lg bg-slate-200" />
-        <div className="h-16 w-20 shrink-0 rounded-lg bg-slate-200" />
+        <div className="h-16 w-20 shrink-0 animate-pulse rounded-lg bg-slate-200" />
+        <div className="h-16 w-20 shrink-0 animate-pulse rounded-lg bg-slate-200" />
       </div>
       <div className="mt-3 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 text-left">
         <Mic className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -131,11 +177,9 @@ function HeroMockCard() {
       </div>
       <div className="mt-3 flex items-center gap-1.5 text-left text-sm">
         <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-        <span className="landing-mock-typing font-medium text-slate-700">
-          KI generiert…
-        </span>
+        <span className="font-medium text-slate-700">KI generiert…</span>
         <span
-          className="landing-mock-cursor inline-block h-4 w-0.5 shrink-0 rounded-sm bg-primary"
+          className="landing-mock-cursor-blink inline-block h-4 w-0.5 shrink-0 rounded-sm bg-primary"
           aria-hidden
         />
       </div>
@@ -148,10 +192,32 @@ function HeroMockCard() {
   );
 }
 
+const navAnchorClass =
+  "relative inline-flex min-h-12 items-center rounded-lg px-3 text-sm font-medium text-white/85 transition-colors after:pointer-events-none after:absolute after:bottom-1 after:left-3 after:h-0.5 after:w-0 after:bg-white after:transition-all after:duration-300 hover:text-white md:hover:after:w-[calc(100%-1.5rem)] active:after:w-[calc(100%-1.5rem)]";
+
+const ctaBtnTransform =
+  "transition-transform duration-200 md:hover:scale-105 active:scale-95";
+
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [heroOn, setHeroOn] = useState(false);
+
+  const [howRef, howInView] = useInView(0.12);
+  const [branchenRef, branchenInView] = useInView(0.1);
+  const [featuresRef, featuresInView] = useInView(0.08);
+  const [trustRef, trustInView] = useInView(0.15);
+  const [pricingRef, pricingInView] = useInView(0.1);
+
+  const n60 = useCountUp(60, 900, trustInView);
+  const n100 = useCountUp(100, 900, trustInView);
+  const n30 = useCountUp(30, 900, trustInView);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setHeroOn(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -168,9 +234,6 @@ export default function LandingPage() {
   }, [menuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
-
-  const navLinkClass =
-    "inline-flex min-h-12 items-center rounded-lg px-3 text-sm font-medium text-white/85 transition hover:text-white";
 
   return (
     <div className="min-h-screen bg-white text-slate-700">
@@ -194,21 +257,21 @@ export default function LandingPage() {
             className="hidden items-center gap-1 md:flex"
             aria-label="Hauptnavigation"
           >
-            <a href="#features" className={navLinkClass}>
+            <a href="#features" className={navAnchorClass}>
               Funktionen
             </a>
-            <a href="#pricing" className={navLinkClass}>
+            <a href="#pricing" className={navAnchorClass}>
               Preise
             </a>
             <Link
               href="/login"
-              className="ml-2 inline-flex min-h-12 items-center justify-center rounded-lg border-2 border-white/35 px-4 text-sm font-semibold text-white transition hover:border-white/60 hover:bg-white/10"
+              className={`${ctaBtnTransform} ml-2 inline-flex min-h-12 items-center justify-center rounded-lg border-2 border-white/35 px-4 text-sm font-semibold text-white transition-colors hover:border-white/60 hover:bg-white/10`}
             >
               Anmelden
             </Link>
             <Link
               href="/register"
-              className="inline-flex min-h-12 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+              className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90`}
             >
               Kostenlos testen
             </Link>
@@ -234,28 +297,28 @@ export default function LandingPage() {
             <div className="flex flex-col gap-1 pt-2">
               <a
                 href="#features"
-                className={`${navLinkClass} w-full justify-start`}
+                className="inline-flex min-h-12 w-full items-center rounded-lg px-3 text-sm font-medium text-white/85 hover:text-white"
                 onClick={closeMenu}
               >
                 Funktionen
               </a>
               <a
                 href="#pricing"
-                className={`${navLinkClass} w-full justify-start`}
+                className="inline-flex min-h-12 w-full items-center rounded-lg px-3 text-sm font-medium text-white/85 hover:text-white"
                 onClick={closeMenu}
               >
                 Preise
               </a>
               <Link
                 href="/login"
-                className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-lg border-2 border-white/35 text-sm font-semibold text-white"
+                className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-lg border-2 border-white/35 text-sm font-semibold text-white active:bg-white/10"
                 onClick={closeMenu}
               >
                 Anmelden
               </Link>
               <Link
                 href="/register"
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white"
+                className={`${ctaBtnTransform} inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white`}
                 onClick={closeMenu}
               >
                 Kostenlos testen
@@ -268,8 +331,14 @@ export default function LandingPage() {
       <main>
         {/* Hero */}
         <section className="border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white px-4 py-12 sm:py-16 md:py-20 lg:py-24">
-          <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2 md:items-center md:gap-12 lg:gap-16">
-            <div className="text-left">
+          <div className="mx-auto flex max-w-6xl flex-col gap-10 md:grid md:grid-cols-2 md:items-center md:gap-12 lg:gap-16">
+            <div
+              className={`order-1 text-left transition-all ease-out ${animD} ${
+                heroOn
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-8 opacity-0"
+              }`}
+            >
               <p className="inline-flex min-h-8 items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary md:text-sm">
                 Neu: KI-Protokolle in 60 Sekunden
               </p>
@@ -286,13 +355,13 @@ export default function LandingPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <Link
                   href="/register"
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-md shadow-primary/25 transition hover:bg-primary/90 md:min-h-[52px] md:px-10 md:text-lg"
+                  className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-md shadow-primary/25 transition-colors hover:bg-primary/90 md:min-h-[52px] md:px-10 md:text-lg`}
                 >
                   Kostenlos starten
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-6 py-3.5 text-base font-semibold text-slate-700 transition hover:bg-slate-100 md:min-h-[52px]"
+                  className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-6 py-3.5 text-base font-semibold text-slate-700 transition-colors active:bg-slate-200 md:min-h-[52px] md:hover:bg-slate-100"
                 >
                   Wie es funktioniert
                   <ChevronDown className="h-5 w-5" aria-hidden />
@@ -312,7 +381,7 @@ export default function LandingPage() {
                 </span>
               </div>
             </div>
-            <div className="mx-auto w-full max-w-md md:mx-0 md:max-w-none md:justify-self-end">
+            <div className="order-2 w-full md:order-2 md:justify-self-end">
               <HeroMockCard />
             </div>
           </div>
@@ -321,6 +390,7 @@ export default function LandingPage() {
         {/* So funktioniert's */}
         <section
           id="how-it-works"
+          ref={howRef}
           className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
@@ -328,10 +398,17 @@ export default function LandingPage() {
               So funktioniert&apos;s
             </h2>
             <ol className="mx-auto mt-10 flex max-w-4xl flex-col gap-8 md:mt-14 md:flex-row md:gap-6 lg:gap-8">
-              {steps.map(({ n, icon: Icon, title, text }) => (
+              {steps.map(({ n, icon: Icon, title, text }, i) => (
                 <li
                   key={n}
-                  className="relative flex flex-1 flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-6 text-center md:pt-8"
+                  className={`relative flex flex-1 flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-6 text-center transition-all ease-out md:pt-8 ${animD} ${
+                    howInView
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-12 opacity-0"
+                  }`}
+                  style={{
+                    transitionDelay: howInView ? `${i * 200}ms` : "0ms",
+                  }}
                 >
                   <div className="absolute -top-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-sm">
                     {n}
@@ -350,6 +427,7 @@ export default function LandingPage() {
         {/* Für wen */}
         <section
           id="branchen"
+          ref={branchenRef}
           className="scroll-mt-20 border-y border-slate-100 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
@@ -363,7 +441,11 @@ export default function LandingPage() {
               {branchen.map(({ icon: Icon, title, text }) => (
                 <li
                   key={title}
-                  className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md md:p-6"
+                  className={`group flex flex-col rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition-all duration-200 ease-out md:p-6 ${animD} md:hover:-translate-y-2 md:hover:border-primary/30 md:hover:shadow-md active:-translate-y-1 active:border-primary/25 active:shadow-md ${
+                    branchenInView
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-10 opacity-0"
+                  }`}
                 >
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary/15 md:h-16 md:w-16">
                     <Icon className="h-8 w-8 md:h-9 md:w-9" strokeWidth={2} />
@@ -383,6 +465,7 @@ export default function LandingPage() {
         {/* Features */}
         <section
           id="features"
+          ref={featuresRef}
           className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
@@ -390,44 +473,64 @@ export default function LandingPage() {
               Funktionen
             </h2>
             <div className="mt-10 grid grid-cols-1 gap-6 md:mt-14 md:grid-cols-2 md:gap-8">
-              {features.map(({ icon: Icon, title, text }) => (
-                <div
-                  key={title}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 md:p-8"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-6 w-6" strokeWidth={2} />
+              {features.map(({ icon: Icon, title, text }, index) => {
+                const diagMs = [0, 150, 150, 300][index] ?? 0;
+                return (
+                  <div
+                    key={title}
+                    className={`rounded-2xl border border-slate-200 bg-slate-50/50 p-6 transition-all ease-out md:p-8 ${animD} md:hover:-translate-y-1 md:hover:shadow-lg active:-translate-y-0.5 active:shadow-md ${
+                      featuresInView
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-10 opacity-0"
+                    }`}
+                    style={{
+                      transitionDelay: featuresInView ? `${diagMs}ms` : "0ms",
+                    }}
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Icon className="h-6 w-6" strokeWidth={2} />
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold text-slate-900">
+                      {title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600 md:text-base">
+                      {text}
+                    </p>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600 md:text-base">
-                    {text}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Social proof / Vertrauen */}
+        {/* Social proof */}
         <section
           id="trust"
+          ref={trustRef}
           className="scroll-mt-20 border-y border-slate-100 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
               {[
-                { stat: "60 Sek", sub: "pro Protokoll" },
-                { stat: "100%", sub: "Digital" },
-                { stat: "30 Tage", sub: "kostenlos" },
-              ].map(({ stat, sub }) => (
+                {
+                  display: `${n60} Sek`,
+                  sub: "pro Protokoll",
+                },
+                {
+                  display: `${n100}%`,
+                  sub: "Digital",
+                },
+                {
+                  display: `${n30} Tage`,
+                  sub: "kostenlos",
+                },
+              ].map(({ display, sub }) => (
                 <div
-                  key={stat}
+                  key={sub}
                   className="rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm"
                 >
                   <p className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
-                    {stat}
+                    {display}
                   </p>
                   <p className="mt-2 text-sm font-medium text-slate-600 md:text-base">
                     {sub}
@@ -449,6 +552,7 @@ export default function LandingPage() {
         {/* Pricing */}
         <section
           id="pricing"
+          ref={pricingRef}
           className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
@@ -468,18 +572,18 @@ export default function LandingPage() {
             </div>
 
             <div
-              className="mx-auto mt-8 flex max-w-lg flex-col items-stretch justify-center gap-2 sm:mt-10 sm:flex-row sm:items-center"
+              className="mx-auto mt-8 w-full max-w-lg sm:mt-10 md:flex md:justify-center"
               role="group"
               aria-label="Abrechnungszeitraum"
             >
-              <div className="flex min-h-[48px] flex-1 rounded-xl border border-slate-200 bg-slate-100 p-1 sm:max-w-md sm:flex-initial">
+              <div className="flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 md:w-auto md:max-w-md">
                 <button
                   type="button"
                   onClick={() => setBilling("monthly")}
                   className={`min-h-11 flex-1 rounded-lg px-3 text-sm font-semibold transition sm:min-h-12 sm:px-4 sm:text-base ${
                     billing === "monthly"
                       ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
                   }`}
                 >
                   Monatlich
@@ -490,7 +594,7 @@ export default function LandingPage() {
                   className={`min-h-11 flex-1 rounded-lg px-2 text-xs font-semibold leading-tight transition sm:min-h-12 sm:px-3 sm:text-sm md:text-base ${
                     billing === "yearly"
                       ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
                   }`}
                 >
                   <span className="block sm:inline">Jährlich</span>
@@ -502,9 +606,17 @@ export default function LandingPage() {
             </div>
 
             <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:mt-12 md:grid-cols-2 md:gap-8 md:items-stretch">
-              <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                <h3 className="text-xl font-bold text-slate-900">Starter</h3>
-                <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <div
+                className={`flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 pb-10 shadow-sm transition-all ease-out sm:p-8 sm:pb-12 md:hover:-translate-y-1 md:hover:shadow-xl active:shadow-lg ${animD} ${
+                  pricingInView
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "translate-y-8 scale-95 opacity-0"
+                }`}
+              >
+                <h3 className="shrink-0 text-xl font-bold text-slate-900">
+                  Starter
+                </h3>
+                <div className="mt-4 flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
                     {billing === "monthly" ? "29€" : "23€"}
                   </span>
@@ -513,14 +625,14 @@ export default function LandingPage() {
                   </span>
                 </div>
                 {billing === "yearly" ? (
-                  <p className="mt-1 text-sm font-medium text-slate-600 md:text-base">
+                  <p className="mt-1 shrink-0 text-sm font-medium text-slate-600 md:text-base">
                     276€/Jahr
                   </p>
                 ) : null}
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 shrink-0 text-sm text-slate-500">
                   <span className="line-through">Normalpreis: 39€</span>
                 </p>
-                <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
+                <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
                   {starterPricingFeatures.map((line) => (
                     <li key={line} className="flex gap-3">
                       <Check
@@ -534,20 +646,29 @@ export default function LandingPage() {
                 </ul>
                 <Link
                   href="/register"
-                  className="mt-auto inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 pt-6 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
+                  className={`${ctaBtnTransform} mt-6 inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
                 >
                   30 Tage kostenlos starten
                 </Link>
               </div>
 
-              <div className="relative flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl sm:p-8">
-                <div className="flex flex-wrap items-center gap-2">
+              <div
+                className={`relative flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl transition-all ease-out sm:p-8 md:hover:-translate-y-2 md:hover:shadow-2xl active:shadow-xl ${animD} ${
+                  pricingInView
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "translate-y-8 scale-95 opacity-0"
+                }`}
+                style={{
+                  transitionDelay: pricingInView ? "120ms" : "0ms",
+                }}
+              >
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <h3 className="text-xl font-bold text-white">Pro</h3>
                   <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
                     Beliebt
                   </span>
                 </div>
-                <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <div className="mt-4 flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-4xl font-extrabold tracking-tight text-white md:text-5xl">
                     {billing === "monthly" ? "59€" : "47€"}
                   </span>
@@ -556,14 +677,14 @@ export default function LandingPage() {
                   </span>
                 </div>
                 {billing === "yearly" ? (
-                  <p className="mt-1 text-sm font-medium text-slate-300 md:text-base">
+                  <p className="mt-1 shrink-0 text-sm font-medium text-slate-300 md:text-base">
                     564€/Jahr
                   </p>
                 ) : null}
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 shrink-0 text-sm text-slate-500">
                   <span className="line-through">Normalpreis: 79€</span>
                 </p>
-                <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-200 md:text-base">
+                <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-200 md:text-base">
                   {proPricingFeatures.map((line) => (
                     <li key={line} className="flex gap-3">
                       <Check
@@ -577,7 +698,7 @@ export default function LandingPage() {
                 </ul>
                 <Link
                   href="/register"
-                  className="mt-auto inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 pt-6 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
+                  className={`${ctaBtnTransform} mt-6 inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
                 >
                   30 Tage kostenlos starten
                 </Link>
@@ -585,7 +706,7 @@ export default function LandingPage() {
             </div>
 
             <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-slate-600 md:mt-12 md:text-base">
-              Cancel anytime · No hidden fees
+              Monatlich kündbar · Keine versteckten Kosten
             </p>
           </div>
         </section>
@@ -598,7 +719,7 @@ export default function LandingPage() {
             </h2>
             <Link
               href="/register"
-              className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary/90 md:mt-10 md:min-h-[52px] md:px-10 md:text-lg"
+              className={`${ctaBtnTransform} mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary/90 md:mt-10 md:min-h-[52px] md:px-10 md:text-lg`}
             >
               Jetzt 30 Tage kostenlos testen
             </Link>
@@ -614,19 +735,19 @@ export default function LandingPage() {
           <nav className="order-1 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm sm:order-2">
             <Link
               href="/datenschutz"
-              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition hover:text-white"
+              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
             >
               Datenschutz
             </Link>
             <Link
               href="/impressum"
-              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition hover:text-white"
+              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
             >
               Impressum
             </Link>
             <a
               href="mailto:kontakt@dokuhero.de"
-              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition hover:text-white"
+              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
             >
               Kontakt
             </a>

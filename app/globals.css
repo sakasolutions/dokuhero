@@ -12,32 +12,32 @@ body {
   @apply bg-surface text-slate-900 antialiased;
 }
 
-/* Landing: „Typing“-Zeile im UI-Mock */
-@keyframes landing-typing-pulse {
+/* Landing: Hero-Mock float */
+@keyframes landing-float {
   0%,
   100% {
-    opacity: 0.45;
+    transform: translateY(0);
   }
   50% {
-    opacity: 1;
+    transform: translateY(-8px);
   }
 }
 
-@keyframes landing-cursor-blink {
+.landing-mock-float {
+  animation: landing-float 3s ease-in-out infinite;
+}
+
+/* KI-Zeile: blinkender Cursor | */
+@keyframes landing-blink {
   0%,
-  45% {
+  100% {
     opacity: 1;
   }
-  50%,
-  100% {
+  50% {
     opacity: 0;
   }
 }
 
-.landing-mock-typing {
-  animation: landing-typing-pulse 1.8s ease-in-out infinite;
-}
-
-.landing-mock-cursor {
-  animation: landing-cursor-blink 1.1s step-end infinite;
+.landing-mock-cursor-blink {
+  animation: landing-blink 1s step-end infinite;
 }
