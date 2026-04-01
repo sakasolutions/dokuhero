@@ -44,23 +44,40 @@ const branchen = [
   {
     icon: Wrench,
     title: "KFZ",
-    text: "Service & Schäden dokumentieren.",
+    text: "Schadensdoku in 60 Sek. statt 20 Min.",
   },
   {
     icon: HardHat,
     title: "Handwerk",
-    text: "Baustelle festhalten, Büro sparen.",
+    text: "Kein Zettelchaos mehr auf der Baustelle.",
   },
   {
     icon: Building2,
     title: "Hausmeister",
-    text: "Objekte & Termine belegen.",
+    text: "Objektberichte per Knopfdruck.",
   },
   {
     icon: Sparkles,
     title: "Reinigung",
-    text: "Leistungen klar fürs Büro.",
+    text: "Leistungsnachweis direkt nach dem Einsatz.",
   },
+];
+
+const starterPricingFeatures = [
+  "Bis 50 Protokolle/Monat",
+  "KI-Protokolltext",
+  "PDF-Generierung",
+  "Automatischer Mail-Versand",
+  "Bewertungs-Automatik",
+  "1 Benutzer",
+];
+
+const proPricingFeatures = [
+  "Unbegrenzte Protokolle",
+  "Alles aus Starter",
+  "Priorität Support",
+  "Früher Zugang zu neuen Features",
+  "Mehrere Benutzer (bald)",
 ];
 
 const features = [
@@ -152,21 +169,21 @@ export default function LandingPage() {
   const closeMenu = () => setMenuOpen(false);
 
   const navLinkClass =
-    "inline-flex min-h-12 items-center rounded-lg px-3 text-sm font-medium text-slate-700 transition hover:text-slate-900";
+    "inline-flex min-h-12 items-center rounded-lg px-3 text-sm font-medium text-white/85 transition hover:text-white";
 
   return (
     <div className="min-h-screen bg-white text-slate-700">
       <header
-        className={`sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-200 ${
+        className={`sticky top-0 z-50 border-b transition-[background-color,backdrop-filter,border-color] duration-200 ${
           scrolled
-            ? "border-b border-slate-200/90 bg-white/90 backdrop-blur-md"
-            : "border-b border-transparent bg-white/0"
+            ? "border-white/10 bg-slate-900/95 backdrop-blur-md"
+            : "border-white/10 bg-slate-900"
         }`}
       >
         <div className="mx-auto flex h-14 min-h-[48px] max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
-            className="text-base font-bold tracking-tight text-slate-900 md:text-lg"
+            className="text-base font-bold tracking-tight text-white md:text-lg"
             onClick={closeMenu}
           >
             DokuHero
@@ -184,7 +201,7 @@ export default function LandingPage() {
             </a>
             <Link
               href="/login"
-              className="ml-2 inline-flex min-h-12 items-center justify-center rounded-lg border-2 border-slate-200 px-4 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+              className="ml-2 inline-flex min-h-12 items-center justify-center rounded-lg border-2 border-white/35 px-4 text-sm font-semibold text-white transition hover:border-white/60 hover:bg-white/10"
             >
               Anmelden
             </Link>
@@ -198,7 +215,7 @@ export default function LandingPage() {
 
           <button
             type="button"
-            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-slate-900 md:hidden"
+            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-white md:hidden"
             aria-expanded={menuOpen}
             aria-controls="landing-mobile-nav"
             aria-label={menuOpen ? "Menü schließen" : "Menü öffnen"}
@@ -211,7 +228,7 @@ export default function LandingPage() {
         {menuOpen ? (
           <div
             id="landing-mobile-nav"
-            className="border-b border-slate-200 bg-white px-4 pb-4 shadow-lg md:hidden"
+            className="border-b border-white/10 bg-slate-900 px-4 pb-4 shadow-lg md:hidden"
           >
             <div className="flex flex-col gap-1 pt-2">
               <a
@@ -230,7 +247,7 @@ export default function LandingPage() {
               </a>
               <Link
                 href="/login"
-                className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-lg border-2 border-slate-200 text-sm font-semibold text-slate-900"
+                className="mt-2 inline-flex min-h-12 w-full items-center justify-center rounded-lg border-2 border-white/35 text-sm font-semibold text-white"
                 onClick={closeMenu}
               >
                 Anmelden
@@ -341,17 +358,19 @@ export default function LandingPage() {
             <p className="mx-auto mt-3 max-w-xl text-center text-sm text-slate-600 md:text-base">
               Teams vor Ort, wenig Lust auf Schreibtischarbeit.
             </p>
-            <ul className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 md:mt-12 md:gap-6">
+            <ul className="mx-auto mt-10 grid max-w-6xl grid-cols-2 gap-4 md:mt-12 md:grid-cols-4 md:gap-6">
               {branchen.map(({ icon: Icon, title, text }) => (
                 <li
                   key={title}
-                  className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md md:p-6"
+                  className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md md:p-6"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary/15">
-                    <Icon className="h-6 w-6" strokeWidth={2} />
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary/15 md:h-16 md:w-16">
+                    <Icon className="h-8 w-8 md:h-9 md:w-9" strokeWidth={2} />
                   </div>
-                  <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                  <h3 className="mt-4 text-base font-bold text-slate-900 md:text-lg">
+                    {title}
+                  </h3>
+                  <p className="mt-2 text-xs leading-snug text-slate-600 md:text-sm md:leading-relaxed">
                     {text}
                   </p>
                 </li>
@@ -390,10 +409,46 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Social proof / Vertrauen */}
+        <section
+          id="trust"
+          className="scroll-mt-20 border-y border-slate-100 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
+              {[
+                { stat: "60 Sek", sub: "pro Protokoll" },
+                { stat: "100%", sub: "Digital" },
+                { stat: "30 Tage", sub: "kostenlos" },
+              ].map(({ stat, sub }) => (
+                <div
+                  key={stat}
+                  className="rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm"
+                >
+                  <p className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
+                    {stat}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-slate-600 md:text-base">
+                    {sub}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <figure className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm md:mt-12 md:px-10 md:py-10">
+              <blockquote className="text-lg font-medium leading-relaxed text-slate-800 md:text-xl">
+                &ldquo;Endlich kein Papierkram mehr nach der Arbeit.&rdquo;
+              </blockquote>
+              <figcaption className="mt-4 text-sm text-slate-500 md:text-base">
+                — KFZ-Werkstatt, München (Beta-Tester)
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
         {/* Pricing */}
         <section
           id="pricing"
-          className="scroll-mt-20 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
+          className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
@@ -402,45 +457,106 @@ export default function LandingPage() {
             <p className="mx-auto mt-3 max-w-lg text-center text-sm text-slate-600 md:text-base">
               Einfache Pakete — du entscheidest, wie viel du protokollierst.
             </p>
-            <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-6 md:mt-14 md:grid-cols-2 md:gap-8">
+
+            <div className="mx-auto mt-8 flex justify-center md:mt-10">
+              <p className="inline-flex max-w-xl flex-col items-center gap-1 rounded-2xl bg-primary/10 px-5 py-3 text-center text-sm font-semibold text-primary sm:flex-row sm:gap-2 sm:px-8 sm:py-4 sm:text-base md:text-lg">
+                <span className="leading-snug">
+                  30 Tage kostenlos testen — keine Kreditkarte nötig
+                </span>
+              </p>
+            </div>
+
+            <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:mt-12 md:grid-cols-2 md:gap-8">
               <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                <h3 className="text-lg font-bold text-slate-900">Starter</h3>
-                <p className="mt-3 text-3xl font-extrabold text-primary md:text-4xl">
-                  29€
-                  <span className="text-base font-semibold text-slate-500 md:text-lg">
-                    {" "}
-                    /Monat
+                <h3 className="text-xl font-bold text-slate-900">Starter</h3>
+                <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
+                    29€
                   </span>
+                  <span className="text-sm font-semibold text-slate-500 md:text-base">
+                    /Monat netto
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-slate-500">
+                  <span className="line-through">Normalpreis: 39€</span>
                 </p>
-                <p className="mt-4 text-slate-600">Bis 50 Protokolle</p>
+                <ul className="mt-6 flex flex-col gap-3 text-sm text-slate-700 md:text-base">
+                  {starterPricingFeatures.map((line) => (
+                    <li key={line} className="flex gap-3">
+                      <Check
+                        className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                        strokeWidth={2.5}
+                        aria-hidden
+                      />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
                 <Link
                   href="/register"
                   className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
                 >
-                  Kostenlos testen
+                  30 Tage kostenlos starten
                 </Link>
               </div>
+
               <div className="relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl sm:p-8">
-                <span className="absolute -top-3 right-4 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-white sm:right-6">
-                  Beliebt
-                </span>
-                <h3 className="text-lg font-bold text-white">Pro</h3>
-                <p className="mt-3 text-3xl font-extrabold text-white md:text-4xl">
-                  59€
-                  <span className="text-base font-semibold text-slate-400 md:text-lg">
-                    {" "}
-                    /Monat
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-xl font-bold text-white">Pro</h3>
+                  <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
+                    Beliebt
                   </span>
+                </div>
+                <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-4xl font-extrabold tracking-tight text-white md:text-5xl">
+                    59€
+                  </span>
+                  <span className="text-sm font-semibold text-slate-400 md:text-base">
+                    /Monat netto
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-slate-500">
+                  <span className="line-through">Normalpreis: 79€</span>
                 </p>
-                <p className="mt-4 text-slate-300">Unbegrenzt Protokolle</p>
+                <ul className="mt-6 flex flex-col gap-3 text-sm text-slate-200 md:text-base">
+                  {proPricingFeatures.map((line) => (
+                    <li key={line} className="flex gap-3">
+                      <Check
+                        className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                        strokeWidth={2.5}
+                        aria-hidden
+                      />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
                 <Link
                   href="/register"
                   className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
                 >
-                  Kostenlos testen
+                  30 Tage kostenlos starten
                 </Link>
               </div>
             </div>
+
+            <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-slate-600 md:mt-12 md:text-base">
+              Monatlich kündbar. Keine versteckten Kosten.
+            </p>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="bg-slate-900 px-4 py-14 sm:py-16 md:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-2xl font-bold text-white md:text-3xl lg:text-4xl">
+              Bereit, Schluss mit Papierkram zu machen?
+            </h2>
+            <Link
+              href="/register"
+              className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary/90 md:mt-10 md:min-h-[52px] md:px-10 md:text-lg"
+            >
+              Jetzt 30 Tage kostenlos testen
+            </Link>
           </div>
         </section>
       </main>
