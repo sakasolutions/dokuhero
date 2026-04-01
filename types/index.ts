@@ -22,6 +22,8 @@ export interface Kunde {
   erstellt_am: Date;
 }
 
+export type AuftragStatus = "offen" | "in_bearbeitung" | "abgeschlossen";
+
 export interface Auftrag {
   id: number;
   betrieb_id: number;
@@ -30,6 +32,11 @@ export interface Auftrag {
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
+}
+
+/** API-Liste GET /api/auftraege */
+export interface AuftragMitKunde extends Auftrag {
+  kunde_name: string | null;
 }
 
 export interface DashboardStats {
