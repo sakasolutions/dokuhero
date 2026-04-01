@@ -9,6 +9,7 @@ interface BetriebRow extends RowDataPacket {
   name: string;
   email: string;
   passwort: string;
+  gesperrt?: number | null;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -43,11 +44,16 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        if (Number(betrieb.gesperrt) === 1) {
+          throw new Error("GESPERRT");
+        }
+
         return {
           id: String(betrieb.id),
           email: betrieb.email,
           name: betrieb.name,
           betrieb_id: betrieb.id,
+          gesperrt: Number(betrieb.gesperrt) === 1 ? 1 : 0,
         };
       },
     }),
@@ -65,6 +71,7 @@ export const authOptions: NextAuthOptions = {
         token.betrieb_id = user.betrieb_id;
         token.name = user.name ?? "";
         token.email = user.email ?? "";
+        token.gesperrt = user.gesperrt ?? 0;
       }
       if (trigger === "update" && session && typeof session === "object") {
         const s = session as { name?: unknown };
@@ -79,6 +86,7 @@ export const authOptions: NextAuthOptions = {
         session.user.betrieb_id = token.betrieb_id;
         session.user.name = token.name;
         session.user.email = token.email;
+        session.user.gesperrt = token.gesperrt ?? 0;
       }
       return session;
     },

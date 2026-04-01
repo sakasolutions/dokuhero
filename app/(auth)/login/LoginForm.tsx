@@ -43,6 +43,12 @@ export function LoginForm() {
     });
 
     if (res?.error) {
+      if (res.error === "GESPERRT") {
+        setFormError(
+          "Ihr Konto wurde gesperrt. Bitte kontaktieren Sie kontakt@dokuhero.de."
+        );
+        return;
+      }
       setFormError("E-Mail oder Passwort ist falsch.");
       return;
     }

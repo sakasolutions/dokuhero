@@ -1,30 +1,18 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { withAuth } from "next-auth/middleware";
 import { isAdminEmail } from "@/lib/admin";
-
-async function fetchBetriebGesperrt(req: NextRequest): Promise<boolean> {
-  try {
-    const url = new URL("/api/betrieb-status", req.nextUrl.origin);
-    const res = await fetch(url, {
-      headers: { cookie: req.headers.get("cookie") ?? "" },
-    });
-    if (!res.ok) return false;
-    const data = (await res.json()) as { gesperrt?: boolean };
-    return data.gesperrt === true;
-  } catch {
-    return false;
-  }
-}
 
 export default withAuth(
   async function middleware(req) {
     const path = req.nextUrl.pathname;
-    const token = req.nextauth.token;
 
     if (path === "/gesperrt" || path.startsWith("/gesperrt/")) {
       return NextResponse.next();
     }
+
+    const secret = process.env.NEXTAUTH_SECRET;
+    const token = secret ? await getToken({ req, secret }) : null;
 
     if (path === "/admin" || path.startsWith("/admin/")) {
       if (!isAdminEmail(token?.email as string | undefined)) {
@@ -38,7 +26,7 @@ export default withAuth(
       return NextResponse.next();
     }
 
-    if (token?.betrieb_id && (await fetchBetriebGesperrt(req))) {
+    if (Number(token?.gesperrt) === 1) {
       return NextResponse.redirect(new URL("/gesperrt", req.url));
     }
 

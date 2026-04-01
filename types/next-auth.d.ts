@@ -6,6 +6,7 @@ declare module "next-auth" {
       betrieb_id: number;
       name: string;
       email: string;
+      gesperrt?: number;
     };
   }
 
@@ -13,6 +14,7 @@ declare module "next-auth" {
     betrieb_id: number;
     name: string;
     email: string;
+    gesperrt?: number;
   }
 }
 
@@ -21,5 +23,6 @@ declare module "next-auth/jwt" {
     betrieb_id: number;
     name: string;
     email: string;
+    gesperrt?: number;
   }
 }
