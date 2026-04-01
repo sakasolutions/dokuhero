@@ -3,10 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --primary: #334155;
-  --accent: #f59e0b;
+  --primary: #4f6af5;
+  --accent: #6ee7b7;
+  --dark: #1e293b;
+  --surface: #f8fafc;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-surface text-slate-900 antialiased;
 }

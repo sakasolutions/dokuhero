@@ -6,13 +6,11 @@ import { Button } from "@/components/ui/Button";
 
 export function Navbar({ title }: { title?: string }) {
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200/80 bg-surface px-4 lg:px-6">
       <div className="flex items-center gap-3">
-        <span className="text-lg font-bold text-slate-800 lg:hidden">
-          DokuHero
-        </span>
+        <span className="text-lg font-bold text-dark lg:hidden">DokuHero</span>
         {title ? (
-          <span className="text-base font-medium text-slate-800">{title}</span>
+          <span className="text-base font-medium text-dark">{title}</span>
         ) : null}
       </div>
       <Button

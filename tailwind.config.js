@@ -7,14 +7,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#334155",
-          foreground: "#ffffff",
-        },
-        accent: {
-          DEFAULT: "#F59E0B",
-          foreground: "#0f172a",
-        },
+        primary: "#4F6AF5",
+        dark: "#1E293B",
+        accent: "#6EE7B7",
+        surface: "#F8FAFC",
       },
       fontFamily: {
         sans: ["var(--font-plus-jakarta)", "system-ui", "sans-serif"],

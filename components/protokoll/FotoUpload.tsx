@@ -86,7 +86,7 @@ export function FotoUpload({
           type="button"
           disabled={disabled || value.length >= maxPhotos}
           onClick={() => cameraInputRef.current?.click()}
-          className="inline-flex min-h-12 min-w-[120px] flex-1 items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-base font-semibold text-white shadow-md transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex min-h-12 min-w-[120px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-semibold text-white shadow-md transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
           aria-label="Foto mit Kamera aufnehmen"
         >
           <Camera className="h-6 w-6 shrink-0" />
@@ -96,7 +96,7 @@ export function FotoUpload({
           type="button"
           disabled={disabled || value.length >= maxPhotos}
           onClick={() => galleryInputRef.current?.click()}
-          className="inline-flex min-h-12 min-w-[120px] flex-1 items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-base font-semibold text-white shadow-md transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex min-h-12 min-w-[120px] flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-base font-semibold text-white shadow-md transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
           aria-label="Foto aus Galerie wählen"
         >
           <ImagePlus className="h-6 w-6 shrink-0" />

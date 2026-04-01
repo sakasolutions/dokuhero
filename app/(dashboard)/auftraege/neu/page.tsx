@@ -79,7 +79,7 @@ export default function AuftragNeuPage() {
     <div className="mx-auto max-w-xl space-y-6">
       <Link
         href="/auftraege"
-        className="inline-flex items-center gap-2 text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
       >
         <ArrowLeft className="h-4 w-4" />
         Zurück zur Liste
@@ -108,7 +108,7 @@ export default function AuftragNeuPage() {
             <select
               id="kunde_id"
               disabled={loadingKunden || kunden.length === 0}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-50"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
               {...register("kunde_id")}
             >
               <option value="">

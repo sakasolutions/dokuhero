@@ -102,7 +102,7 @@ export default function DashboardPage() {
                   {value}
                 </p>
               </div>
-              <div className="rounded-lg bg-amber-500/10 p-3 text-amber-600">
+              <div className="rounded-lg bg-primary/10 p-3 text-primary">
                 <Icon className="h-6 w-6" />
               </div>
             </div>
@@ -140,11 +140,11 @@ export default function DashboardPage() {
         </div>
         {stats?.letztes_feedback ? (
           <div
-            className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+            className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-dark"
             role="status"
           >
-            <p className="font-medium text-amber-900">Letztes Feedback</p>
-            <p className="mt-1 whitespace-pre-wrap text-amber-950/90">
+            <p className="font-medium text-dark">Letztes Feedback</p>
+            <p className="mt-1 whitespace-pre-wrap text-dark/90">
               {stats.letztes_feedback}
             </p>
           </div>

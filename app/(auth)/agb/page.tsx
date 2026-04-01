@@ -14,7 +14,7 @@ export default function AgbPage() {
         </p>
       </div>
       <p className="mt-6 text-center">
-        <Link href="/register" className="text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline">
+        <Link href="/register" className="text-sm font-medium text-primary hover:text-primary/80 hover:underline">
           Zurück zur Registrierung
         </Link>
       </p>

@@ -86,7 +86,7 @@ export default function ProtokollNeuPage() {
       <div className="mb-4 flex items-center gap-3">
         <Link
           href="/dashboard"
-          className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-amber-500 hover:bg-slate-100"
+          className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-primary hover:bg-surface"
           aria-label="Zurück"
         >
           <ArrowLeft className="h-6 w-6" />
@@ -101,7 +101,7 @@ export default function ProtokollNeuPage() {
             <div
               className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${
                 step === s
-                  ? "bg-slate-800 text-white ring-2 ring-amber-500 ring-offset-2"
+                  ? "bg-primary text-white ring-2 ring-accent ring-offset-2"
                   : step > s
                     ? "bg-emerald-500 text-white"
                     : "bg-slate-200 text-slate-600"
@@ -154,7 +154,7 @@ export default function ProtokollNeuPage() {
                     onClick={() => setAuftragId(a.id)}
                     className={`flex min-h-14 w-full flex-col items-start rounded-xl border-2 px-4 py-3 text-left transition ${
                       auftragId === a.id
-                        ? "border-amber-500 bg-amber-500/5 ring-2 ring-amber-500/30"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/25"
                         : "border-slate-200 hover:border-slate-300"
                     }`}
                   >

@@ -5,21 +5,21 @@ export default function GesperrtPage() {
   return (
     <div className="w-full max-w-md">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-slate-800">DokuHero</h1>
+        <h1 className="text-2xl font-bold text-dark">DokuHero</h1>
         <p className="mt-2 text-sm text-slate-600">Konto gesperrt</p>
       </div>
       <Card>
-        <p className="text-center text-slate-800">
+        <p className="text-center text-dark">
           Ihr Konto wurde gesperrt. Kontakt:{" "}
           <a
             href="mailto:kontakt@dokuhero.de"
-            className="font-medium text-amber-500 hover:text-amber-600 hover:underline"
+            className="font-medium text-primary hover:text-primary/80 hover:underline"
           >
             kontakt@dokuhero.de
           </a>
         </p>
         <p className="mt-6 text-center text-sm text-slate-600">
-          <Link href="/api/auth/signout?callbackUrl=/login" className="text-amber-500 hover:text-amber-600 hover:underline">
+          <Link href="/api/auth/signout?callbackUrl=/login" className="text-primary hover:text-primary/80 hover:underline">
             Abmelden
           </Link>
         </p>

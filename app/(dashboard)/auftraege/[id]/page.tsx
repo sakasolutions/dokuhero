@@ -129,7 +129,7 @@ export default function AuftragBearbeitenPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <Link
         href="/auftraege"
-        className="inline-flex items-center gap-2 text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
       >
         <ArrowLeft className="h-4 w-4" />
         Zurück zur Liste
@@ -164,7 +164,7 @@ export default function AuftragBearbeitenPage() {
             </label>
             <select
               id="status"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               {...register("status")}
             >
               {STATUS_OPTIONS.map((o) => (
@@ -235,7 +235,7 @@ export default function AuftragBearbeitenPage() {
                     <a
                       href={p.pdf_pfad}
                       download
-                      className="inline-flex items-center justify-center rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
+                      className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90"
                     >
                       PDF herunterladen
                     </a>

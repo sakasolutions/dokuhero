@@ -20,7 +20,7 @@ export default async function DashboardLayout({
       <Sidebar />
       <div className="flex min-h-screen flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
         <Navbar />
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main className="flex-1 bg-surface p-4 lg:p-6">{children}</main>
       </div>
       <BottomNav />
     </div>

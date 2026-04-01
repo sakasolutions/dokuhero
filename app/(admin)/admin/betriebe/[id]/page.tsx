@@ -121,7 +121,7 @@ export default function AdminBetriebDetailPage() {
         {error ? <p className="text-red-600">{error}</p> : null}
         <Link
           href="/admin/betriebe"
-          className="inline-flex items-center gap-2 text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />
           Zur Liste
@@ -137,7 +137,7 @@ export default function AdminBetriebDetailPage() {
       <div>
         <Link
           href="/admin/betriebe"
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />
           Zur Liste
@@ -254,7 +254,7 @@ export default function AdminBetriebDetailPage() {
                 {p.pdf_pfad ? (
                   <a
                     href={p.pdf_pfad}
-                    className="text-amber-500 hover:text-amber-600 hover:underline"
+                    className="text-primary hover:text-primary/80 hover:underline"
                     target="_blank"
                     rel="noreferrer"
                   >

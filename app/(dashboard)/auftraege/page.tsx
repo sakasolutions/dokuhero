@@ -15,8 +15,8 @@ const STATUS_OPTIONS: { value: AuftragStatus | "alle"; label: string }[] = [
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    offen: "bg-amber-100 text-amber-900 ring-amber-200",
-    in_bearbeitung: "bg-amber-50 text-amber-950 ring-amber-200",
+    offen: "bg-primary/10 text-primary ring-primary/25",
+    in_bearbeitung: "bg-accent/25 text-dark ring-accent/40",
     abgeschlossen: "bg-emerald-100 text-emerald-900 ring-emerald-200",
   };
   const labels: Record<string, string> = {
@@ -86,7 +86,7 @@ export default function AuftraegeListePage() {
         </div>
         <Link
           href="/auftraege/neu"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 sm:w-auto"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Neuer Auftrag
@@ -100,7 +100,7 @@ export default function AuftraegeListePage() {
           onChange={(e) =>
             setStatusFilter(e.target.value as AuftragStatus | "alle")
           }
-          className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 sm:w-auto"
+          className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-auto"
         >
           {STATUS_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -157,14 +157,14 @@ export default function AuftraegeListePage() {
                         a.protokoll_id != null ? (
                           <Link
                             href={`/protokoll/${a.protokoll_id}`}
-                            className="text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+                            className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                           >
                             Protokoll ansehen
                           </Link>
                         ) : null}
                         <Link
                           href={`/auftraege/${a.id}`}
-                          className="text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+                          className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                         >
                           Bearbeiten
                         </Link>
@@ -202,14 +202,14 @@ export default function AuftraegeListePage() {
                     a.protokoll_id != null ? (
                       <Link
                         href={`/protokoll/${a.protokoll_id}`}
-                        className="text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+                        className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                       >
                         Protokoll ansehen
                       </Link>
                     ) : null}
                     <Link
                       href={`/auftraege/${a.id}`}
-                      className="text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
+                      className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                     >
                       Bearbeiten
                     </Link>
