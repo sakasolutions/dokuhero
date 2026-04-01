@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { generateProtokollText } from "@/lib/ai";
+import { generateProtokollText, refineProtokollText } from "@/lib/ai";
 import type { RowDataPacket } from "mysql2";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,27 @@ interface Row extends RowDataPacket {
 
 type RouteContext = { params: { id: string } };
 
-export async function POST(_request: Request, context: RouteContext) {
+function parsePreviewBody(raw: string): {
+  feedback?: string;
+  previousText?: string;
+} {
+  const t = raw.trim();
+  if (!t) return {};
+  try {
+    const o = JSON.parse(t) as unknown;
+    if (!o || typeof o !== "object" || Array.isArray(o)) return {};
+    const rec = o as Record<string, unknown>;
+    return {
+      feedback: typeof rec.feedback === "string" ? rec.feedback : undefined,
+      previousText:
+        typeof rec.previousText === "string" ? rec.previousText : undefined,
+    };
+  } catch {
+    throw new SyntaxError("invalid json");
+  }
+}
+
+export async function POST(request: Request, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.betrieb_id) {
@@ -27,6 +47,19 @@ export async function POST(_request: Request, context: RouteContext) {
     if (!Number.isFinite(protokollId)) {
       return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });
     }
+
+    let parsed: { feedback?: string; previousText?: string };
+    try {
+      parsed = parsePreviewBody(await request.text());
+    } catch {
+      return NextResponse.json(
+        { error: "Ungültiger JSON-Body" },
+        { status: 400 }
+      );
+    }
+
+    const feedback = (parsed.feedback ?? "").trim();
+    const previousText = (parsed.previousText ?? "").trim();
 
     const pool = getPool();
 
@@ -45,8 +78,22 @@ export async function POST(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
     }
 
-    const notizText = row.notiz ?? "";
-    const kiText = await generateProtokollText(notizText, row.betrieb_name);
+    let kiText: string;
+    if (feedback) {
+      if (!previousText) {
+        return NextResponse.json(
+          {
+            error:
+              "Bei Anpassung ist previousText (aktueller Protokolltext) erforderlich.",
+          },
+          { status: 400 }
+        );
+      }
+      kiText = await refineProtokollText(previousText, feedback);
+    } else {
+      const notizText = row.notiz ?? "";
+      kiText = await generateProtokollText(notizText, row.betrieb_name);
+    }
 
     await pool.execute(`UPDATE protokolle SET ki_text = ? WHERE id = ?`, [
       kiText,

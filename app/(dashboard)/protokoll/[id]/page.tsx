@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   FileDown,
   Loader2,
+  PencilLine,
   RefreshCw,
   Send,
 } from "lucide-react";
@@ -34,7 +35,7 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail";
+type Busy = null | "preview" | "refine" | "pdf" | "mail";
 
 export default function ProtokollAnsichtPage() {
   const params = useParams();
@@ -45,6 +46,7 @@ export default function ProtokollAnsichtPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [kiTextDraft, setKiTextDraft] = useState("");
+  const [feedbackDraft, setFeedbackDraft] = useState("");
   const [stepPdf, setStepPdf] = useState(false);
   const [pdfCacheBust, setPdfCacheBust] = useState(0);
 
@@ -88,6 +90,7 @@ export default function ProtokollAnsichtPage() {
   }, [data]);
 
   const hasKiText = kiTextDraft.trim().length > 0;
+  const hasFeedback = feedbackDraft.trim().length > 0;
 
   async function postPreview() {
     setBannerError(null);
@@ -107,6 +110,40 @@ export default function ProtokollAnsichtPage() {
       if (typeof j.kiText === "string") {
         setKiTextDraft(j.kiText);
         setBannerSuccess("Protokolltext wurde erstellt. Du kannst ihn bei Bedarf anpassen.");
+      }
+      await load();
+    } catch {
+      setBannerError("Netzwerkfehler.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function postPreviewAdjust() {
+    const fb = feedbackDraft.trim();
+    const prev = kiTextDraft.trim();
+    if (!fb || !prev) return;
+
+    setBannerError(null);
+    setBannerSuccess(null);
+    setBusy("refine");
+    try {
+      const res = await fetch(`/api/protokoll/${id}/preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback: fb, previousText: prev }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBannerError(
+          typeof j.error === "string" ? j.error : "Textanpassung fehlgeschlagen."
+        );
+        return;
+      }
+      if (typeof j.kiText === "string") {
+        setKiTextDraft(j.kiText);
+        setFeedbackDraft("");
+        setBannerSuccess("Protokolltext wurde an dein Feedback angepasst.");
       }
       await load();
     } catch {
@@ -299,6 +336,44 @@ export default function ProtokollAnsichtPage() {
                 onClick={() => setStepPdf(true)}
               >
                 Weiter zu PDF
+              </Button>
+            </div>
+
+            <div className="border-t border-slate-200 pt-4">
+              <label
+                htmlFor="ki-feedback"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Feedback zur Anpassung
+              </label>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Beschreibe, was am Text geändert werden soll.
+              </p>
+              <textarea
+                id="ki-feedback"
+                value={feedbackDraft}
+                onChange={(e) => setFeedbackDraft(e.target.value)}
+                rows={3}
+                className="mt-2 w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-base leading-relaxed text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder={
+                  "Was soll geändert werden? z.B. „Bitte kürzer“ oder „Ölwechsel ergänzen“ oder „Förmlicher formulieren“"
+                }
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 min-h-12 gap-2 text-base"
+                disabled={
+                  busy !== null || !hasFeedback || !kiTextDraft.trim()
+                }
+                onClick={() => void postPreviewAdjust()}
+              >
+                {busy === "refine" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <PencilLine className="h-5 w-5" />
+                )}
+                {busy === "refine" ? "Wird angepasst…" : "Text anpassen"}
               </Button>
             </div>
           </div>
