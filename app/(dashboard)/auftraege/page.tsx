@@ -15,19 +15,21 @@ const STATUS_OPTIONS: { value: AuftragStatus | "alle"; label: string }[] = [
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    offen: "bg-primary/10 text-primary ring-primary/25",
-    in_bearbeitung: "bg-primary/15 text-primary ring-primary/30",
-    abgeschlossen: "bg-primary/10 text-dark ring-primary/25",
+    offen: "bg-amber-100 text-amber-700",
+    in_bearbeitung: "bg-blue-100 text-blue-700",
+    abgeschlossen: "bg-green-100 text-green-700",
+    gesperrt: "bg-red-100 text-red-700",
   };
   const labels: Record<string, string> = {
     offen: "Offen",
     in_bearbeitung: "In Bearbeitung",
     abgeschlossen: "Abgeschlossen",
+    gesperrt: "Gesperrt",
   };
-  const cls = styles[status] ?? "bg-slate-100 text-slate-800 ring-slate-200";
+  const cls = styles[status] ?? "bg-slate-100 text-slate-800";
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${cls}`}
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
     >
       {labels[status] ?? status}
     </span>

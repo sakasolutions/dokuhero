@@ -278,7 +278,13 @@ export default function AdminBetriebDetailPage() {
             {data.bewertungen.map((b) => (
               <li key={b.id} className="py-3 text-sm">
                 <p className="font-medium text-slate-900">
-                  {b.zufrieden === 1 ? "Positiv" : b.zufrieden === 0 ? "Negativ" : "Offen"}{" "}
+                  {b.zufrieden === 1 ? (
+                    <span className="text-green-600">Positiv</span>
+                  ) : b.zufrieden === 0 ? (
+                    <span className="text-red-600">Negativ</span>
+                  ) : (
+                    "Offen"
+                  )}{" "}
                   · Protokoll #{b.protokoll_id ?? "–"}
                 </p>
                 <p className="text-slate-600">{formatDe(b.erstellt_am)}</p>

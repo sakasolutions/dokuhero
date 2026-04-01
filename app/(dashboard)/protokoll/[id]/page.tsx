@@ -273,7 +273,7 @@ export default function ProtokollAnsichtPage() {
       {bannerError ? (
         <div
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
         >
           {bannerError}
         </div>
@@ -281,7 +281,7 @@ export default function ProtokollAnsichtPage() {
       {bannerSuccess ? (
         <div
           role="status"
-          className="rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-dark"
+          className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
         >
           {bannerSuccess}
         </div>

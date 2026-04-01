@@ -77,21 +77,38 @@ export default function AdminDashboardPage() {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-slate-500">{label}</p>
-                <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
-                  {value}
-                </p>
+        {cards.map(({ label, value, icon: Icon }) => {
+          const isPos = label === "Bewertungen positiv";
+          const isNeg = label === "Bewertungen negativ";
+          const valueCls = isPos
+            ? "text-green-600"
+            : isNeg
+              ? "text-red-600"
+              : "text-slate-900";
+          const iconWrap =
+            isPos
+              ? "bg-green-50 text-green-600"
+              : isNeg
+                ? "bg-red-50 text-red-600"
+                : "bg-primary/10 text-primary";
+          return (
+            <Card key={label}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">{label}</p>
+                  <p
+                    className={`mt-2 text-3xl font-semibold tabular-nums ${valueCls}`}
+                  >
+                    {value}
+                  </p>
+                </div>
+                <div className={`rounded-lg p-3 ${iconWrap}`}>
+                  <Icon className="h-6 w-6" />
+                </div>
               </div>
-              <div className="rounded-lg bg-red-50 p-3 text-red-700">
-                <Icon className="h-6 w-6" />
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

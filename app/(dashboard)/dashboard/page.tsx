@@ -120,7 +120,7 @@ export default function DashboardPage() {
               <span className="mr-1.5" aria-hidden>
                 👍
               </span>
-              <span className="font-semibold tabular-nums text-slate-900">
+              <span className="font-semibold tabular-nums text-green-600">
                 {stats?.bewertungen_positiv ?? "–"}
               </span>{" "}
               zufrieden
@@ -131,7 +131,7 @@ export default function DashboardPage() {
               <span className="mr-1.5" aria-hidden>
                 👎
               </span>
-              <span className="font-semibold tabular-nums text-slate-900">
+              <span className="font-semibold tabular-nums text-red-600">
                 {stats?.bewertungen_negativ ?? "–"}
               </span>{" "}
               Feedback

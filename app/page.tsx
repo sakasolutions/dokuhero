@@ -28,19 +28,19 @@ const steps = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-surface text-slate-700">
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-surface/95 backdrop-blur">
+    <div className="min-h-screen bg-white text-slate-700">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-900/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
-            className="text-lg font-bold tracking-tight text-dark"
+            className="text-lg font-bold tracking-tight text-white"
           >
             DokuHero
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:text-primary/80"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-white/90 transition hover:text-white"
             >
               Anmelden
             </Link>
@@ -55,26 +55,26 @@ export default function LandingPage() {
       </header>
 
       <main>
-        <section className="border-b border-slate-200/60 px-4 py-20 sm:px-6 sm:py-28">
+        <section className="border-b border-white/10 bg-slate-900 px-4 py-20 sm:px-6 sm:py-28">
           <div className="mx-auto max-w-4xl text-center">
-            <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-dark sm:text-5xl md:text-6xl">
+            <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
               Protokolle in 60 Sekunden.
               <span className="block text-primary">Automatisch.</span>
             </h1>
-            <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl">
+            <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-300 sm:text-xl">
               Foto machen, kurz sprechen — DokuHero erstellt das professionelle PDF
               und schickt es direkt an deinen Kunden.
             </p>
             <div className="mt-12 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:justify-center">
               <Link
                 href="/register"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-10 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary/90"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-10 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary/30 transition hover:bg-primary/90"
               >
                 Kostenlos testen
               </Link>
               <Link
                 href="/login"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-10 py-3.5 text-base font-semibold text-dark transition hover:border-slate-300 hover:bg-surface"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-white bg-transparent px-10 py-3.5 text-base font-semibold text-white transition hover:bg-white/10"
               >
                 Anmelden
               </Link>
@@ -82,9 +82,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="px-4 py-16 sm:px-6 sm:py-20">
+        <section className="bg-white px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-6xl">
-            <h2 className="text-center text-3xl font-bold text-dark sm:text-4xl">
+            <h2 className="text-center text-3xl font-bold text-slate-900 sm:text-4xl">
               So funktioniert&apos;s
             </h2>
             <ol className="mx-auto mt-14 grid max-w-5xl gap-8 sm:grid-cols-3">
@@ -102,16 +102,16 @@ export default function LandingPage() {
                   >
                     <Icon className="h-7 w-7" strokeWidth={2} />
                   </div>
-                  <p className="mt-5 font-semibold text-dark">{title}</p>
+                  <p className="mt-5 font-semibold text-slate-900">{title}</p>
                 </li>
               ))}
             </ol>
           </div>
         </section>
 
-        <section className="border-y border-slate-200/60 bg-white/60 px-4 py-16 sm:px-6 sm:py-20">
+        <section className="bg-slate-50 px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-6xl">
-            <h2 className="text-center text-3xl font-bold text-dark sm:text-4xl">
+            <h2 className="text-center text-3xl font-bold text-slate-900 sm:text-4xl">
               Funktionen
             </h2>
             <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -139,12 +139,12 @@ export default function LandingPage() {
               ].map(({ icon: Icon, title, text }) => (
                 <div
                   key={title}
-                  className="rounded-2xl border border-slate-200/80 bg-surface p-6 shadow-sm"
+                  className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
                 >
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" strokeWidth={2} />
                   </div>
-                  <h3 className="mt-4 font-semibold text-dark">{title}</h3>
+                  <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">
                     {text}
                   </p>
@@ -154,9 +154,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="px-4 py-16 sm:px-6 sm:py-20">
+        <section className="bg-white px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-6xl">
-            <h2 className="text-center text-3xl font-bold text-dark sm:text-4xl">
+            <h2 className="text-center text-3xl font-bold text-slate-900 sm:text-4xl">
               Für wen
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-slate-600">
@@ -188,13 +188,13 @@ export default function LandingPage() {
               ].map(({ icon: Icon, title, text }) => (
                 <li
                   key={title}
-                  className="flex gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm"
+                  className="flex gap-4 rounded-2xl border border-slate-200/80 bg-slate-50 p-5 shadow-sm"
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="h-6 w-6" strokeWidth={2} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-dark">{title}</h3>
+                    <h3 className="font-semibold text-slate-900">{title}</h3>
                     <p className="mt-1 text-sm leading-relaxed text-slate-600">
                       {text}
                     </p>
@@ -205,17 +205,17 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-slate-200/60 bg-white/60 px-4 py-16 sm:px-6 sm:py-20">
+        <section className="bg-slate-50 px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-6xl">
-            <h2 className="text-center text-3xl font-bold text-dark sm:text-4xl">
+            <h2 className="text-center text-3xl font-bold text-slate-900 sm:text-4xl">
               Preise
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-center text-slate-600">
               Einfache Pakete — du entscheidest, wie viel du protokollierst.
             </p>
             <div className="mx-auto mt-14 grid max-w-3xl gap-8 lg:grid-cols-2">
-              <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-surface p-8 shadow-sm">
-                <h3 className="text-lg font-bold text-dark">Starter</h3>
+              <div className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900">Starter</h3>
                 <p className="mt-3 text-3xl font-extrabold text-primary">
                   29€
                   <span className="text-base font-semibold text-slate-500">
@@ -230,18 +230,18 @@ export default function LandingPage() {
                   Kostenlos testen
                 </Link>
               </div>
-              <div className="relative flex flex-col rounded-2xl border-2 border-primary bg-white p-8 shadow-lg shadow-primary/10">
+              <div className="relative flex flex-col rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-xl">
                 <span className="absolute -top-3 right-6 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-white">
                   Beliebt
                 </span>
-                <h3 className="text-lg font-bold text-dark">Pro</h3>
-                <p className="mt-3 text-3xl font-extrabold text-primary">
+                <h3 className="text-lg font-bold text-white">Pro</h3>
+                <p className="mt-3 text-3xl font-extrabold text-white">
                   59€
-                  <span className="text-base font-semibold text-slate-500">
+                  <span className="text-base font-semibold text-slate-400">
                     /Monat
                   </span>
                 </p>
-                <p className="mt-4 text-slate-600">Unbegrenzt Protokolle</p>
+                <p className="mt-4 text-slate-300">Unbegrenzt Protokolle</p>
                 <Link
                   href="/register"
                   className="mt-8 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-primary/90"
@@ -254,19 +254,19 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200/80 bg-surface px-4 py-10 sm:px-6">
+      <footer className="border-t border-white/10 bg-slate-900 px-4 py-10 sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 sm:flex-row">
-          <p className="text-sm text-slate-600">© 2026 DokuHero</p>
+          <p className="text-sm text-slate-400">© 2026 DokuHero</p>
           <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
             <Link
               href="/datenschutz"
-              className="font-semibold text-primary hover:text-primary/80"
+              className="font-medium text-slate-400 transition hover:text-white"
             >
               Datenschutz
             </Link>
             <Link
               href="/impressum"
-              className="font-semibold text-primary hover:text-primary/80"
+              className="font-medium text-slate-400 transition hover:text-white"
             >
               Impressum
             </Link>

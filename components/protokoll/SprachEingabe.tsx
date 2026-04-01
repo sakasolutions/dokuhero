@@ -187,7 +187,7 @@ export function SprachEingabe({ onTranscript }: Props) {
         </p>
       ) : null}
       {successHint && !permissionError ? (
-        <p className="max-w-[220px] text-center text-xs text-primary" role="status">
+        <p className="max-w-[220px] text-center text-xs text-green-700" role="status">
           ✓ Sprache erkannt — du kannst den Text noch anpassen
         </p>
       ) : null}
