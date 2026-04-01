@@ -2,6 +2,7 @@ import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import puppeteer from "puppeteer";
+import { resolveLogoDiskPathFromWebPath } from "@/lib/logo-upload";
 import { ensurePdfsUploadDir, getPdfsUploadDir } from "@/lib/protokoll-upload";
 
 export type ProtokollData = {
@@ -15,6 +16,8 @@ export type ProtokollData = {
   kiText: string;
   /** file://-URLs oder Web-Pfade wie /uploads/fotos/… (relativ zu public/) */
   fotoPfade: string[];
+  /** Web-Pfad z. B. /uploads/logos/1.jpg – optional, oben rechts im PDF */
+  betriebLogoPfad?: string | null;
 };
 
 function toDiskPath(fotoRef: string): string {
@@ -26,14 +29,44 @@ function toDiskPath(fotoRef: string): string {
   return join(process.cwd(), "public", rel);
 }
 
+function bufferToImageDataUri(buf: Buffer): string {
+  const b64 = buf.toString("base64");
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8) {
+    return `data:image/jpeg;base64,${b64}`;
+  }
+  if (
+    buf.length >= 8 &&
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47
+  ) {
+    return `data:image/png;base64,${b64}`;
+  }
+  return `data:image/jpeg;base64,${b64}`;
+}
+
+async function loadBetriebLogoDataUri(
+  logoPfad: string | null | undefined
+): Promise<string | null> {
+  if (!logoPfad?.trim()) return null;
+  try {
+    const diskPath = resolveLogoDiskPathFromWebPath(logoPfad);
+    const buf = await readFile(diskPath);
+    return bufferToImageDataUri(buf);
+  } catch (e) {
+    console.error("PDF: Logo konnte nicht gelesen werden:", logoPfad, e);
+    return null;
+  }
+}
+
 async function loadFotosAsDataUris(fotoPfade: string[]): Promise<string[]> {
   const uris: string[] = [];
   for (const ref of fotoPfade.slice(0, 6)) {
     try {
       const diskPath = toDiskPath(ref);
       const imageBuffer = await readFile(diskPath);
-      const base64 = imageBuffer.toString("base64");
-      uris.push(`data:image/jpeg;base64,${base64}`);
+      uris.push(bufferToImageDataUri(imageBuffer));
     } catch (e) {
       console.error("PDF: Foto konnte nicht gelesen werden:", ref, e);
     }
@@ -49,13 +82,22 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function buildHtml(data: ProtokollData, fotoDataUris: string[]): string {
+function buildHtml(
+  data: ProtokollData,
+  fotoDataUris: string[],
+  logoDataUri: string | null
+): string {
   const fotoCells = fotoDataUris
     .map(
       (src) =>
         `<div class="foto-cell"><img src=${JSON.stringify(src)} alt="" /></div>`
     )
     .join("");
+
+  const logoBlock =
+    logoDataUri != null
+      ? `<div class="logo-wrap"><img src=${JSON.stringify(logoDataUri)} alt="" /></div>`
+      : "";
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -64,7 +106,10 @@ function buildHtml(data: ProtokollData, fotoDataUris: string[]): string {
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-size: 11pt; color: #111; margin: 24px; line-height: 1.45; }
-    .header { border-bottom: 2px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; }
+    .header { border-bottom: 2px solid #2563eb; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .header-text { flex: 1; min-width: 0; }
+    .logo-wrap { flex-shrink: 0; max-width: 160px; }
+    .logo-wrap img { max-height: 56px; max-width: 160px; width: auto; height: auto; object-fit: contain; display: block; }
     .betrieb { font-size: 22pt; font-weight: 800; color: #1e40af; letter-spacing: -0.02em; }
     .subtitle { font-size: 12pt; color: #64748b; margin-top: 4px; font-weight: 600; }
     .info { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
@@ -80,8 +125,11 @@ function buildHtml(data: ProtokollData, fotoDataUris: string[]): string {
 </head>
 <body>
   <div class="header">
-    <div class="betrieb">${esc(data.betriebName)}</div>
-    <div class="subtitle">Serviceprotokoll</div>
+    <div class="header-text">
+      <div class="betrieb">${esc(data.betriebName)}</div>
+      <div class="subtitle">Serviceprotokoll</div>
+    </div>
+    ${logoBlock}
   </div>
   <div class="info">
     <div class="info-row"><span class="info-label">Kunde</span><br/><strong>${esc(data.kundeName)}</strong></div>
@@ -109,7 +157,10 @@ function buildHtml(data: ProtokollData, fotoDataUris: string[]): string {
 export async function generatePDF(data: ProtokollData): Promise<Buffer> {
   await ensurePdfsUploadDir();
 
-  const fotoDataUris = await loadFotosAsDataUris(data.fotoPfade);
+  const [fotoDataUris, logoDataUri] = await Promise.all([
+    loadFotosAsDataUris(data.fotoPfade),
+    loadBetriebLogoDataUri(data.betriebLogoPfad ?? null),
+  ]);
 
   const browser = await puppeteer.launch({
     executablePath: "/usr/bin/chromium-browser",
@@ -122,7 +173,7 @@ export async function generatePDF(data: ProtokollData): Promise<Buffer> {
 
   try {
     const page = await browser.newPage();
-    const html = buildHtml(data, fotoDataUris);
+    const html = buildHtml(data, fotoDataUris, logoDataUri);
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,

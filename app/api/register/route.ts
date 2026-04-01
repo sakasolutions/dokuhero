@@ -33,8 +33,8 @@ export async function POST(request: Request) {
     const hash = await bcrypt.hash(password, 12);
 
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO betriebe (name, email, passwort, telefon, logo_pfad, google_bewertung_link)
-       VALUES (?, ?, ?, ?, NULL, NULL)`,
+      `INSERT INTO betriebe (name, email, passwort, telefon, adresse, logo_pfad, google_bewertung_link)
+       VALUES (?, ?, ?, ?, NULL, NULL, NULL)`,
       [name.trim(), email.trim().toLowerCase(), hash, telefon?.trim() || null]
     );
 

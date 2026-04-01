@@ -8,5 +8,7 @@ export const config = {
     "/auftraege/:path*",
     "/protokoll",
     "/protokoll/:path*",
+    "/einstellungen",
+    "/einstellungen/:path*",
   ],
 };

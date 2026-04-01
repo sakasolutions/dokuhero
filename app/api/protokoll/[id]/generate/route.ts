@@ -24,6 +24,7 @@ interface LoadRow extends RowDataPacket {
   kunde_name: string | null;
   kunde_email: string | null;
   betrieb_name: string;
+  betrieb_logo_pfad: string | null;
 }
 
 interface FotoPfadRow extends RowDataPacket {
@@ -66,7 +67,8 @@ export async function POST(request: Request, context: RouteContext) {
       `SELECT p.id AS protokoll_id, p.auftrag_id, p.erstellt_am AS protokoll_erstellt,
               a.beschreibung,
               k.name AS kunde_name, k.email AS kunde_email,
-              b.name AS betrieb_name
+              b.name AS betrieb_name,
+              b.logo_pfad AS betrieb_logo_pfad
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
        LEFT JOIN kunden k ON a.kunde_id = k.id
@@ -102,6 +104,7 @@ export async function POST(request: Request, context: RouteContext) {
       beschreibung: row.beschreibung ?? "",
       kiText,
       fotoPfade,
+      betriebLogoPfad: row.betrieb_logo_pfad,
     });
 
     const pdfUrl = `/uploads/pdfs/${protokollId}.pdf`;

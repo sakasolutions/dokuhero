@@ -4,6 +4,7 @@ export interface Betrieb {
   email: string;
   passwort: string;
   telefon: string | null;
+  adresse: string | null;
   logo_pfad: string | null;
   google_bewertung_link: string | null;
   erstellt_am: Date;
