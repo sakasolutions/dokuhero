@@ -68,7 +68,29 @@ export async function POST(request: Request) {
       language: "de",
     });
 
-    const text = transcription.text?.trim() ?? "";
+    const roh = transcription.text?.trim() ?? "";
+    if (!roh) {
+      return NextResponse.json({ text: "" });
+    }
+
+    const bereinigt = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `Du bereinigst gesprochene Sprachnotizen von Handwerkern.
+Entferne Füllwörter (ähm, äh, halt, also),
+korrigiere Grammatik,
+formatiere als kurze Stichpunkte.
+Behalte alle technischen Informationen.
+Antworte nur mit dem bereinigten Text, nichts anderes.`,
+        },
+        { role: "user", content: roh },
+      ],
+    });
+
+    const text =
+      bereinigt.choices[0]?.message?.content?.trim() ?? roh;
     return NextResponse.json({ text });
   } catch (error) {
     console.error("[whisper]", error);
