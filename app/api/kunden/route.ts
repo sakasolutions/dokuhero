@@ -41,11 +41,9 @@ export async function GET() {
     );
 
     return NextResponse.json(rows);
-  } catch {
-    return NextResponse.json(
-      { error: "Kunden konnten nicht geladen werden." },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("Kunden API Fehler:", error);
+    return NextResponse.json({ error: "Fehler" }, { status: 500 });
   }
 }
 
@@ -85,10 +83,8 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ id: result.insertId }, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { error: "Kunde konnte nicht angelegt werden." },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("Kunden API Fehler:", error);
+    return NextResponse.json({ error: "Fehler" }, { status: 500 });
   }
 }
