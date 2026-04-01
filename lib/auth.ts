@@ -8,7 +8,7 @@ interface BetriebRow extends RowDataPacket {
   id: number;
   name: string;
   email: string;
-  passwort_hash: string;
+  passwort: string;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
 
         const pool = getPool();
         const [rows] = await pool.execute<BetriebRow[]>(
-          "SELECT id, name, email, passwort_hash FROM betriebe WHERE email = ? LIMIT 1",
+          "SELECT * FROM betriebe WHERE email = ? LIMIT 1",
           [credentials.email.trim().toLowerCase()]
         );
 
@@ -37,7 +37,7 @@ export const authOptions: NextAuthOptions = {
 
         const ok = await bcrypt.compare(
           credentials.password,
-          betrieb.passwort_hash
+          betrieb.passwort
         );
         if (!ok) {
           return null;

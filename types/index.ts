@@ -2,7 +2,7 @@ export interface Betrieb {
   id: number;
   name: string;
   email: string;
-  passwort_hash: string;
+  passwort: string;
   telefon: string | null;
   adresse: string | null;
   google_maps_link: string | null;
