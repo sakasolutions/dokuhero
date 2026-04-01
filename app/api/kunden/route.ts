@@ -1,0 +1,94 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getPool } from "@/lib/db";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import { z } from "zod";
+
+interface KundeRow extends RowDataPacket {
+  id: number;
+  betrieb_id: number;
+  name: string;
+  telefon: string | null;
+  email: string | null;
+  fahrzeug: string | null;
+  kennzeichen: string | null;
+  notizen: string | null;
+  created_at: Date;
+}
+
+const createSchema = z.object({
+  name: z.string().min(1, "Name ist erforderlich"),
+  telefon: z.string().optional().nullable(),
+  email: z.union([z.string().email(), z.literal("")]).optional(),
+  fahrzeug: z.string().optional().nullable(),
+  kennzeichen: z.string().optional().nullable(),
+  notizen: z.string().optional().nullable(),
+});
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.betrieb_id) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const pool = getPool();
+    const [rows] = await pool.execute<KundeRow[]>(
+      `SELECT id, betrieb_id, name, telefon, email, fahrzeug, kennzeichen, notizen, created_at
+       FROM kunden WHERE betrieb_id = ? ORDER BY name ASC`,
+      [session.user.betrieb_id]
+    );
+
+    return NextResponse.json(rows);
+  } catch {
+    return NextResponse.json(
+      { error: "Kunden konnten nicht geladen werden." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.betrieb_id) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const d = parsed.data;
+    const email =
+      d.email && d.email.length > 0 ? d.email : null;
+
+    const pool = getPool();
+    const [result] = await pool.execute<ResultSetHeader>(
+      `INSERT INTO kunden (betrieb_id, name, telefon, email, fahrzeug, kennzeichen, notizen)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        session.user.betrieb_id,
+        d.name.trim(),
+        d.telefon?.trim() || null,
+        email,
+        d.fahrzeug?.trim() || null,
+        d.kennzeichen?.trim() || null,
+        d.notizen?.trim() || null,
+      ]
+    );
+
+    return NextResponse.json({ id: result.insertId }, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "Kunde konnte nicht angelegt werden." },
+      { status: 500 }
+    );
+  }
+}
