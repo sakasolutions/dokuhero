@@ -4,9 +4,9 @@ export interface Betrieb {
   email: string;
   passwort: string;
   telefon: string | null;
-  adresse: string | null;
-  google_maps_link: string | null;
-  created_at: Date;
+  logo_pfad: string | null;
+  google_bewertung_link: string | null;
+  erstellt_am: Date;
 }
 
 export interface Kunde {
@@ -18,7 +18,7 @@ export interface Kunde {
   fahrzeug: string | null;
   kennzeichen: string | null;
   notizen: string | null;
-  created_at: Date;
+  erstellt_am: Date;
 }
 
 export interface Auftrag {

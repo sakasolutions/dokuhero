@@ -14,7 +14,7 @@ interface KundeRow extends RowDataPacket {
   fahrzeug: string | null;
   kennzeichen: string | null;
   notizen: string | null;
-  created_at: Date;
+  erstellt_am: Date;
 }
 
 const createSchema = z.object({
@@ -35,7 +35,7 @@ export async function GET() {
 
     const pool = getPool();
     const [rows] = await pool.execute<KundeRow[]>(
-      `SELECT id, betrieb_id, name, telefon, email, fahrzeug, kennzeichen, notizen, created_at
+      `SELECT id, betrieb_id, name, telefon, email, fahrzeug, kennzeichen, notizen, erstellt_am
        FROM kunden WHERE betrieb_id = ? ORDER BY name ASC`,
       [session.user.betrieb_id]
     );
