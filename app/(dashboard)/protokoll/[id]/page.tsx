@@ -237,7 +237,7 @@ export default function ProtokollAnsichtPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-4">
         <p className="text-red-600">{error ?? "Unbekannter Fehler"}</p>
-        <Link href="/auftraege" className="text-primary hover:underline">
+        <Link href="/auftraege" className="text-amber-500 hover:text-amber-600 hover:underline">
           Zurück zu Aufträgen
         </Link>
       </div>
@@ -256,7 +256,7 @@ export default function ProtokollAnsichtPage() {
     <div className="mx-auto max-w-3xl space-y-6 px-4 pb-24">
       <Link
         href="/auftraege"
-        className="inline-flex min-h-12 items-center gap-2 text-sm font-medium text-primary hover:underline"
+        className="inline-flex min-h-12 items-center gap-2 text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
       >
         <ArrowLeft className="h-5 w-5" />
         Zurück zu Aufträgen
@@ -340,7 +340,7 @@ export default function ProtokollAnsichtPage() {
               value={kiTextDraft}
               onChange={(e) => setKiTextDraft(e.target.value)}
               rows={16}
-              className="w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-base leading-relaxed text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-base leading-relaxed text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               placeholder="Protokolltext…"
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">

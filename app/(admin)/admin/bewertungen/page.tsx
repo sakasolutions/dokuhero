@@ -99,7 +99,7 @@ export default function AdminBewertungenPage() {
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/betriebe/${r.betrieb_id}`}
-                        className="text-primary hover:underline"
+                        className="text-amber-500 hover:text-amber-600 hover:underline"
                       >
                         {r.betrieb_name}
                       </Link>

@@ -117,7 +117,7 @@ export default function AdminBetriebePage() {
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/betriebe/${b.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-amber-500 hover:text-amber-600 hover:underline"
                       >
                         {b.name}
                       </Link>

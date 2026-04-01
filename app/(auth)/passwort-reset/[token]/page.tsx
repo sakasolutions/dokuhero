@@ -70,7 +70,7 @@ export default function PasswortResetTokenPage() {
   return (
     <div className="w-full max-w-md">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-primary">DokuHero</h1>
+        <h1 className="text-2xl font-bold text-slate-800">DokuHero</h1>
         <p className="mt-2 text-sm text-slate-600">Neues Passwort setzen</p>
       </div>
       <Card>
@@ -106,7 +106,7 @@ export default function PasswortResetTokenPage() {
           </Button>
         </form>
         <p className="mt-6 text-center text-sm text-slate-600">
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link href="/login" className="font-medium text-amber-500 hover:text-amber-600 hover:underline">
             Zum Login
           </Link>
         </p>

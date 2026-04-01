@@ -2,12 +2,16 @@ import Link from "next/link";
 import {
   Camera,
   Car,
+  FileText,
   Home,
   Mail,
-  Sparkles,
   Star,
   Wrench,
+  Droplets,
 } from "lucide-react";
+
+const iconBox =
+  "mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500";
 
 export default function LandingPage() {
   return (
@@ -16,20 +20,20 @@ export default function LandingPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
-            className="text-lg font-bold tracking-tight text-primary"
+            className="text-lg font-bold tracking-tight text-slate-800"
           >
             DokuHero
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-amber-500 hover:text-amber-600"
             >
               Anmelden
             </Link>
             <Link
               href="/register"
-              className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+              className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
             >
               Registrieren
             </Link>
@@ -50,7 +54,7 @@ export default function LandingPage() {
             <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/register"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3 text-base font-semibold text-white shadow-md transition hover:bg-teal-700"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-800 px-8 py-3 text-base font-semibold text-white shadow-md transition hover:bg-slate-700"
               >
                 Kostenlos testen
               </Link>
@@ -71,25 +75,25 @@ export default function LandingPage() {
             </h2>
             <ol className="mx-auto mt-12 grid max-w-4xl gap-8 sm:grid-cols-3">
               <li className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-                <span className="text-4xl" aria-hidden>
-                  📸
-                </span>
+                <div className={iconBox} aria-hidden>
+                  <Camera className="h-7 w-7" strokeWidth={2} />
+                </div>
                 <p className="mt-4 font-semibold text-slate-900">
                   Foto machen + Notiz sprechen
                 </p>
               </li>
               <li className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-                <span className="text-4xl" aria-hidden>
-                  🤖
-                </span>
+                <div className={iconBox} aria-hidden>
+                  <Star className="h-7 w-7" strokeWidth={2} />
+                </div>
                 <p className="mt-4 font-semibold text-slate-900">
                   KI erstellt professionellen Text
                 </p>
               </li>
               <li className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-                <span className="text-4xl" aria-hidden>
-                  📄
-                </span>
+                <div className={iconBox} aria-hidden>
+                  <FileText className="h-7 w-7" strokeWidth={2} />
+                </div>
                 <p className="mt-4 font-semibold text-slate-900">
                   PDF geht automatisch an den Kunden
                 </p>
@@ -111,7 +115,7 @@ export default function LandingPage() {
                   text: "Alles dokumentieren, was vor Ort passiert — klar und nachvollziehbar.",
                 },
                 {
-                  icon: Sparkles,
+                  icon: FileText,
                   title: "KI-Protokolltext auf Knopfdruck",
                   text: "Aus Stichworten und Sprache wird ein sauberer Protokolltext.",
                 },
@@ -130,7 +134,7 @@ export default function LandingPage() {
                   key={title}
                   className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
                     <Icon className="h-5 w-5" strokeWidth={2} />
                   </div>
                   <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
@@ -170,7 +174,7 @@ export default function LandingPage() {
                   text: "Ob Elektrik, Sanitär oder Tischler: Protokoll und Kunde sind schnell bedient.",
                 },
                 {
-                  icon: Sparkles,
+                  icon: Droplets,
                   title: "Reinigungsfirmen",
                   text: "Einsätze und Leistungen klar belegen — professionell fürs Büro des Kunden.",
                 },
@@ -179,7 +183,7 @@ export default function LandingPage() {
                   key={title}
                   className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
                     <Icon className="h-6 w-6" strokeWidth={2} />
                   </div>
                   <div>
@@ -205,7 +209,7 @@ export default function LandingPage() {
             <div className="mx-auto mt-12 grid max-w-3xl gap-8 lg:grid-cols-2">
               <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-900">Starter</h3>
-                <p className="mt-2 text-3xl font-extrabold text-primary">
+                <p className="mt-2 text-3xl font-extrabold text-amber-500">
                   29€
                   <span className="text-base font-semibold text-slate-500">
                     /Monat
@@ -214,14 +218,14 @@ export default function LandingPage() {
                 <p className="mt-4 text-slate-600">Bis 50 Protokolle</p>
                 <Link
                   href="/register"
-                  className="mt-8 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-teal-700"
+                  className="mt-8 inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-800 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
                 >
                   Kostenlos testen
                 </Link>
               </div>
-              <div className="flex flex-col rounded-2xl border-2 border-primary bg-white p-8 shadow-md ring-1 ring-primary/20">
+              <div className="flex flex-col rounded-2xl border-2 border-amber-500 bg-white p-8 shadow-md ring-1 ring-amber-500/20">
                 <h3 className="text-lg font-bold text-slate-900">Pro</h3>
-                <p className="mt-2 text-3xl font-extrabold text-primary">
+                <p className="mt-2 text-3xl font-extrabold text-amber-500">
                   59€
                   <span className="text-base font-semibold text-slate-500">
                     /Monat
@@ -230,7 +234,7 @@ export default function LandingPage() {
                 <p className="mt-4 text-slate-600">Unbegrenzt Protokolle</p>
                 <Link
                   href="/register"
-                  className="mt-8 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-teal-700"
+                  className="mt-8 inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-800 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-700"
                 >
                   Kostenlos testen
                 </Link>
@@ -246,13 +250,13 @@ export default function LandingPage() {
           <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
             <Link
               href="/datenschutz"
-              className="font-medium text-slate-600 hover:text-primary"
+              className="font-medium text-amber-500 hover:text-amber-600"
             >
               Datenschutz
             </Link>
             <Link
               href="/impressum"
-              className="font-medium text-slate-600 hover:text-primary"
+              className="font-medium text-amber-500 hover:text-amber-600"
             >
               Impressum
             </Link>

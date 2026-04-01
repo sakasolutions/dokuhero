@@ -102,7 +102,7 @@ export default function DashboardPage() {
                   {value}
                 </p>
               </div>
-              <div className="rounded-lg bg-primary/10 p-3 text-primary">
+              <div className="rounded-lg bg-amber-500/10 p-3 text-amber-600">
                 <Icon className="h-6 w-6" />
               </div>
             </div>

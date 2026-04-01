@@ -60,7 +60,7 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-md">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-primary">DokuHero</h1>
+        <h1 className="text-2xl font-bold text-slate-800">DokuHero</h1>
         <p className="mt-2 text-sm text-slate-600">Anmelden</p>
       </div>
       <Card>
@@ -106,7 +106,7 @@ export function LoginForm() {
           <p className="-mt-1 text-right">
             <Link
               href="/passwort-vergessen"
-              className="text-sm font-medium text-primary hover:underline"
+              className="text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline"
             >
               Passwort vergessen?
             </Link>
@@ -123,7 +123,7 @@ export function LoginForm() {
           Noch kein Konto?{" "}
           <Link
             href="/register"
-            className="font-medium text-primary hover:underline"
+            className="font-medium text-amber-500 hover:text-amber-600 hover:underline"
           >
             Registrieren
           </Link>

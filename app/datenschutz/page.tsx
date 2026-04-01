@@ -5,7 +5,7 @@ export default function DatenschutzPage() {
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-14 max-w-3xl items-center px-4">
-          <Link href="/" className="text-lg font-bold text-primary">
+          <Link href="/" className="text-lg font-bold text-slate-800">
             DokuHero
           </Link>
         </div>
@@ -16,7 +16,7 @@ export default function DatenschutzPage() {
           Die Datenschutzerklärung wird in Kürze ergänzt.
         </p>
         <p className="mt-8">
-          <Link href="/" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/" className="text-sm font-medium text-amber-500 hover:text-amber-600 hover:underline">
             Zur Startseite
           </Link>
         </p>

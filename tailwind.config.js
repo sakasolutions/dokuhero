@@ -8,12 +8,16 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#0D9488",
+          DEFAULT: "#334155",
           foreground: "#ffffff",
+        },
+        accent: {
+          DEFAULT: "#F59E0B",
+          foreground: "#0f172a",
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["var(--font-plus-jakarta)", "system-ui", "sans-serif"],
       },
     },
   },

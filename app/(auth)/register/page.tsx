@@ -120,7 +120,7 @@ export default function RegisterPage() {
   return (
     <div className="w-full max-w-md">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-primary">DokuHero</h1>
+        <h1 className="text-2xl font-bold text-slate-800">DokuHero</h1>
         <p className="mt-2 text-sm text-slate-600">Neuen Betrieb registrieren</p>
       </div>
       <Card>
@@ -221,7 +221,7 @@ export default function RegisterPage() {
             </label>
             <select
               id="branche"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               {...register("branche")}
             >
               <option value="" disabled>
@@ -246,7 +246,7 @@ export default function RegisterPage() {
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700">
                   <input
                     type="checkbox"
-                    className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-primary focus:ring-primary"
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
                     checked={field.value}
                     onChange={(e) => field.onChange(e.target.checked)}
                     onBlur={field.onBlur}
@@ -256,7 +256,7 @@ export default function RegisterPage() {
                     Ich akzeptiere die{" "}
                     <Link
                       href="/agb"
-                      className="font-medium text-primary hover:underline"
+                      className="font-medium text-amber-500 hover:text-amber-600 hover:underline"
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -282,7 +282,7 @@ export default function RegisterPage() {
           Bereits registriert?{" "}
           <Link
             href="/login"
-            className="font-medium text-primary hover:underline"
+            className="font-medium text-amber-500 hover:text-amber-600 hover:underline"
           >
             Zum Login
           </Link>

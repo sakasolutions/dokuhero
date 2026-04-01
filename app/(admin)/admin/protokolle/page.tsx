@@ -99,7 +99,7 @@ export default function AdminProtokollePage() {
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/betriebe/${r.betrieb_id}`}
-                        className="text-primary hover:underline"
+                        className="text-amber-500 hover:text-amber-600 hover:underline"
                       >
                         {r.betrieb_name}
                       </Link>
@@ -119,7 +119,7 @@ export default function AdminProtokollePage() {
                       {r.pdf_pfad ? (
                         <a
                           href={r.pdf_pfad}
-                          className="text-primary hover:underline"
+                          className="text-amber-500 hover:text-amber-600 hover:underline"
                           target="_blank"
                           rel="noreferrer"
                         >

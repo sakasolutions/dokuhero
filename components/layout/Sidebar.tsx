@@ -23,7 +23,7 @@ export function Sidebar() {
   return (
     <aside className="hidden min-h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
       <div className="flex h-14 shrink-0 items-center border-b border-slate-200 px-4">
-        <span className="text-lg font-semibold text-primary">DokuHero</span>
+        <span className="text-lg font-bold text-slate-800">DokuHero</span>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {links.map(({ href, label, icon: Icon }) => {
@@ -34,7 +34,7 @@ export function Sidebar() {
               href={href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                 active
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-amber-50 text-amber-800"
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
@@ -50,7 +50,7 @@ export function Sidebar() {
           className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
             pathname === "/einstellungen" ||
             pathname.startsWith("/einstellungen/")
-              ? "bg-primary/10 text-primary"
+              ? "bg-amber-50 text-amber-800"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
