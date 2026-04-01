@@ -3,6 +3,8 @@ export interface Betrieb {
   name: string;
   email: string;
   passwort: string;
+  /** 1 = gesperrt (nur sinnvoll nach Migration gesperrt-Spalte) */
+  gesperrt?: number;
   telefon: string | null;
   branche: string | null;
   adresse: string | null;
