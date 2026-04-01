@@ -9,8 +9,9 @@ interface KundeRow extends RowDataPacket {
   id: number;
   betrieb_id: number;
   name: string;
-  telefon: string | null;
   email: string | null;
+  telefon: string | null;
+  adresse: string | null;
   fahrzeug: string | null;
   kennzeichen: string | null;
   notizen: string | null;
@@ -19,8 +20,9 @@ interface KundeRow extends RowDataPacket {
 
 const updateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
-  telefon: z.string().optional().nullable(),
   email: z.union([z.string().email(), z.literal("")]).optional(),
+  telefon: z.string().optional().nullable(),
+  adresse: z.string().optional().nullable(),
   fahrzeug: z.string().optional().nullable(),
   kennzeichen: z.string().optional().nullable(),
   notizen: z.string().optional().nullable(),
@@ -46,7 +48,7 @@ export async function GET(
 
     const pool = getPool();
     const [rows] = await pool.execute<KundeRow[]>(
-      `SELECT id, betrieb_id, name, telefon, email, fahrzeug, kennzeichen, notizen, erstellt_am
+      `SELECT id, betrieb_id, name, email, telefon, adresse, fahrzeug, kennzeichen, notizen, erstellt_am
        FROM kunden WHERE id = ? AND betrieb_id = ? LIMIT 1`,
       [kundeId, session.user.betrieb_id]
     );
@@ -57,11 +59,9 @@ export async function GET(
     }
 
     return NextResponse.json(kunde);
-  } catch {
-    return NextResponse.json(
-      { error: "Kunde konnte nicht geladen werden." },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("Kunden API Fehler:", error);
+    return NextResponse.json({ error: "Fehler" }, { status: 500 });
   }
 }
 
@@ -96,12 +96,13 @@ export async function PUT(
 
     const pool = getPool();
     const [result] = await pool.execute<ResultSetHeader>(
-      `UPDATE kunden SET name = ?, telefon = ?, email = ?, fahrzeug = ?, kennzeichen = ?, notizen = ?
+      `UPDATE kunden SET name = ?, email = ?, telefon = ?, adresse = ?, fahrzeug = ?, kennzeichen = ?, notizen = ?
        WHERE id = ? AND betrieb_id = ?`,
       [
         d.name.trim(),
-        d.telefon?.trim() || null,
         email,
+        d.telefon?.trim() || null,
+        d.adresse?.trim() || null,
         d.fahrzeug?.trim() || null,
         d.kennzeichen?.trim() || null,
         d.notizen?.trim() || null,
@@ -115,11 +116,9 @@ export async function PUT(
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json(
-      { error: "Kunde konnte nicht aktualisiert werden." },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("Kunden API Fehler:", error);
+    return NextResponse.json({ error: "Fehler" }, { status: 500 });
   }
 }
 
@@ -158,9 +157,7 @@ export async function DELETE(
         { status: 409 }
       );
     }
-    return NextResponse.json(
-      { error: "Kunde konnte nicht gelöscht werden." },
-      { status: 500 }
-    );
+    console.error("Kunden API Fehler:", e);
+    return NextResponse.json({ error: "Fehler" }, { status: 500 });
   }
 }

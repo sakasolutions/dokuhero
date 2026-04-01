@@ -14,8 +14,9 @@ import { Card } from "@/components/ui/Card";
 
 const schema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
-  telefon: z.string().optional(),
   email: z.union([z.string().email("Ungültige E-Mail"), z.literal("")]),
+  telefon: z.string().optional(),
+  adresse: z.string().optional(),
   fahrzeug: z.string().optional(),
   kennzeichen: z.string().optional(),
   notizen: z.string().optional(),
@@ -54,8 +55,9 @@ export default function KundeBearbeitenPage() {
         if (!cancelled) {
           reset({
             name: k.name ?? "",
-            telefon: k.telefon ?? "",
             email: k.email ?? "",
+            telefon: k.telefon ?? "",
+            adresse: k.adresse ?? "",
             fahrzeug: k.fahrzeug ?? "",
             kennzeichen: k.kennzeichen ?? "",
             notizen: k.notizen ?? "",
@@ -79,8 +81,9 @@ export default function KundeBearbeitenPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: data.name,
-        telefon: data.telefon || null,
         email: data.email || "",
+        telefon: data.telefon || null,
+        adresse: data.adresse || null,
         fahrzeug: data.fahrzeug || null,
         kennzeichen: data.kennzeichen || null,
         notizen: data.notizen || null,
@@ -156,16 +159,21 @@ export default function KundeBearbeitenPage() {
             {...register("name")}
           />
           <Input
+            label="E-Mail"
+            type="email"
+            error={errors.email?.message}
+            {...register("email")}
+          />
+          <Input
             label="Telefon"
             type="tel"
             error={errors.telefon?.message}
             {...register("telefon")}
           />
           <Input
-            label="E-Mail"
-            type="email"
-            error={errors.email?.message}
-            {...register("email")}
+            label="Adresse"
+            error={errors.adresse?.message}
+            {...register("adresse")}
           />
           <Input
             label="Fahrzeug"

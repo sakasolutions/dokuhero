@@ -1,11 +1,29 @@
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
+import type { Pool } from "mysql2/promise";
 import type { RowDataPacket } from "mysql2";
 
 interface CountRow extends RowDataPacket {
   c: number;
+}
+
+async function countSafe(
+  pool: Pool,
+  sql: string,
+  params: [number]
+): Promise<number> {
+  try {
+    const [rows] = await pool.execute<CountRow[]>(sql, params);
+    const first = rows[0];
+    return Number(first?.c ?? 0);
+  } catch (error) {
+    console.error("[dashboard/stats] Abfrage fehlgeschlagen:", sql, error);
+    return 0;
+  }
 }
 
 export async function GET() {
@@ -18,39 +36,45 @@ export async function GET() {
     const betriebId = session.user.betrieb_id;
     const pool = getPool();
 
-    const [[kundenGesamt]] = await pool.execute<CountRow[]>(
+    const kundenGesamt = await countSafe(
+      pool,
       "SELECT COUNT(*) AS c FROM kunden WHERE betrieb_id = ?",
       [betriebId]
     );
 
-    const [[auftraegeHeute]] = await pool.execute<CountRow[]>(
+    const auftraegeHeute = await countSafe(
+      pool,
       `SELECT COUNT(*) AS c FROM auftraege
        WHERE betrieb_id = ? AND DATE(erstellt_am) = CURDATE()`,
       [betriebId]
     );
 
-    const [[protokolleDieseWoche]] = await pool.execute<CountRow[]>(
+    // Nur Spalten aus bekannten Tabellen; Woche über erstellt_am des Auftrags
+    const protokolleDieseWoche = await countSafe(
+      pool,
       `SELECT COUNT(*) AS c
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
        WHERE a.betrieb_id = ?
-         AND YEARWEEK(COALESCE(p.gesendet_am, a.erstellt_am), 1) = YEARWEEK(CURDATE(), 1)`,
+         AND YEARWEEK(a.erstellt_am, 1) = YEARWEEK(CURDATE(), 1)`,
       [betriebId]
     );
 
-    const [[offeneAuftraege]] = await pool.execute<CountRow[]>(
+    const offeneAuftraege = await countSafe(
+      pool,
       `SELECT COUNT(*) AS c FROM auftraege
        WHERE betrieb_id = ? AND abgeschlossen_am IS NULL`,
       [betriebId]
     );
 
     return NextResponse.json({
-      kundenGesamt: Number(kundenGesamt?.c ?? 0),
-      auftraegeHeute: Number(auftraegeHeute?.c ?? 0),
-      protokolleDieseWoche: Number(protokolleDieseWoche?.c ?? 0),
-      offeneAuftraege: Number(offeneAuftraege?.c ?? 0),
+      kundenGesamt,
+      auftraegeHeute,
+      protokolleDieseWoche,
+      offeneAuftraege,
     });
-  } catch {
+  } catch (error) {
+    console.error("[dashboard/stats]", error);
     return NextResponse.json(
       { error: "Statistiken konnten nicht geladen werden." },
       { status: 500 }

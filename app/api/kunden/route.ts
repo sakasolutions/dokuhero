@@ -9,8 +9,9 @@ interface KundeRow extends RowDataPacket {
   id: number;
   betrieb_id: number;
   name: string;
-  telefon: string | null;
   email: string | null;
+  telefon: string | null;
+  adresse: string | null;
   fahrzeug: string | null;
   kennzeichen: string | null;
   notizen: string | null;
@@ -19,8 +20,9 @@ interface KundeRow extends RowDataPacket {
 
 const createSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
-  telefon: z.string().optional().nullable(),
   email: z.union([z.string().email(), z.literal("")]).optional(),
+  telefon: z.string().optional().nullable(),
+  adresse: z.string().optional().nullable(),
   fahrzeug: z.string().optional().nullable(),
   kennzeichen: z.string().optional().nullable(),
   notizen: z.string().optional().nullable(),
@@ -35,7 +37,7 @@ export async function GET() {
 
     const pool = getPool();
     const [rows] = await pool.execute<KundeRow[]>(
-      `SELECT id, betrieb_id, name, telefon, email, fahrzeug, kennzeichen, notizen, erstellt_am
+      `SELECT id, betrieb_id, name, email, telefon, adresse, fahrzeug, kennzeichen, notizen, erstellt_am
        FROM kunden WHERE betrieb_id = ? ORDER BY name ASC`,
       [session.user.betrieb_id]
     );
@@ -69,13 +71,14 @@ export async function POST(request: Request) {
 
     const pool = getPool();
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO kunden (betrieb_id, name, telefon, email, fahrzeug, kennzeichen, notizen)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO kunden (betrieb_id, name, email, telefon, adresse, fahrzeug, kennzeichen, notizen)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         session.user.betrieb_id,
         d.name.trim(),
-        d.telefon?.trim() || null,
         email,
+        d.telefon?.trim() || null,
+        d.adresse?.trim() || null,
         d.fahrzeug?.trim() || null,
         d.kennzeichen?.trim() || null,
         d.notizen?.trim() || null,

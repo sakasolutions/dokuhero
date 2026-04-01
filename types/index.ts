@@ -13,8 +13,9 @@ export interface Kunde {
   id: number;
   betrieb_id: number;
   name: string;
-  telefon: string | null;
   email: string | null;
+  telefon: string | null;
+  adresse: string | null;
   fahrzeug: string | null;
   kennzeichen: string | null;
   notizen: string | null;
