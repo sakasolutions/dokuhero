@@ -75,9 +75,9 @@ const starterPricingFeatures = [
 const proPricingFeatures = [
   "Unbegrenzte Protokolle",
   "Alles aus Starter",
-  "Priorität Support",
-  "Früher Zugang zu neuen Features",
-  "Mehrere Benutzer (bald)",
+  "Priority Support",
+  "Early Access zu neuen Features",
+  "Team-Zugang (coming soon)",
 ];
 
 const features = [
@@ -151,6 +151,7 @@ function HeroMockCard() {
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -466,21 +467,60 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:mt-12 md:grid-cols-2 md:gap-8">
-              <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div
+              className="mx-auto mt-8 flex max-w-lg flex-col items-stretch justify-center gap-2 sm:mt-10 sm:flex-row sm:items-center"
+              role="group"
+              aria-label="Abrechnungszeitraum"
+            >
+              <div className="flex min-h-[48px] flex-1 rounded-xl border border-slate-200 bg-slate-100 p-1 sm:max-w-md sm:flex-initial">
+                <button
+                  type="button"
+                  onClick={() => setBilling("monthly")}
+                  className={`min-h-11 flex-1 rounded-lg px-3 text-sm font-semibold transition sm:min-h-12 sm:px-4 sm:text-base ${
+                    billing === "monthly"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Monatlich
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBilling("yearly")}
+                  className={`min-h-11 flex-1 rounded-lg px-2 text-xs font-semibold leading-tight transition sm:min-h-12 sm:px-3 sm:text-sm md:text-base ${
+                    billing === "yearly"
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="block sm:inline">Jährlich</span>
+                  <span className="block text-[0.7rem] font-medium text-slate-500 sm:ml-1 sm:inline sm:text-sm sm:text-slate-600">
+                    — 2 Monate gratis
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:mt-12 md:grid-cols-2 md:gap-8 md:items-stretch">
+              <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                 <h3 className="text-xl font-bold text-slate-900">Starter</h3>
                 <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
-                    29€
+                    {billing === "monthly" ? "29€" : "23€"}
                   </span>
                   <span className="text-sm font-semibold text-slate-500 md:text-base">
                     /Monat netto
                   </span>
                 </div>
+                {billing === "yearly" ? (
+                  <p className="mt-1 text-sm font-medium text-slate-600 md:text-base">
+                    276€/Jahr
+                  </p>
+                ) : null}
                 <p className="mt-2 text-sm text-slate-500">
                   <span className="line-through">Normalpreis: 39€</span>
                 </p>
-                <ul className="mt-6 flex flex-col gap-3 text-sm text-slate-700 md:text-base">
+                <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
                   {starterPricingFeatures.map((line) => (
                     <li key={line} className="flex gap-3">
                       <Check
@@ -494,13 +534,13 @@ export default function LandingPage() {
                 </ul>
                 <Link
                   href="/register"
-                  className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
+                  className="mt-auto inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 pt-6 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
                 >
                   30 Tage kostenlos starten
                 </Link>
               </div>
 
-              <div className="relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl sm:p-8">
+              <div className="relative flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl sm:p-8">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-xl font-bold text-white">Pro</h3>
                   <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
@@ -509,16 +549,21 @@ export default function LandingPage() {
                 </div>
                 <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-4xl font-extrabold tracking-tight text-white md:text-5xl">
-                    59€
+                    {billing === "monthly" ? "59€" : "47€"}
                   </span>
                   <span className="text-sm font-semibold text-slate-400 md:text-base">
                     /Monat netto
                   </span>
                 </div>
+                {billing === "yearly" ? (
+                  <p className="mt-1 text-sm font-medium text-slate-300 md:text-base">
+                    564€/Jahr
+                  </p>
+                ) : null}
                 <p className="mt-2 text-sm text-slate-500">
                   <span className="line-through">Normalpreis: 79€</span>
                 </p>
-                <ul className="mt-6 flex flex-col gap-3 text-sm text-slate-200 md:text-base">
+                <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-200 md:text-base">
                   {proPricingFeatures.map((line) => (
                     <li key={line} className="flex gap-3">
                       <Check
@@ -532,7 +577,7 @@ export default function LandingPage() {
                 </ul>
                 <Link
                   href="/register"
-                  className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
+                  className="mt-auto inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 pt-6 text-sm font-semibold text-white transition hover:bg-primary/90 sm:text-base"
                 >
                   30 Tage kostenlos starten
                 </Link>
@@ -540,7 +585,7 @@ export default function LandingPage() {
             </div>
 
             <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-slate-600 md:mt-12 md:text-base">
-              Monatlich kündbar. Keine versteckten Kosten.
+              Cancel anytime · No hidden fees
             </p>
           </div>
         </section>
