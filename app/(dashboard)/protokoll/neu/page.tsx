@@ -23,6 +23,7 @@ export default function ProtokollNeuPage() {
   const [notiz, setNotiz] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,8 +66,15 @@ export default function ProtokollNeuPage() {
           fotos,
         }),
       });
-      const j = await res.json().catch(() => ({}));
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        limitReached?: boolean;
+      };
       if (!res.ok) {
+        if (res.status === 403 && j.limitReached === true) {
+          setLimitModalOpen(true);
+          return;
+        }
         setError(
           typeof j.error === "string" ? j.error : "Speichern fehlgeschlagen."
         );
@@ -83,6 +91,44 @@ export default function ProtokollNeuPage() {
 
   return (
     <div className="mx-auto min-h-[70vh] max-w-lg pb-6">
+      {limitModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="protokoll-limit-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <h2
+              id="protokoll-limit-title"
+              className="text-lg font-semibold text-slate-900"
+            >
+              Monatliches Limit erreicht
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
+              Du hast dein monatliches Limit von 50 Protokollen erreicht.
+              Upgrade auf Pro für unbegrenzte Protokolle.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11 w-full sm:w-auto"
+                onClick={() => setLimitModalOpen(false)}
+              >
+                Schließen
+              </Button>
+              <Link
+                href="/preise"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
+              >
+                Jetzt upgraden
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mb-4 flex items-center gap-3">
         <Link
           href="/dashboard"

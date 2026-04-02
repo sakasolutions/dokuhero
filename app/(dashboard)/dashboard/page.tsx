@@ -111,6 +111,41 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
+      {stats?.protokoll_limit != null ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm font-medium text-slate-700">
+            <span className="tabular-nums text-slate-900">
+              {stats.protokolle_monat ?? 0}
+            </span>
+            {" / "}
+            <span className="tabular-nums text-slate-900">
+              {stats.protokoll_limit}
+            </span>{" "}
+            Protokolle diesen Monat
+          </p>
+          <div
+            className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200"
+            role="progressbar"
+            aria-valuenow={Math.min(
+              stats.protokolle_monat ?? 0,
+              stats.protokoll_limit
+            )}
+            aria-valuemin={0}
+            aria-valuemax={stats.protokoll_limit}
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-[width]"
+              style={{
+                width: `${Math.min(
+                  100,
+                  ((stats.protokolle_monat ?? 0) / stats.protokoll_limit) * 100
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {cards.map(({ label, value, icon: Icon }) => (
           <Card key={label}>

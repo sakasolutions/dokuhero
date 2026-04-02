@@ -78,6 +78,10 @@ export interface DashboardStats {
   kundenGesamt: number;
   auftraegeHeute: number;
   protokolleDieseWoche: number;
+  /** Protokolle im laufenden Kalendermonat (Betrieb) */
+  protokolle_monat: number;
+  /** 50 bei Starter, sonst null (unbegrenzt) */
+  protokoll_limit: number | null;
   offeneAuftraege: number;
   bewertungen_positiv: number;
   bewertungen_negativ: number;

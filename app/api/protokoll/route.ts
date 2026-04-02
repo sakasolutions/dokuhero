@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
+const STARTER_PROTOKOLL_MONATS_LIMIT = 50;
+
 const postSchema = z.object({
   auftrag_id: z.coerce.number().int().positive(),
   notiz: z.string().max(20000).optional().nullable(),
@@ -60,6 +62,31 @@ export async function POST(request: Request) {
         { error: "Nur Aufträge mit Status „offen“ können protokolliert werden." },
         { status: 400 }
       );
+    }
+
+    const planRaw = session.user.plan;
+    const plan =
+      typeof planRaw === "string" ? planRaw.trim().toLowerCase() : "";
+    if (plan === "starter") {
+      const [cntRows] = await pool.execute<RowDataPacket[]>(
+        `SELECT COUNT(*) AS c
+         FROM protokolle p
+         INNER JOIN auftraege a ON a.id = p.auftrag_id
+         WHERE a.betrieb_id = ?
+           AND MONTH(p.erstellt_am) = MONTH(NOW())
+           AND YEAR(p.erstellt_am) = YEAR(NOW())`,
+        [session.user.betrieb_id]
+      );
+      const monatsCount = Number((cntRows[0] as { c?: unknown })?.c ?? 0);
+      if (monatsCount >= STARTER_PROTOKOLL_MONATS_LIMIT) {
+        return NextResponse.json(
+          {
+            error: "Protokoll-Limit erreicht. Bitte auf Pro upgraden.",
+            limitReached: true,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // entspricht z. B. /var/www/dokuhero/public/uploads/fotos/ wenn cwd = Projektroot

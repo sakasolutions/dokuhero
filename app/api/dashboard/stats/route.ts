@@ -7,6 +7,8 @@ import { getPool } from "@/lib/db";
 import type { Pool } from "mysql2/promise";
 import type { RowDataPacket } from "mysql2";
 
+const STARTER_PROTOKOLL_MONATS_LIMIT = 50;
+
 interface CountRow extends RowDataPacket {
   c: number;
 }
@@ -38,6 +40,12 @@ export async function GET() {
     }
 
     const betriebId = session.user.betrieb_id;
+    const planRaw = session.user.plan;
+    const plan =
+      typeof planRaw === "string" ? planRaw.trim().toLowerCase() : "";
+    const protokoll_limit =
+      plan === "starter" ? STARTER_PROTOKOLL_MONATS_LIMIT : null;
+
     const pool = getPool();
 
     const kundenGesamt = await countSafe(
@@ -60,6 +68,17 @@ export async function GET() {
        INNER JOIN auftraege a ON a.id = p.auftrag_id
        WHERE a.betrieb_id = ?
          AND p.erstellt_am >= DATE_SUB(NOW(), INTERVAL 7 DAY)`,
+      [betriebId]
+    );
+
+    const protokolle_monat = await countSafe(
+      pool,
+      `SELECT COUNT(*) AS c
+       FROM protokolle p
+       INNER JOIN auftraege a ON a.id = p.auftrag_id
+       WHERE a.betrieb_id = ?
+         AND MONTH(p.erstellt_am) = MONTH(NOW())
+         AND YEAR(p.erstellt_am) = YEAR(NOW())`,
       [betriebId]
     );
 
@@ -108,6 +127,8 @@ export async function GET() {
       kundenGesamt,
       auftraegeHeute,
       protokolleDieseWoche,
+      protokolle_monat,
+      protokoll_limit,
       offeneAuftraege,
       bewertungen_positiv,
       bewertungen_negativ,
