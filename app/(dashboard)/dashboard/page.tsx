@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [betriebName, setBetriebName] = useState("Betrieb");
+  const [paymentOk, setPaymentOk] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +55,15 @@ export default function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("payment");
+    if (p === "success") {
+      setPaymentOk(true);
+      const t = window.setTimeout(() => setPaymentOk(false), 5000);
+      return () => window.clearTimeout(t);
+    }
+  }, []);
+
   const cards = [
     {
       label: "Kunden gesamt",
@@ -90,6 +100,15 @@ export default function DashboardPage() {
 
       {error ? (
         <p className="text-sm text-red-600">{error}</p>
+      ) : null}
+
+      {paymentOk ? (
+        <div
+          className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+          role="status"
+        >
+          Zahlung erfolgreich! Dein Plan ist jetzt aktiv.
+        </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

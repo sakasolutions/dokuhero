@@ -17,6 +17,10 @@ interface BetriebRow extends RowDataPacket {
   adresse: string | null;
   logo_pfad: string | null;
   google_bewertung_link: string | null;
+  plan?: string | null;
+  abo_bis?: Date | null;
+  stripe_customer_id?: string | null;
+  erstellt_am?: Date | null;
 }
 
 const putSchema = z
@@ -60,7 +64,8 @@ export async function GET() {
 
     const pool = getPool();
     const [rows] = await pool.execute<BetriebRow[]>(
-      `SELECT id, name, email, telefon, adresse, logo_pfad, google_bewertung_link
+      `SELECT id, name, email, telefon, adresse, logo_pfad, google_bewertung_link,
+              plan, abo_bis, stripe_customer_id, erstellt_am
        FROM betriebe WHERE id = ? LIMIT 1`,
       [session.user.betrieb_id]
     );
@@ -79,6 +84,12 @@ export async function GET() {
         adresse: row.adresse,
         logo_pfad: row.logo_pfad,
         google_bewertung_link: row.google_bewertung_link,
+        plan: typeof row.plan === "string" ? row.plan : null,
+        abo_bis: row.abo_bis instanceof Date ? row.abo_bis.toISOString() : null,
+        stripe_customer_id:
+          typeof row.stripe_customer_id === "string" ? row.stripe_customer_id : null,
+        erstellt_am:
+          row.erstellt_am instanceof Date ? row.erstellt_am.toISOString() : null,
       },
     });
   } catch (e) {

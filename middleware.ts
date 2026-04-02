@@ -11,6 +11,10 @@ export default withAuth(
       return NextResponse.next();
     }
 
+    if (path === "/preise" || path.startsWith("/preise/")) {
+      return NextResponse.next();
+    }
+
     const secret = process.env.NEXTAUTH_SECRET;
     const token = secret ? await getToken({ req, secret }) : null;
 
@@ -30,6 +34,24 @@ export default withAuth(
       return NextResponse.redirect(new URL("/gesperrt", req.url));
     }
 
+    // Trial- / Plan-Gating
+    const plan = (token as unknown as { plan?: unknown }).plan;
+    const planStr = typeof plan === "string" ? plan : null;
+    if (planStr === "expired") {
+      return NextResponse.redirect(new URL("/preise", req.url));
+    }
+    if (planStr === "trial") {
+      const createdIso = (token as unknown as { erstellt_am?: unknown }).erstellt_am;
+      const createdAt =
+        typeof createdIso === "string" ? new Date(createdIso) : null;
+      if (createdAt && !Number.isNaN(createdAt.getTime())) {
+        const days30 = 30 * 24 * 60 * 60 * 1000;
+        if (Date.now() - createdAt.getTime() > days30) {
+          return NextResponse.redirect(new URL("/preise", req.url));
+        }
+      }
+    }
+
     return NextResponse.next();
   },
   {
@@ -37,6 +59,9 @@ export default withAuth(
       authorized: ({ req, token }) => {
         const path = req.nextUrl.pathname;
         if (path === "/gesperrt" || path.startsWith("/gesperrt/")) {
+          return true;
+        }
+        if (path === "/preise" || path.startsWith("/preise/")) {
           return true;
         }
         return !!token;
@@ -55,6 +80,8 @@ export const config = {
     "/protokoll/:path*",
     "/einstellungen",
     "/einstellungen/:path*",
+    "/preise",
+    "/preise/:path*",
     "/admin",
     "/admin/:path*",
     "/gesperrt",

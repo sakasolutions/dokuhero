@@ -10,6 +10,10 @@ interface BetriebRow extends RowDataPacket {
   email: string;
   passwort: string;
   gesperrt?: number | null;
+  plan?: string | null;
+  abo_bis?: Date | null;
+  stripe_customer_id?: string | null;
+  erstellt_am?: Date | null;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -54,6 +58,13 @@ export const authOptions: NextAuthOptions = {
           name: betrieb.name,
           betrieb_id: betrieb.id,
           gesperrt: Number(betrieb.gesperrt) === 1 ? 1 : 0,
+          plan: typeof betrieb.plan === "string" ? betrieb.plan : "trial",
+          abo_bis:
+            betrieb.abo_bis instanceof Date ? betrieb.abo_bis.toISOString() : null,
+          erstellt_am:
+            betrieb.erstellt_am instanceof Date
+              ? betrieb.erstellt_am.toISOString()
+              : null,
         };
       },
     }),
@@ -72,6 +83,11 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name ?? "";
         token.email = user.email ?? "";
         token.gesperrt = user.gesperrt ?? 0;
+        if ("plan" in user) token.plan = (user as { plan?: unknown }).plan as any;
+        if ("abo_bis" in user)
+          token.abo_bis = (user as { abo_bis?: unknown }).abo_bis as any;
+        if ("erstellt_am" in user)
+          token.erstellt_am = (user as { erstellt_am?: unknown }).erstellt_am as any;
       }
       if (trigger === "update" && session && typeof session === "object") {
         const s = session as { name?: unknown };
@@ -87,6 +103,9 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.gesperrt = token.gesperrt ?? 0;
+        session.user.plan = (token as any).plan;
+        session.user.abo_bis = (token as any).abo_bis;
+        session.user.erstellt_am = (token as any).erstellt_am;
       }
       return session;
     },
