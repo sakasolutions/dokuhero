@@ -97,23 +97,31 @@ export default function DashboardPage() {
       label: "Kunden gesamt",
       value: stats?.kundenGesamt ?? "–",
       icon: Users,
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
     },
     {
       label: "Aufträge heute",
       value: stats?.auftraegeHeute ?? "–",
       icon: Wrench,
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
     },
     {
       label: "Protokolle diese Woche",
       value: stats?.protokolleDieseWoche ?? "–",
       icon: FileText,
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
     },
     {
       label: "Offene Aufträge",
       value: stats?.offeneAuftraege ?? "–",
       icon: ClipboardList,
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
     },
-  ];
+  ] as const;
 
   return (
     <div className="space-y-8">
@@ -210,16 +218,18 @@ export default function DashboardPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {cards.map(({ label, value, icon: Icon }) => (
+        {cards.map(({ label, value, icon: Icon, iconBg, iconColor }) => (
           <Card key={label}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-slate-500">{label}</p>
-                <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
+                <p className="text-sm text-slate-500 font-medium">{label}</p>
+                <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">
                   {value}
                 </p>
               </div>
-              <div className="rounded-lg bg-primary/10 p-3 text-primary">
+              <div
+                className={`rounded-xl p-2.5 ${iconBg} ${iconColor}`}
+              >
                 <Icon className="h-6 w-6" />
               </div>
             </div>
