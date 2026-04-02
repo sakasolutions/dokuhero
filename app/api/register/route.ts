@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { getPool } from "@/lib/db";
-import { sendWillkommenMail } from "@/lib/mail";
+import {
+  sendNeuerBetriebAdminNotifyMail,
+  sendWillkommenMail,
+} from "@/lib/mail";
 import type { ResultSetHeader } from "mysql2";
 import type { RowDataPacket } from "mysql2";
 
@@ -94,6 +97,18 @@ export async function POST(request: Request) {
         branche,
       ]
     );
+
+    try {
+      await sendNeuerBetriebAdminNotifyMail({
+        betriebName: name.trim(),
+        email: emailNorm,
+        telefon: telefon?.trim() || null,
+        branche,
+        betriebId: result.insertId,
+      });
+    } catch (e) {
+      console.error("[register] Admin-Benachrichtigung fehlgeschlagen:", e);
+    }
 
     try {
       await sendWillkommenMail(emailNorm, name.trim());

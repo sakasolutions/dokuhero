@@ -160,6 +160,53 @@ function getLoginBaseUrl(): string {
   return u.replace(/\/$/, "");
 }
 
+const REGISTRATION_ADMIN_NOTIFY_TO =
+  process.env.REGISTRATION_NOTIFY_EMAIL?.trim() || "kontakt@dokuhero.de";
+
+/** Interne Benachrichtigung: neuer Betrieb hat sich registriert. */
+export async function sendNeuerBetriebAdminNotifyMail(opts: {
+  betriebName: string;
+  email: string;
+  telefon: string | null;
+  branche: string;
+  betriebId: number;
+}): Promise<void> {
+  const { resend, from } = getResendClient();
+  const adminUrl = `${getLoginBaseUrl()}/admin`;
+  const datum = new Date().toLocaleString("de-DE", {
+    timeZone: "Europe/Berlin",
+  });
+  const telefon =
+    opts.telefon?.trim() && opts.telefon.trim().length > 0
+      ? opts.telefon.trim()
+      : "nicht angegeben";
+
+  const subject = "🎉 Neuer DokuHero Nutzer registriert!";
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8" /></head>
+<body style="font-family: system-ui, sans-serif; line-height: 1.6; color: #334155;">
+  <h2 style="margin-top:0;">Neuer Betrieb registriert</h2>
+  <p><strong>Name:</strong> ${escapeHtml(opts.betriebName)}</p>
+  <p><strong>E-Mail:</strong> ${escapeHtml(opts.email)}</p>
+  <p><strong>Telefon:</strong> ${escapeHtml(telefon)}</p>
+  <p><strong>Branche:</strong> ${escapeHtml(opts.branche)}</p>
+  <p><strong>Betrieb-ID:</strong> ${opts.betriebId}</p>
+  <p><strong>Datum:</strong> ${escapeHtml(datum)}</p>
+  <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #e2e8f0;" />
+  <p><a href="${escapeHtml(adminUrl)}">Im Admin-Panel ansehen</a></p>
+</body>
+</html>`;
+
+  const { error } = await resend.emails.send({
+    from,
+    to: REGISTRATION_ADMIN_NOTIFY_TO,
+    subject,
+    html,
+  });
+  if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
+}
+
 /** Willkommens-Mail nach Registrierung. */
 export async function sendWillkommenMail(
   to: string,
