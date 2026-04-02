@@ -188,21 +188,23 @@ function HeroPhotoThumb({
 
   return (
     <figure className="flex shrink-0 flex-col items-center gap-1.5">
-      <div className="flex h-16 w-20 items-center justify-center overflow-hidden rounded-lg bg-slate-100 shadow-md shadow-slate-300/45">
+      <div className="relative h-16 w-20 overflow-hidden rounded-lg bg-slate-100 shadow-md shadow-slate-300/45">
         {!usePlaceholder ? (
           // eslint-disable-next-line @next/next/no-img-element -- lokale Hero-Assets optional
           <img
             src={imageSrc}
             alt=""
-            className="h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
             onError={() => setUsePlaceholder(true)}
           />
         ) : (
-          <Camera
-            className="h-6 w-6 text-slate-400"
-            strokeWidth={1.75}
-            aria-hidden
-          />
+          <div className="flex h-full w-full items-center justify-center">
+            <Camera
+              className="h-6 w-6 text-slate-400"
+              strokeWidth={1.75}
+              aria-hidden
+            />
+          </div>
         )}
       </div>
       <figcaption className="text-center text-xs font-medium text-slate-500">
