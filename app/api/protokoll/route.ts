@@ -7,12 +7,11 @@ import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
+import { STARTER_PROTOKOLL_MONATS_LIMIT } from "@/lib/protokoll-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-const STARTER_PROTOKOLL_MONATS_LIMIT = 6;
 
 const postSchema = z.object({
   auftrag_id: z.coerce.number().int().positive(),

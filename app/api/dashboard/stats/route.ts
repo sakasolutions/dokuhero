@@ -6,8 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import type { Pool } from "mysql2/promise";
 import type { RowDataPacket } from "mysql2";
-
-const STARTER_PROTOKOLL_MONATS_LIMIT = 50;
+import { STARTER_PROTOKOLL_MONATS_LIMIT } from "@/lib/protokoll-limit";
 
 interface CountRow extends RowDataPacket {
   c: number;

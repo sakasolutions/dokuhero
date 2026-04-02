@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { ClipboardList, FileText, Users, Wrench } from "lucide-react";
 import type { DashboardStats } from "@/types";
@@ -64,6 +65,14 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const starterLimit = stats?.protokoll_limit;
+  const protokolleMonatUsed = stats?.protokolle_monat ?? 0;
+  const starterLimitPct =
+    starterLimit != null && starterLimit > 0
+      ? (protokolleMonatUsed / starterLimit) * 100
+      : 0;
+  const starterLimitWarn = starterLimit != null && starterLimitPct > 80;
+
   const cards = [
     {
       label: "Kunden gesamt",
@@ -111,38 +120,48 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
-      {stats?.protokoll_limit != null ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {starterLimit != null ? (
+        <div
+          className={`rounded-xl border bg-white p-4 shadow-sm ${
+            starterLimitWarn ? "border-red-200/90" : "border-slate-200"
+          }`}
+        >
           <p className="text-sm font-medium text-slate-700">
             <span className="tabular-nums text-slate-900">
-              {stats.protokolle_monat ?? 0}
+              {protokolleMonatUsed}
             </span>
             {" / "}
-            <span className="tabular-nums text-slate-900">
-              {stats.protokoll_limit}
-            </span>{" "}
+            <span className="tabular-nums text-slate-900">{starterLimit}</span>{" "}
             Protokolle diesen Monat
           </p>
           <div
             className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200"
             role="progressbar"
-            aria-valuenow={Math.min(
-              stats.protokolle_monat ?? 0,
-              stats.protokoll_limit
-            )}
+            aria-valuenow={Math.min(protokolleMonatUsed, starterLimit)}
             aria-valuemin={0}
-            aria-valuemax={stats.protokoll_limit}
+            aria-valuemax={starterLimit}
           >
             <div
-              className="h-full rounded-full bg-primary transition-[width]"
+              className={`h-full rounded-full transition-[width] ${
+                starterLimitWarn ? "bg-red-600" : "bg-primary"
+              }`}
               style={{
-                width: `${Math.min(
-                  100,
-                  ((stats.protokolle_monat ?? 0) / stats.protokoll_limit) * 100
-                )}%`,
+                width: `${Math.min(100, starterLimitPct)}%`,
               }}
             />
           </div>
+          {starterLimitWarn ? (
+            <p className="mt-3 text-sm text-slate-700">
+              Du hast {protokolleMonatUsed} von {starterLimit} Protokollen
+              verbraucht.{" "}
+              <Link
+                href="/preise"
+                className="font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary/90"
+              >
+                Upgrade empfohlen.
+              </Link>
+            </p>
+          ) : null}
         </div>
       ) : null}
 

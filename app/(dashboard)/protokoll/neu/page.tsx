@@ -13,6 +13,12 @@ import type { AuftragMitKunde } from "@/types";
 
 const STEPS = 3;
 
+type LimitPayload = {
+  limitReached: boolean;
+  count: number;
+  limit: number;
+};
+
 export default function ProtokollNeuPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -23,9 +29,49 @@ export default function ProtokollNeuPage() {
   const [notiz, setNotiz] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [limitModalOpen, setLimitModalOpen] = useState(false);
+
+  const [limitPhase, setLimitPhase] = useState<"loading" | "ready">("loading");
+  const [limitBlocked, setLimitBlocked] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ count: number; limit: number } | null>(
+    null
+  );
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/protokoll/limit");
+        const j = (await res.json().catch(() => ({}))) as Partial<LimitPayload> & {
+          error?: string;
+        };
+        if (cancelled) return;
+        if (!res.ok) {
+          setLimitPhase("ready");
+          setLimitBlocked(false);
+          return;
+        }
+        if (j.limitReached === true && typeof j.limit === "number") {
+          setLimitInfo({
+            count: typeof j.count === "number" ? j.count : j.limit,
+            limit: j.limit,
+          });
+          setLimitBlocked(true);
+        } else {
+          setLimitBlocked(false);
+        }
+      } catch {
+        if (!cancelled) setLimitBlocked(false);
+      } finally {
+        if (!cancelled) setLimitPhase("ready");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (limitPhase !== "ready" || limitBlocked) return;
     let cancelled = false;
     (async () => {
       try {
@@ -42,7 +88,7 @@ export default function ProtokollNeuPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [limitPhase, limitBlocked]);
 
   function canGoStep2() {
     return auftragId != null;
@@ -50,6 +96,22 @@ export default function ProtokollNeuPage() {
 
   function canSubmit() {
     return auftragId != null;
+  }
+
+  async function refreshLimitAndBlock() {
+    try {
+      const res = await fetch("/api/protokoll/limit");
+      const j = (await res.json()) as Partial<LimitPayload>;
+      if (res.ok && j.limitReached === true && typeof j.limit === "number") {
+        setLimitInfo({
+          count: typeof j.count === "number" ? j.count : j.limit,
+          limit: j.limit,
+        });
+        setLimitBlocked(true);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   async function handleSubmit() {
@@ -72,7 +134,7 @@ export default function ProtokollNeuPage() {
       };
       if (!res.ok) {
         if (res.status === 403 && j.limitReached === true) {
-          setLimitModalOpen(true);
+          await refreshLimitAndBlock();
           return;
         }
         setError(
@@ -89,46 +151,45 @@ export default function ProtokollNeuPage() {
     }
   }
 
+  if (limitPhase === "loading") {
+    return (
+      <div className="mx-auto flex min-h-[50vh] max-w-lg items-center justify-center pb-6">
+        <p className="text-slate-600">Laden…</p>
+      </div>
+    );
+  }
+
+  if (limitBlocked && limitInfo) {
+    const { limit } = limitInfo;
+    return (
+      <div className="mx-auto max-w-xl pb-8">
+        <Card className="border-amber-200 bg-amber-50/80 p-8 shadow-md sm:p-10">
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+            Monatliches Limit erreicht
+          </h1>
+          <p className="mt-5 text-base leading-relaxed text-slate-700 sm:text-lg">
+            Ihr Betrieb hat diesen Monat bereits {limit}{" "}
+            {limit === 1 ? "Protokoll" : "Protokolle"} erstellt.
+          </p>
+          <p className="mt-4 text-base leading-relaxed text-slate-700 sm:text-lg">
+            Bitte wenden Sie sich an den Betriebsinhaber für ein Upgrade.
+          </p>
+          <div className="mt-10">
+            <Button
+              type="button"
+              className="min-h-12 w-full text-base sm:w-auto"
+              onClick={() => router.push("/dashboard")}
+            >
+              Zurück zum Dashboard
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto min-h-[70vh] max-w-lg pb-6">
-      {limitModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="protokoll-limit-title"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h2
-              id="protokoll-limit-title"
-              className="text-lg font-semibold text-slate-900"
-            >
-              Monatliches Limit erreicht
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Du hast dein monatliches Limit von 50 Protokollen erreicht.
-              Upgrade auf Pro für unbegrenzte Protokolle.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11 w-full sm:w-auto"
-                onClick={() => setLimitModalOpen(false)}
-              >
-                Schließen
-              </Button>
-              <Link
-                href="/preise"
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
-              >
-                Jetzt upgraden
-              </Link>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div className="mb-4 flex items-center gap-3">
         <Link
           href="/dashboard"
