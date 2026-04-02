@@ -213,7 +213,7 @@ export function PricingSection() {
           </span>
         </div>
 
-        <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 md:mt-12 md:grid md:grid-cols-3 md:items-stretch md:gap-6 lg:gap-8">
+        <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 md:mt-12 md:grid md:grid-cols-3 md:items-end md:gap-6 lg:gap-8">
           {/* Starter */}
           <div
             className={`order-2 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm transition-all ease-out sm:px-8 md:order-1 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
