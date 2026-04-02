@@ -645,9 +645,9 @@ export default function LandingPage() {
         <PricingSection />
 
         {/* CTA */}
-        <section className="bg-gradient-to-br from-blue-600 to-indigo-700 px-4 py-24">
+        <section className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 px-4 py-32">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="text-sm font-medium uppercase tracking-widest text-blue-200">
+            <span className="text-sm font-medium uppercase tracking-widest text-blue-300/70">
               Kostenlos starten
             </span>
             <h2 className="mt-3 text-4xl font-bold leading-tight text-white md:text-5xl">
@@ -661,7 +661,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
                 href="/register"
-                className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-8 py-4 text-base font-semibold text-blue-700 transition-colors hover:bg-blue-50`}
+                className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-8 py-4 text-base font-semibold text-blue-700 shadow-lg transition-colors hover:bg-blue-50`}
               >
                 Jetzt kostenlos starten
               </Link>
@@ -707,7 +707,7 @@ export default function LandingPage() {
                 </span>
               </Link>
               <p className="mt-2 max-w-sm text-sm text-slate-400">
-                Professionelle Dokumentation für Handwerksbetriebe.
+                Dokumentation die sich von selbst erledigt.
               </p>
             </div>
             <nav
