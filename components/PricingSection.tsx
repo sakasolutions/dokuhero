@@ -1,0 +1,343 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Check } from "lucide-react";
+
+const animD = "duration-[400ms] md:duration-700";
+
+const ctaBtnTransform =
+  "transition-transform duration-200 md:hover:scale-105 active:scale-95";
+
+type Billing = "monthly" | "yearly";
+
+const PRICE_IDS = {
+  starter: {
+    monthly: "price_1THhVxJ4dcGJEa2Gv9C89qGR",
+    yearly: "price_1THhVxJ4dcGJEa2GGSnbCjCr",
+  },
+  pro: {
+    monthly: "price_1THhWvJ4dcGJEa2GeTQZUwoJ",
+    yearly: "price_1THhWvJ4dcGJEa2G1zIKXiZP",
+  },
+  business: {
+    monthly: "price_1THqFBJ4dcGJEa2G0KR0hQ3E",
+    yearly: "price_1THqFBJ4dcGJEa2Gg7fMTOHg",
+  },
+} as const;
+
+const starterFeatures = [
+  "Bis 50 Protokolle/Monat",
+  "KI-Protokolltext",
+  "PDF-Generierung",
+  "Automatischer Mail-Versand",
+  "Bewertungs-Automatik",
+  "1 Benutzer",
+];
+
+const proFeatures = [
+  "Unbegrenzte Protokolle",
+  "Alles aus Starter",
+  "Bis 5 Benutzer",
+  "Priority Support",
+  "Early Access zu neuen Features",
+];
+
+const businessFeatures = [
+  "Unbegrenzte Protokolle",
+  "Alles aus Pro",
+  "Bis 15 Benutzer",
+  "Persönlicher Onboarding-Support",
+  "Dedizierter Ansprechpartner",
+];
+
+function useInView(threshold = 0.1) {
+  const [inView, setInView] = useState(false);
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setInView(true);
+      },
+      { threshold }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node, threshold]);
+  const ref = useCallback((el: HTMLElement | null) => setNode(el), []);
+  return [ref, inView] as const;
+}
+
+function PriceBlock({
+  billing,
+  main,
+  compare,
+  variant,
+}: {
+  billing: Billing;
+  main: string;
+  compare: string | null;
+  variant: "light" | "dark";
+}) {
+  const mainCls =
+    variant === "dark"
+      ? "text-4xl font-extrabold tracking-tight text-white md:text-5xl"
+      : "text-4xl font-extrabold tracking-tight text-primary md:text-5xl";
+  const unitCls =
+    variant === "dark"
+      ? "text-sm font-semibold text-slate-300 md:text-base"
+      : "text-sm font-semibold text-slate-600 md:text-base";
+  const hintCls =
+    variant === "dark" ? "text-slate-400 md:text-sm" : "text-slate-500 md:text-sm";
+  const compareCls =
+    variant === "dark"
+      ? "text-lg font-medium text-slate-500 line-through md:text-xl"
+      : "text-lg font-medium text-slate-400 line-through md:text-xl";
+
+  return (
+    <div className="mt-4 shrink-0">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className={mainCls}>{main}</span>
+        {billing === "yearly" && compare ? (
+          <span className={compareCls}>{compare}</span>
+        ) : null}
+        <span className={unitCls}>/ Monat</span>
+      </div>
+      {billing === "yearly" ? (
+        <p className={`mt-1 text-xs font-medium ${hintCls}`}>
+          bei jährlicher Zahlung, pro Monat
+        </p>
+      ) : null}
+      <p
+        className={
+          variant === "dark"
+            ? "mt-2 text-xs text-slate-400"
+            : "mt-2 text-xs text-slate-500"
+        }
+      >
+        zzgl. MwSt.
+      </p>
+    </div>
+  );
+}
+
+export function PricingSection() {
+  const [billing, setBilling] = useState<Billing>("monthly");
+  const [pricingRef, pricingInView] = useInView(0.1);
+
+  const pid = (plan: keyof typeof PRICE_IDS) =>
+    billing === "monthly" ? PRICE_IDS[plan].monthly : PRICE_IDS[plan].yearly;
+
+  const starterMain = billing === "monthly" ? "29,90 €" : "29,90 €";
+  const proMain = billing === "monthly" ? "59,00 €" : "47,00 €";
+  const businessMain = billing === "monthly" ? "149,00 €" : "119,00 €";
+
+  return (
+    <section
+      id="pricing"
+      ref={pricingRef}
+      className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
+    >
+      <div className="mx-auto max-w-6xl">
+        <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
+          Preise
+        </h2>
+        <p className="mx-auto mt-3 max-w-lg text-center text-sm text-slate-600 md:text-base">
+          Einfache Pakete — du entscheidest, wie viel du protokollierst.
+        </p>
+
+        <div className="mx-auto mt-8 flex justify-center md:mt-10">
+          <p className="inline-flex max-w-xl flex-col items-center gap-1 rounded-2xl bg-primary/10 px-5 py-3 text-center text-sm font-semibold text-primary sm:flex-row sm:gap-2 sm:px-8 sm:py-4 sm:text-base md:text-lg">
+            <span className="leading-snug">
+              30 Tage kostenlos testen — keine Kreditkarte nötig
+            </span>
+          </p>
+        </div>
+
+        <div
+          className="mx-auto mt-8 flex w-full max-w-2xl flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center"
+          role="group"
+          aria-label="Abrechnungszeitraum"
+        >
+          <div className="flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:min-w-[280px] sm:flex-1 sm:max-w-md">
+            <button
+              type="button"
+              onClick={() => setBilling("monthly")}
+              className={`min-h-[44px] flex-1 rounded-lg px-3 text-sm font-semibold transition sm:px-4 sm:text-base ${
+                billing === "monthly"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
+              }`}
+            >
+              Monatlich
+            </button>
+            <button
+              type="button"
+              onClick={() => setBilling("yearly")}
+              className={`min-h-[44px] flex-1 rounded-lg px-3 text-sm font-semibold transition sm:px-4 sm:text-base ${
+                billing === "yearly"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
+              }`}
+            >
+              Jährlich
+            </button>
+          </div>
+          <span className="mx-auto inline-flex items-center justify-center rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 sm:mx-0">
+            2 Monate gratis
+          </span>
+        </div>
+
+        <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 md:mt-12 md:grid md:grid-cols-3 md:items-stretch md:gap-6 lg:gap-8">
+          {/* Starter — desktop links */}
+          <div
+            className={`order-2 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all ease-out sm:p-8 md:order-1 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
+              pricingInView
+                ? "translate-y-0 opacity-100"
+                : "translate-y-8 opacity-0"
+            }`}
+          >
+            <h3 className="shrink-0 text-xl font-bold text-slate-900">
+              Starter
+            </h3>
+            <PriceBlock
+              variant="light"
+              billing={billing}
+              main={starterMain}
+              compare={null}
+            />
+            <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
+              {starterFeatures.map((line) => (
+                <li key={line} className="flex gap-3">
+                  <Check
+                    className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                    strokeWidth={2.5}
+                    aria-hidden
+                  />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto flex flex-col pt-6">
+              <Link
+                href="/register"
+                data-price-id={pid("starter")}
+                className={`${ctaBtnTransform} inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
+              >
+                30 Tage kostenlos starten
+              </Link>
+            </div>
+          </div>
+
+          {/* Pro — mobile zuerst, hervorgehoben */}
+          <div
+            className={`relative order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-7 shadow-xl transition-all ease-out sm:p-9 md:order-2 md:z-10 md:scale-[1.04] md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
+              pricingInView
+                ? "translate-y-0 opacity-100"
+                : "translate-y-8 opacity-0"
+            }`}
+            style={{
+              transitionDelay: pricingInView ? "80ms" : "0ms",
+            }}
+          >
+            <span className="absolute -top-3 right-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              Beliebt
+            </span>
+            <h3 className="shrink-0 text-xl font-bold text-white">Pro</h3>
+            <PriceBlock
+              variant="dark"
+              billing={billing}
+              main={proMain}
+              compare={billing === "yearly" ? "59,00 €" : null}
+            />
+            <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-200 md:text-base">
+              {proFeatures.map((line) => (
+                <li key={line} className="flex gap-3">
+                  <Check
+                    className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                    strokeWidth={2.5}
+                    aria-hidden
+                  />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto flex flex-col pt-6">
+              <Link
+                href="/register"
+                data-price-id={pid("pro")}
+                className={`${ctaBtnTransform} inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
+              >
+                30 Tage kostenlos starten
+              </Link>
+            </div>
+          </div>
+
+          {/* Business */}
+          <div
+            className={`order-3 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all ease-out sm:p-8 md:order-3 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
+              pricingInView
+                ? "translate-y-0 opacity-100"
+                : "translate-y-8 opacity-0"
+            }`}
+            style={{
+              transitionDelay: pricingInView ? "160ms" : "0ms",
+            }}
+          >
+            <span className="w-fit rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+              Neu
+            </span>
+            <h3 className="mt-2 shrink-0 text-xl font-bold text-slate-900">
+              Business
+            </h3>
+            <PriceBlock
+              variant="light"
+              billing={billing}
+              main={businessMain}
+              compare={billing === "yearly" ? "149,00 €" : null}
+            />
+            <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
+              {businessFeatures.map((line) => (
+                <li key={line} className="flex gap-3">
+                  <Check
+                    className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                    strokeWidth={2.5}
+                    aria-hidden
+                  />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto flex flex-col gap-1 pt-6">
+              <Link
+                href="/register"
+                data-price-id={pid("business")}
+                className={`${ctaBtnTransform} inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
+              >
+                30 Tage kostenlos starten
+              </Link>
+              <p className="text-center text-xs text-slate-500">
+                Keine Kreditkarte nötig
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <p className="mx-auto mt-10 max-w-xl text-center text-sm text-slate-500 md:mt-12">
+          Ab 15+ Mitarbeitern? →{" "}
+          <a
+            href="mailto:kontakt@dokuhero.de"
+            className="font-medium text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
+          >
+            kontakt@dokuhero.de
+          </a>
+        </p>
+
+        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-slate-600 md:mt-8 md:text-base">
+          Monatlich kündbar · Keine versteckten Kosten
+        </p>
+      </div>
+    </section>
+  );
+}

@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { PricingSection } from "@/components/PricingSection";
 import { StatsSection } from "@/components/StatsSection";
 import {
   Archive,
@@ -79,31 +80,6 @@ const kennstDuDasLoesungen = [
   "Alles dokumentiert, 10 Jahre rechtssicher",
   "Fotos, Notiz, PDF — alles an einem Ort",
 ] as const;
-
-const starterPricingFeatures = [
-  "1 Nutzer",
-  "50 Protokolle/Monat",
-  "KI-Protokolltext",
-  "PDF-Generierung",
-  "Automatischer Mail-Versand",
-  "Bewertungs-Automatik",
-];
-
-const proPricingFeatures = [
-  "Bis 5 Nutzer",
-  "Unbegrenzte Protokolle",
-  "Alles aus Starter",
-  "Priority Support",
-  "Early Access zu neuen Features",
-];
-
-const businessPricingFeatures = [
-  "Bis 15 Nutzer",
-  "Unbegrenzte Protokolle",
-  "Alles aus Pro",
-  "Persönlicher Onboarding-Call",
-  "Dedizierter Support",
-];
 
 const landingFeatures = [
   {
@@ -267,12 +243,10 @@ const ctaBtnTransform =
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [heroOn, setHeroOn] = useState(false);
 
   const [howRef, howInView] = useInView(0.12);
   const [featuresRef, featuresInView] = useInView(0.08);
-  const [pricingRef, pricingInView] = useInView(0.1);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setHeroOn(true));
@@ -667,223 +641,7 @@ export default function LandingPage() {
 
         <StatsSection />
 
-        {/* Pricing */}
-        <section
-          id="pricing"
-          ref={pricingRef}
-          className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
-        >
-          <div className="mx-auto max-w-6xl">
-            <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
-              Preise
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-center text-sm text-slate-600 md:text-base">
-              Einfache Pakete — du entscheidest, wie viel du protokollierst.
-            </p>
-
-            <div className="mx-auto mt-8 flex justify-center md:mt-10">
-              <p className="inline-flex max-w-xl flex-col items-center gap-1 rounded-2xl bg-primary/10 px-5 py-3 text-center text-sm font-semibold text-primary sm:flex-row sm:gap-2 sm:px-8 sm:py-4 sm:text-base md:text-lg">
-                <span className="leading-snug">
-                  30 Tage kostenlos testen — keine Kreditkarte nötig
-                </span>
-              </p>
-            </div>
-
-            <div
-              className="mx-auto mt-8 w-full max-w-lg sm:mt-10 md:flex md:justify-center"
-              role="group"
-              aria-label="Abrechnungszeitraum"
-            >
-              <div className="flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 md:w-auto md:max-w-md">
-                <button
-                  type="button"
-                  onClick={() => setBilling("monthly")}
-                  className={`min-h-11 flex-1 rounded-lg px-3 text-sm font-semibold transition sm:min-h-12 sm:px-4 sm:text-base ${
-                    billing === "monthly"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
-                  }`}
-                >
-                  Monatlich
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBilling("yearly")}
-                  className={`min-h-11 flex-1 rounded-lg px-2 text-xs font-semibold leading-tight transition sm:min-h-12 sm:px-3 sm:text-sm md:text-base ${
-                    billing === "yearly"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
-                  }`}
-                >
-                  <span className="block sm:inline">Jährlich</span>
-                  <span className="block text-[0.7rem] font-medium text-slate-500 sm:ml-1 sm:inline sm:text-sm sm:text-slate-600">
-                    — 2 Monate gratis
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 md:mt-12 md:grid-cols-3 md:gap-6 md:items-stretch lg:gap-8">
-              <div
-                className={`flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 pb-10 shadow-sm transition-all ease-out sm:p-8 sm:pb-12 md:hover:-translate-y-1 md:hover:shadow-xl active:shadow-lg ${animD} ${
-                  pricingInView
-                    ? "translate-y-0 scale-100 opacity-100"
-                    : "translate-y-8 scale-95 opacity-0"
-                }`}
-              >
-                <h3 className="shrink-0 text-xl font-bold text-slate-900">
-                  Starter
-                </h3>
-                <div className="mt-4 flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
-                    {billing === "monthly" ? "29€" : "23€"}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-500 md:text-base">
-                    /Monat netto
-                  </span>
-                </div>
-                {billing === "yearly" ? (
-                  <p className="mt-1 shrink-0 text-sm font-medium text-slate-600 md:text-base">
-                    276€/Jahr
-                  </p>
-                ) : null}
-                <p className="mt-2 shrink-0 text-sm text-slate-500">
-                  <span className="line-through">Normalpreis: 39€</span>
-                </p>
-                <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
-                  {starterPricingFeatures.map((line) => (
-                    <li key={line} className="flex gap-3">
-                      <Check
-                        className="mt-0.5 h-5 w-5 shrink-0 text-primary"
-                        strokeWidth={2.5}
-                        aria-hidden
-                      />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/register"
-                  className={`${ctaBtnTransform} mt-6 inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
-                >
-                  30 Tage kostenlos starten
-                </Link>
-              </div>
-
-              <div
-                className={`relative flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl transition-all ease-out sm:p-8 md:hover:-translate-y-2 md:hover:shadow-2xl active:shadow-xl ${animD} ${
-                  pricingInView
-                    ? "translate-y-0 scale-100 opacity-100"
-                    : "translate-y-8 scale-95 opacity-0"
-                }`}
-                style={{
-                  transitionDelay: pricingInView ? "120ms" : "0ms",
-                }}
-              >
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <h3 className="text-xl font-bold text-white">Pro</h3>
-                  <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
-                    Beliebt
-                  </span>
-                </div>
-                <div className="mt-4 flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="text-4xl font-extrabold tracking-tight text-white md:text-5xl">
-                    {billing === "monthly" ? "59€" : "47€"}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-400 md:text-base">
-                    /Monat netto
-                  </span>
-                </div>
-                {billing === "yearly" ? (
-                  <p className="mt-1 shrink-0 text-sm font-medium text-slate-300 md:text-base">
-                    564€/Jahr
-                  </p>
-                ) : null}
-                <p className="mt-2 shrink-0 text-sm text-slate-500">
-                  <span className="line-through">Normalpreis: 79€</span>
-                </p>
-                <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-200 md:text-base">
-                  {proPricingFeatures.map((line) => (
-                    <li key={line} className="flex gap-3">
-                      <Check
-                        className="mt-0.5 h-5 w-5 shrink-0 text-primary"
-                        strokeWidth={2.5}
-                        aria-hidden
-                      />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/register"
-                  className={`${ctaBtnTransform} mt-6 inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
-                >
-                  30 Tage kostenlos starten
-                </Link>
-              </div>
-
-              <div
-                className={`flex min-h-0 flex-col rounded-2xl border-2 border-primary bg-white p-6 pb-10 shadow-sm transition-all ease-out sm:p-8 sm:pb-12 md:hover:-translate-y-1 md:hover:shadow-xl active:shadow-lg ${animD} ${
-                  pricingInView
-                    ? "translate-y-0 scale-100 opacity-100"
-                    : "translate-y-8 scale-95 opacity-0"
-                }`}
-                style={{
-                  transitionDelay: pricingInView ? "240ms" : "0ms",
-                }}
-              >
-                <h3 className="shrink-0 text-xl font-bold text-slate-900">
-                  Business
-                </h3>
-                <div className="mt-4 flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
-                    {billing === "monthly" ? "149€" : "119€"}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-500 md:text-base">
-                    /Monat netto
-                  </span>
-                </div>
-                {billing === "yearly" ? (
-                  <p className="mt-1 shrink-0 text-sm font-medium text-slate-600 md:text-base">
-                    1.428€/Jahr
-                  </p>
-                ) : null}
-                <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
-                  {businessPricingFeatures.map((line) => (
-                    <li key={line} className="flex gap-3">
-                      <Check
-                        className="mt-0.5 h-5 w-5 shrink-0 text-primary"
-                        strokeWidth={2.5}
-                        aria-hidden
-                      />
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/register"
-                  className={`${ctaBtnTransform} mt-6 inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
-                >
-                  30 Tage kostenlos starten
-                </Link>
-              </div>
-            </div>
-
-            <p className="mx-auto mt-8 max-w-xl text-center text-sm text-slate-600 md:mt-10">
-              Ab 15+ Mitarbeitern?{" "}
-              <a
-                href="mailto:kontakt@dokuhero.de"
-                className="font-medium text-primary underline-offset-2 hover:underline"
-              >
-                Kontakt aufnehmen →
-              </a>
-            </p>
-
-            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-slate-600 md:mt-8 md:text-base">
-              Monatlich kündbar · Keine versteckten Kosten
-            </p>
-          </div>
-        </section>
+        <PricingSection />
 
         {/* CTA */}
         <section className="bg-slate-900 px-4 py-14 sm:py-16 md:py-20">
