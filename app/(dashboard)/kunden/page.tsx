@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import type { Kunde } from "@/types";
 
 export default function KundenListePage() {
+  const router = useRouter();
   const [kunden, setKunden] = useState<Kunde[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,14 +122,21 @@ export default function KundenListePage() {
               </thead>
               <tbody>
                 {filtered.map((k) => (
-                  <tr key={k.id} className="border-b border-slate-100">
+                  <tr
+                    key={k.id}
+                    role="link"
+                    tabIndex={0}
+                    className="cursor-pointer border-b border-slate-100 transition-colors hover:bg-slate-50"
+                    onClick={() => router.push(`/kunden/${k.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/kunden/${k.id}`);
+                      }
+                    }}
+                  >
                     <td className="px-4 py-3 font-medium text-slate-900">
-                      <Link
-                        href={`/kunden/${k.id}`}
-                        className="text-primary hover:text-primary/80 hover:underline"
-                      >
-                        {k.name}
-                      </Link>
+                      {k.name}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {k.fahrzeug ?? "–"}
@@ -138,8 +147,17 @@ export default function KundenListePage() {
                     <td className="px-4 py-3 text-slate-600">
                       {k.telefon ?? "–"}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td
+                      className="px-4 py-3 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Link
+                          href={`/kunden/${k.id}`}
+                          className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+                        >
+                          Details
+                        </Link>
                         <Link
                           href={`/kunden/${k.id}/bearbeiten`}
                           title="Bearbeiten"
@@ -172,32 +190,18 @@ export default function KundenListePage() {
           {/* Mobile: Cards */}
           <div className="space-y-3 md:hidden">
             {filtered.map((k) => (
-              <Card key={k.id}>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <Link
-                      href={`/kunden/${k.id}`}
-                      className="font-semibold text-slate-900 hover:text-primary hover:underline"
-                    >
-                      {k.name}
-                    </Link>
-                    <div className="flex gap-1">
-                      <Link
-                        href={`/kunden/${k.id}/bearbeiten`}
-                        className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-800 hover:bg-slate-50"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Link>
-                      <Button
-                        variant="danger"
-                        className="!p-2"
-                        disabled={deletingId === k.id}
-                        onClick={() => handleDelete(k.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+              <Card
+                key={k.id}
+                padding={false}
+                className="relative overflow-hidden"
+              >
+                <Link
+                  href={`/kunden/${k.id}`}
+                  className="absolute inset-0 z-0 rounded-xl"
+                  aria-label={`Details zu ${k.name}`}
+                />
+                <div className="relative z-10 space-y-2 p-4 pr-[4.5rem] pointer-events-none">
+                  <p className="font-semibold text-slate-900">{k.name}</p>
                   <p className="text-sm text-slate-600">
                     <span className="text-slate-400">Fahrzeug: </span>
                     {k.fahrzeug ?? "–"}
@@ -210,6 +214,24 @@ export default function KundenListePage() {
                     <span className="text-slate-400">Telefon: </span>
                     {k.telefon ?? "–"}
                   </p>
+                </div>
+                <div className="absolute right-2 top-1/2 z-20 flex -translate-y-1/2 gap-1 pointer-events-auto">
+                  <Link
+                    href={`/kunden/${k.id}/bearbeiten`}
+                    title="Bearbeiten"
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 text-slate-800 shadow-sm hover:bg-slate-50"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Link>
+                  <Button
+                    variant="danger"
+                    className="!p-1.5"
+                    title="Löschen"
+                    disabled={deletingId === k.id}
+                    onClick={() => handleDelete(k.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </Card>
             ))}
