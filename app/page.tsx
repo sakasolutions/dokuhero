@@ -4,13 +4,11 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Archive,
-  Building2,
   Camera,
   Check,
   ChevronDown,
   ClipboardList,
   FileText,
-  HardHat,
   Lock,
   Mail,
   Menu,
@@ -19,7 +17,6 @@ import {
   Shield,
   Sparkles,
   Star,
-  Wrench,
   X,
 } from "lucide-react";
 
@@ -62,28 +59,21 @@ const steps = [
   },
 ];
 
-const branchen = [
-  {
-    icon: Wrench,
-    title: "KFZ",
-    text: "Schadensdoku in 60 Sek. statt 20 Min.",
-  },
-  {
-    icon: HardHat,
-    title: "Handwerk",
-    text: "Kein Zettelchaos mehr auf der Baustelle.",
-  },
-  {
-    icon: Building2,
-    title: "Hausmeister",
-    text: "Objektberichte per Knopfdruck.",
-  },
-  {
-    icon: Sparkles,
-    title: "Reinigung",
-    text: "Leistungsnachweis direkt nach dem Einsatz.",
-  },
-];
+const kennstDuDasProbleme = [
+  "„Ich schreib das später auf…“ — und vergisst es dann",
+  "Kunde fragt nach Protokoll — du suchst den Zettel",
+  "Nach der Arbeit noch stundenlang tippen",
+  "Kein Nachweis bei Reklamationen",
+  "Fotos auf dem Handy verstreut, nie geordnet",
+] as const;
+
+const kennstDuDasLoesungen = [
+  "60 Sekunden vor Ort — fertig",
+  "Kunde bekommt sofort sein PDF per Mail",
+  "KI schreibt den professionellen Text für dich",
+  "Alles dokumentiert, 10 Jahre rechtssicher",
+  "Fotos, Notiz, PDF — alles an einem Ort",
+] as const;
 
 const starterPricingFeatures = [
   "Bis 50 Protokolle/Monat",
@@ -271,7 +261,6 @@ export default function LandingPage() {
   const [heroOn, setHeroOn] = useState(false);
 
   const [howRef, howInView] = useInView(0.12);
-  const [branchenRef, branchenInView] = useInView(0.1);
   const [featuresRef, featuresInView] = useInView(0.08);
   const [trustRef, trustInView] = useInView(0.15);
   const [pricingRef, pricingInView] = useInView(0.1);
@@ -515,41 +504,68 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Für wen */}
+        {/* Kennst du das? */}
         <section
-          id="branchen"
-          ref={branchenRef}
-          className="scroll-mt-20 border-y border-slate-100 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
+          id="kennst-du-das"
+          className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
-              Für wen
+              Kennst du das?
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-center text-sm text-slate-600 md:text-base">
-              Teams vor Ort, wenig Lust auf Schreibtischarbeit.
+            <p className="mx-auto mt-3 max-w-2xl text-center text-base leading-relaxed text-slate-600 md:text-lg">
+              Für alle, die ihre Arbeit lieben — aber nicht den Papierkram
+              danach.
             </p>
-            <ul className="mx-auto mt-10 grid max-w-6xl grid-cols-2 gap-4 md:mt-12 md:grid-cols-4 md:gap-6">
-              {branchen.map(({ icon: Icon, title, text }) => (
-                <li
-                  key={title}
-                  className={`group flex flex-col rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition-all duration-200 ease-out md:p-6 ${animD} md:hover:-translate-y-2 md:hover:border-primary/30 md:hover:shadow-md active:-translate-y-1 active:border-primary/25 active:shadow-md ${
-                    branchenInView
-                      ? "translate-y-0 opacity-100"
-                      : "translate-y-10 opacity-0"
-                  }`}
-                >
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary/15 md:h-16 md:w-16">
-                    <Icon className="h-8 w-8 md:h-9 md:w-9" strokeWidth={2} />
-                  </div>
-                  <h3 className="mt-4 text-base font-bold text-slate-900 md:text-lg">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-xs leading-snug text-slate-600 md:text-sm md:leading-relaxed">
-                    {text}
-                  </p>
-                </li>
-              ))}
-            </ul>
+
+            <div className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-6 md:mt-14 md:grid-cols-2 md:gap-8 lg:gap-10">
+              <div className="rounded-2xl bg-red-50 px-6 py-8 sm:px-8 sm:py-10 md:px-10 md:py-12">
+                <p className="mb-5 text-sm font-semibold uppercase tracking-wide text-red-600/90">
+                  Probleme
+                </p>
+                <ul className="space-y-4">
+                  {kennstDuDasProbleme.map((line) => (
+                    <li
+                      key={line}
+                      className="flex gap-3 text-base leading-snug text-slate-700 md:text-[1.05rem] md:leading-relaxed"
+                    >
+                      <X
+                        className="mt-0.5 h-5 w-5 shrink-0 text-red-500"
+                        strokeWidth={2.5}
+                        aria-hidden
+                      />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="rounded-2xl bg-green-50 px-6 py-8 sm:px-8 sm:py-10 md:px-10 md:py-12">
+                <p className="mb-5 text-sm font-semibold uppercase tracking-wide text-green-700/90">
+                  Lösung
+                </p>
+                <ul className="space-y-4">
+                  {kennstDuDasLoesungen.map((line) => (
+                    <li
+                      key={line}
+                      className="flex gap-3 text-base leading-snug text-slate-700 md:text-[1.05rem] md:leading-relaxed"
+                    >
+                      <Check
+                        className="mt-0.5 h-5 w-5 shrink-0 text-green-500"
+                        strokeWidth={2.5}
+                        aria-hidden
+                      />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <p className="mx-auto mt-10 max-w-3xl text-center text-base leading-relaxed text-slate-600 md:mt-14 md:text-lg">
+              Egal ob KFZ, Handwerk, Hausmeister, Reinigung oder Gartenbau —
+              wenn du vor Ort arbeitest, ist DokuHero für dich.
+            </p>
           </div>
         </section>
 
