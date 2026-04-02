@@ -41,10 +41,10 @@ export default async function DashboardLayout({
       >
         <Navbar />
         <main
-          className="min-h-0 flex-1 overflow-y-auto bg-slate-50 lg:bg-surface"
+          className="min-h-0 flex-1 overflow-y-auto bg-slate-50 pb-24 md:pb-0 lg:bg-surface"
           style={{ flex: 1, overflowY: "auto" }}
         >
-          <div className="mx-auto max-w-4xl p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-6">
+          <div className="mx-auto max-w-4xl p-6">
             {children}
           </div>
         </main>
