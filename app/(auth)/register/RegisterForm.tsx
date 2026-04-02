@@ -8,10 +8,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 " +
+  "border-white/20 bg-white/10 text-white placeholder:text-slate-400 focus:ring-blue-400 " +
+  "lg:border-slate-200 lg:bg-white lg:text-slate-900 lg:placeholder:text-slate-400 lg:focus:ring-blue-500";
 
 const btnPrimary =
   "w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
+
+const labelClass =
+  "mb-1.5 block text-sm font-medium text-blue-100 lg:text-slate-700";
+
+const linkOnDark =
+  "font-medium text-blue-300 hover:text-white hover:underline lg:text-blue-600 lg:hover:text-blue-700";
 
 const registerSchema = z
   .object({
@@ -30,6 +38,8 @@ const registerSchema = z
       "Bitte bestätigen, dass du die AGB und die Datenschutzerklärung gelesen hast und akzeptierst.",
     path: ["acceptAgb"],
   });
+
+const fieldErrorClass = "mt-1 text-sm text-red-300 lg:text-red-600";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -85,10 +95,17 @@ export function RegisterForm() {
     router.push("/login?registered=1");
   }
 
+  const formErrorBox =
+    "rounded-xl border px-4 py-3 text-sm " +
+    "border-red-400/40 bg-red-500/10 text-red-100 " +
+    "lg:border-red-200 lg:bg-red-50 lg:text-red-700";
+
   return (
     <div className="w-full min-w-0">
-      <h1 className="text-2xl font-bold text-slate-900">Konto erstellen</h1>
-      <p className="mt-1 text-slate-500">
+      <h1 className="text-2xl font-bold text-white lg:text-slate-900">
+        Konto erstellen
+      </h1>
+      <p className="mt-1 text-blue-200/90 lg:text-slate-500">
         30 Tage kostenlos — keine Kreditkarte.
       </p>
 
@@ -98,19 +115,13 @@ export function RegisterForm() {
         noValidate
       >
         {formError ? (
-          <p
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
+          <p className={formErrorBox} role="alert">
             {formError}
           </p>
         ) : null}
 
         <div>
-          <label
-            htmlFor="reg-name"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="reg-name" className={labelClass}>
             Betriebsname *
           </label>
           <input
@@ -121,15 +132,12 @@ export function RegisterForm() {
             {...register("name")}
           />
           {errors.name?.message ? (
-            <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            <p className={fieldErrorClass}>{errors.name.message}</p>
           ) : null}
         </div>
 
         <div>
-          <label
-            htmlFor="reg-email"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="reg-email" className={labelClass}>
             E-Mail *
           </label>
           <input
@@ -141,15 +149,12 @@ export function RegisterForm() {
             {...register("email")}
           />
           {errors.email?.message ? (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            <p className={fieldErrorClass}>{errors.email.message}</p>
           ) : null}
         </div>
 
         <div>
-          <label
-            htmlFor="reg-password"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="reg-password" className={labelClass}>
             Passwort *
           </label>
           <input
@@ -160,17 +165,12 @@ export function RegisterForm() {
             {...register("password")}
           />
           {errors.password?.message ? (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.password.message}
-            </p>
+            <p className={fieldErrorClass}>{errors.password.message}</p>
           ) : null}
         </div>
 
         <div>
-          <label
-            htmlFor="reg-password-confirm"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="reg-password-confirm" className={labelClass}>
             Passwort wiederholen *
           </label>
           <input
@@ -181,9 +181,7 @@ export function RegisterForm() {
             {...register("passwordConfirm")}
           />
           {errors.passwordConfirm?.message ? (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.passwordConfirm.message}
-            </p>
+            <p className={fieldErrorClass}>{errors.passwordConfirm.message}</p>
           ) : null}
         </div>
 
@@ -192,10 +190,10 @@ export function RegisterForm() {
             name="acceptAgb"
             control={control}
             render={({ field }) => (
-              <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700">
+              <label className="flex cursor-pointer items-start gap-3 text-sm text-blue-100 lg:text-slate-700">
                 <input
                   type="checkbox"
-                  className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-white/40 bg-white/5 text-blue-500 focus:ring-blue-400 lg:border-slate-300 lg:bg-white lg:focus:ring-blue-500"
                   checked={field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
                   onBlur={field.onBlur}
@@ -205,7 +203,7 @@ export function RegisterForm() {
                   Ich habe die{" "}
                   <Link
                     href="/agb"
-                    className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                    className={linkOnDark}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -214,7 +212,7 @@ export function RegisterForm() {
                   und{" "}
                   <Link
                     href="/datenschutz"
-                    className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                    className={linkOnDark}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -226,9 +224,7 @@ export function RegisterForm() {
             )}
           />
           {errors.acceptAgb?.message ? (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.acceptAgb.message}
-            </p>
+            <p className={fieldErrorClass}>{errors.acceptAgb.message}</p>
           ) : null}
         </div>
 
@@ -237,12 +233,9 @@ export function RegisterForm() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-blue-200/90 lg:text-slate-500">
         Bereits ein Konto?{" "}
-        <Link
-          href="/login"
-          className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
-        >
+        <Link href="/login" className={linkOnDark}>
           Anmelden
         </Link>
       </p>

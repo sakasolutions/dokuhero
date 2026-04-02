@@ -6,10 +6,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 " +
+  "border-white/20 bg-white/10 text-white placeholder:text-slate-400 focus:ring-blue-400 " +
+  "lg:border-slate-200 lg:bg-white lg:text-slate-900 lg:placeholder:text-slate-400 lg:focus:ring-blue-500";
 
 const btnPrimary =
   "w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
+
+const labelClass =
+  "mb-1.5 block text-sm font-medium text-blue-100 lg:text-slate-700";
+
+const labelInlineClass =
+  "text-sm font-medium text-blue-100 lg:text-slate-700";
 
 function LoginFormInner() {
   const router = useRouter();
@@ -54,34 +62,34 @@ function LoginFormInner() {
     }
   }
 
+  const bannerClass =
+    "mb-4 rounded-xl border px-4 py-3 text-sm " +
+    "border-emerald-400/35 bg-emerald-500/10 text-emerald-100 " +
+    "lg:border-emerald-200 lg:bg-emerald-50 lg:text-emerald-800";
+
   return (
     <div className="w-full min-w-0">
       {registered === "1" && (
-        <div
-          className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-          role="status"
-        >
+        <div className={bannerClass} role="status">
           Registrierung erfolgreich. Du kannst dich jetzt anmelden.
         </div>
       )}
       {reset === "1" && (
-        <div
-          className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-          role="status"
-        >
+        <div className={bannerClass} role="status">
           Passwort wurde geändert. Du kannst dich jetzt anmelden.
         </div>
       )}
 
-      <h1 className="text-2xl font-bold text-slate-900">Willkommen zurück</h1>
-      <p className="mt-1 text-slate-500">Meld dich in deinem Konto an.</p>
+      <h1 className="text-2xl font-bold text-white lg:text-slate-900">
+        Willkommen zurück
+      </h1>
+      <p className="mt-1 text-blue-200/90 lg:text-slate-500">
+        Meld dich in deinem Konto an.
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
-          <label
-            htmlFor="login-email"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="login-email" className={labelClass}>
             E-Mail
           </label>
           <input
@@ -98,15 +106,12 @@ function LoginFormInner() {
         </div>
         <div>
           <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <label
-              htmlFor="login-password"
-              className="text-sm font-medium text-slate-700"
-            >
+            <label htmlFor="login-password" className={labelInlineClass}>
               Passwort
             </label>
             <Link
               href="/passwort-vergessen"
-              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+              className="text-sm text-blue-300 hover:text-white hover:underline lg:text-blue-600 lg:hover:text-blue-700"
             >
               Passwort vergessen?
             </Link>
@@ -123,7 +128,10 @@ function LoginFormInner() {
           />
         </div>
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <p
+            className="text-sm text-red-300 lg:text-red-600"
+            role="alert"
+          >
             {error}
           </p>
         )}
@@ -132,11 +140,11 @@ function LoginFormInner() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-blue-200/90 lg:text-slate-500">
         Noch kein Konto?{" "}
         <Link
           href="/register"
-          className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+          className="font-medium text-blue-300 hover:text-white hover:underline lg:text-blue-600 lg:hover:text-blue-700"
         >
           Registrieren
         </Link>
@@ -150,10 +158,10 @@ export function LoginForm() {
     <Suspense
       fallback={
         <div className="w-full space-y-4 animate-pulse">
-          <div className="h-8 w-48 rounded bg-slate-200" />
-          <div className="h-4 w-full rounded bg-slate-200" />
-          <div className="h-12 w-full rounded-xl bg-slate-200" />
-          <div className="h-12 w-full rounded-xl bg-slate-200" />
+          <div className="h-8 w-48 rounded bg-white/20 lg:bg-slate-200" />
+          <div className="h-4 w-full rounded bg-white/15 lg:bg-slate-200" />
+          <div className="h-12 w-full rounded-xl bg-white/15 lg:bg-slate-200" />
+          <div className="h-12 w-full rounded-xl bg-white/15 lg:bg-slate-200" />
         </div>
       }
     >
