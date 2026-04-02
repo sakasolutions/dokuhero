@@ -17,9 +17,9 @@ export function AuthSplitLayout({
   desktopAuthLink: DesktopAuthLink;
 }) {
   return (
-    <div className="min-h-screen w-full overflow-x-hidden lg:grid lg:grid-cols-2">
-      {/* Brand — nur Desktop */}
-      <aside className="relative hidden h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 lg:sticky lg:top-0 lg:block">
+    <div className="w-full min-h-0 overflow-x-hidden lg:grid lg:min-h-screen lg:grid-cols-2">
+      {/* Brand — nur Desktop (Split links) */}
+      <aside className="relative hidden h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 lg:sticky lg:top-0 lg:flex lg:flex-col">
         <div className="flex h-full min-h-0 flex-col justify-between p-12">
           <div>
             <Link
@@ -72,28 +72,29 @@ export function AuthSplitLayout({
         </div>
       </aside>
 
-      {/* Formular */}
-      <div className="relative flex w-full min-h-screen flex-col overflow-x-hidden bg-slate-50 lg:h-screen lg:min-h-0 lg:overflow-y-auto">
-        <Link
-          href="/"
-          className="absolute left-6 top-6 z-10 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 lg:hidden"
-        >
-          ← Zurück zur Startseite
-        </Link>
+      {/* Rechte Spalte: Mobile = Header + Formular; Desktop = wie bisher */}
+      <div className="flex w-full flex-col overflow-x-hidden bg-white lg:h-screen lg:min-h-0 lg:bg-slate-50 lg:overflow-y-auto">
+        {/* Mobile: dunkler Header */}
+        <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 px-6 pb-8 pt-6 lg:hidden">
+          <Link
+            href="/"
+            className="mb-6 flex items-center gap-1 text-sm text-blue-300 hover:text-blue-200"
+          >
+            ← Zurück zur Startseite
+          </Link>
+          <h2 className="text-xl font-bold leading-snug text-white">
+            Dokumentation die sich
+            <br />
+            von selbst erledigt.
+          </h2>
+          <p className="mt-2 text-sm text-blue-300">
+            Foto machen, kurz sprechen — fertig.
+          </p>
+        </div>
 
-        <div className="flex w-full flex-1 flex-col px-6 pb-8 pt-16 lg:flex-1 lg:items-center lg:justify-center lg:px-16 lg:py-12">
-          <div className="mx-auto w-full max-w-sm min-w-0">
-            <div className="mb-8 flex items-center gap-2 lg:hidden">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary">
-                <FileText
-                  className="h-5 w-5 text-white"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-              </span>
-              <span className="font-bold text-slate-900">DokuHero</span>
-            </div>
-
+        {/* Mobile: weißer Formularblock | Desktop: zentrierte Spalte */}
+        <div className="px-6 pb-10 pt-8 lg:flex lg:flex-1 lg:items-center lg:justify-center lg:px-16 lg:py-12">
+          <div className="mx-auto w-full min-w-0 max-w-sm">
             <div className="mb-8 hidden justify-end text-sm text-slate-500 lg:flex">
               <span>
                 {desktopAuthLink.preface}{" "}
