@@ -12,6 +12,8 @@ export const maxDuration = 60;
 interface Row extends RowDataPacket {
   notiz: string | null;
   betrieb_name: string;
+  prot_archiviert: number;
+  auftrag_archiviert: number;
 }
 
 type RouteContext = { params: { id: string } };
@@ -64,7 +66,8 @@ export async function POST(request: Request, context: RouteContext) {
     const pool = getPool();
 
     const [rows] = await pool.execute<Row[]>(
-      `SELECT p.notiz, b.name AS betrieb_name
+      `SELECT p.notiz, b.name AS betrieb_name,
+              p.archiviert AS prot_archiviert, a.archiviert AS auftrag_archiviert
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
        INNER JOIN betriebe b ON a.betrieb_id = b.id
@@ -76,6 +79,13 @@ export async function POST(request: Request, context: RouteContext) {
     const row = rows[0];
     if (!row) {
       return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    }
+
+    if (row.prot_archiviert === 1 || row.auftrag_archiviert === 1) {
+      return NextResponse.json(
+        { error: "Archivierte Einträge können nicht bearbeitet werden." },
+        { status: 400 }
+      );
     }
 
     let kiText: string;

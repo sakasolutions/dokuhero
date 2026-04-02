@@ -30,7 +30,7 @@ export async function GET() {
               k.name AS kunde_name
        FROM auftraege a
        LEFT JOIN kunden k ON k.id = a.kunde_id AND k.betrieb_id = a.betrieb_id
-       WHERE a.betrieb_id = ? AND a.status = 'offen'
+       WHERE a.betrieb_id = ? AND a.status = 'offen' AND a.archiviert = 0
        ORDER BY a.erstellt_am DESC`,
       [session.user.betrieb_id]
     );

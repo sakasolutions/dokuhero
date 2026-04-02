@@ -41,6 +41,7 @@ export default function AuftragBearbeitenPage() {
     erstellt_am: string;
   } | null>(null);
   const [protokolle, setProtokolle] = useState<ProtokollListeEintrag[]>([]);
+  const [auftragArchiviert, setAuftragArchiviert] = useState(false);
 
   const {
     register,
@@ -60,8 +61,11 @@ export default function AuftragBearbeitenPage() {
           if (!cancelled) setFormError("Auftrag nicht gefunden.");
           return;
         }
-        const a = (await res.json()) as AuftragMitProtokollen;
+        const a = (await res.json()) as AuftragMitProtokollen & {
+          archiviert?: number;
+        };
         if (!cancelled) {
+          setAuftragArchiviert(Number(a.archiviert) === 1);
           setMeta({
             kunde_name: a.kunde_name,
             erstellt_am:
@@ -147,6 +151,17 @@ export default function AuftragBearbeitenPage() {
         ) : null}
       </div>
 
+      {auftragArchiviert ? (
+        <div
+          className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-800"
+          role="status"
+        >
+          Dieser Auftrag ist <strong>archiviert</strong>. Änderungen sind nicht
+          mehr möglich – du kannst ihn unter Aufträge → Archiv weiterhin
+          öffnen.
+        </div>
+      ) : null}
+
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {formError ? (
@@ -164,7 +179,8 @@ export default function AuftragBearbeitenPage() {
             </label>
             <select
               id="status"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              disabled={auftragArchiviert}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-slate-100"
               {...register("status")}
             >
               {STATUS_OPTIONS.map((o) => (
@@ -181,6 +197,7 @@ export default function AuftragBearbeitenPage() {
           <Textarea
             label="Beschreibung"
             error={errors.beschreibung?.message}
+            disabled={auftragArchiviert}
             {...register("beschreibung")}
           />
 
@@ -191,7 +208,11 @@ export default function AuftragBearbeitenPage() {
             >
               Abbrechen
             </Link>
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+            <Button
+              type="submit"
+              disabled={isSubmitting || auftragArchiviert}
+              className="w-full sm:w-auto"
+            >
               {isSubmitting ? "Speichern…" : "Speichern"}
             </Button>
           </div>

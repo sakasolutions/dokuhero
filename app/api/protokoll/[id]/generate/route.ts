@@ -22,6 +22,8 @@ interface LoadRow extends RowDataPacket {
   auftrag_id: number;
   protokoll_erstellt: Date;
   protokoll_status: string;
+  prot_archiviert: number;
+  auftrag_archiviert: number;
   beschreibung: string | null;
   kunde_name: string | null;
   kunde_email: string | null;
@@ -75,6 +77,8 @@ export async function POST(request: Request, context: RouteContext) {
     const [rows] = await pool.execute<LoadRow[]>(
       `SELECT p.id AS protokoll_id, p.auftrag_id, p.erstellt_am AS protokoll_erstellt,
               p.status AS protokoll_status,
+              p.archiviert AS prot_archiviert,
+              a.archiviert AS auftrag_archiviert,
               a.beschreibung,
               k.name AS kunde_name, k.email AS kunde_email,
               b.name AS betrieb_name,
@@ -91,6 +95,13 @@ export async function POST(request: Request, context: RouteContext) {
     const row = rows[0];
     if (!row) {
       return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    }
+
+    if (row.prot_archiviert === 1 || row.auftrag_archiviert === 1) {
+      return NextResponse.json(
+        { error: "Archivierte Einträge können nicht bearbeitet werden." },
+        { status: 400 }
+      );
     }
 
     if (row.protokoll_status !== "zur_pruefung") {

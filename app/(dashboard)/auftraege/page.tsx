@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Archive, Plus } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import type { AuftragMitKunde, AuftragStatus } from "@/types";
 
@@ -48,6 +48,8 @@ function formatDate(d: string | Date) {
   }
 }
 
+type ArchivFilter = "aktiv" | "archiv";
+
 export default function AuftraegeListePage() {
   const searchParams = useSearchParams();
   const freigabeOnly = searchParams.get("freigabe") === "1";
@@ -58,6 +60,7 @@ export default function AuftraegeListePage() {
   const [statusFilter, setStatusFilter] = useState<AuftragStatus | "alle">(
     "alle"
   );
+  const [archivFilter, setArchivFilter] = useState<ArchivFilter>("aktiv");
 
   useEffect(() => {
     let cancelled = false;
@@ -65,9 +68,11 @@ export default function AuftraegeListePage() {
       setLoading(true);
       setError(null);
       try {
-        const url = freigabeOnly
-          ? "/api/auftraege?protokoll_status=zur_pruefung"
-          : "/api/auftraege";
+        const params = new URLSearchParams();
+        if (freigabeOnly) params.set("protokoll_status", "zur_pruefung");
+        if (archivFilter === "archiv") params.set("archiv", "1");
+        const q = params.toString();
+        const url = q ? `/api/auftraege?${q}` : "/api/auftraege";
         const res = await fetch(url);
         if (!res.ok) throw new Error("load");
         const data = (await res.json()) as AuftragMitKunde[];
@@ -81,7 +86,25 @@ export default function AuftraegeListePage() {
     return () => {
       cancelled = true;
     };
-  }, [freigabeOnly]);
+  }, [freigabeOnly, archivFilter]);
+
+  async function archiveAuftrag(auftragId: number) {
+    const ok = window.confirm(
+      "Auftrag archivieren? Er bleibt gespeichert und ist im Archiv abrufbar."
+    );
+    if (!ok) return;
+    const res = await fetch(`/api/auftraege/${auftragId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archivieren: true }),
+    });
+    if (!res.ok) {
+      setError("Archivieren fehlgeschlagen.");
+      return;
+    }
+    setError(null);
+    setAuftraege((prev) => prev.filter((a) => a.id !== auftragId));
+  }
 
   const filtered = useMemo(() => {
     if (statusFilter === "alle") return auftraege;
@@ -95,13 +118,15 @@ export default function AuftraegeListePage() {
           <h1 className="text-2xl font-bold text-slate-900">Aufträge</h1>
           <p className="text-slate-600">Alle Aufträge deines Betriebs</p>
         </div>
-        <Link
-          href="/auftraege/neu"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Neuer Auftrag
-        </Link>
+        {archivFilter === "aktiv" ? (
+          <Link
+            href="/auftraege/neu"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Neuer Auftrag
+          </Link>
+        ) : null}
       </div>
 
       {freigabeOnly ? (
@@ -120,21 +145,36 @@ export default function AuftraegeListePage() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <label className="text-sm font-medium text-slate-700">Filter</label>
-        <select
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as AuftragStatus | "alle")
-          }
-          className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-auto"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <label className="text-sm font-medium text-slate-700">Ansicht</label>
+          <select
+            value={archivFilter}
+            onChange={(e) =>
+              setArchivFilter(e.target.value as ArchivFilter)
+            }
+            className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-auto"
+          >
+            <option value="aktiv">Aktiv</option>
+            <option value="archiv">Archiv</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <label className="text-sm font-medium text-slate-700">Status</label>
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as AuftragStatus | "alle")
+            }
+            className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-auto"
+          >
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -195,6 +235,17 @@ export default function AuftraegeListePage() {
                         >
                           Bearbeiten
                         </Link>
+                        {archivFilter === "aktiv" ? (
+                          <button
+                            type="button"
+                            onClick={() => void archiveAuftrag(a.id)}
+                            className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
+                            title="Auftrag archivieren"
+                          >
+                            <Archive className="h-4 w-4 shrink-0" />
+                            Archivieren
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -240,6 +291,17 @@ export default function AuftraegeListePage() {
                     >
                       Bearbeiten
                     </Link>
+                    {archivFilter === "aktiv" ? (
+                      <button
+                        type="button"
+                        onClick={() => void archiveAuftrag(a.id)}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
+                        title="Auftrag archivieren"
+                      >
+                        <Archive className="h-4 w-4 shrink-0" />
+                        Archivieren
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </Card>

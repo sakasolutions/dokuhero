@@ -54,7 +54,7 @@ export async function GET() {
     const auftraegeHeute = await countSafe(
       pool,
       `SELECT COUNT(*) AS c FROM auftraege
-       WHERE betrieb_id = ? AND DATE(erstellt_am) = CURDATE()`,
+       WHERE betrieb_id = ? AND archiviert = 0 AND DATE(erstellt_am) = CURDATE()`,
       [betriebId]
     );
 
@@ -63,7 +63,7 @@ export async function GET() {
       `SELECT COUNT(*) AS c
        FROM protokolle p
        INNER JOIN auftraege a ON a.id = p.auftrag_id
-       WHERE a.betrieb_id = ?
+       WHERE a.betrieb_id = ? AND a.archiviert = 0
          AND p.erstellt_am >= DATE_SUB(NOW(), INTERVAL 7 DAY)`,
       [betriebId]
     );
@@ -73,7 +73,7 @@ export async function GET() {
       `SELECT COUNT(*) AS c
        FROM protokolle p
        INNER JOIN auftraege a ON a.id = p.auftrag_id
-       WHERE a.betrieb_id = ?
+       WHERE a.betrieb_id = ? AND a.archiviert = 0
          AND MONTH(p.erstellt_am) = MONTH(NOW())
          AND YEAR(p.erstellt_am) = YEAR(NOW())`,
       [betriebId]
@@ -84,7 +84,8 @@ export async function GET() {
       `SELECT COUNT(*) AS c
        FROM protokolle p
        INNER JOIN auftraege a ON a.id = p.auftrag_id
-       WHERE a.betrieb_id = ?
+       WHERE a.betrieb_id = ? AND a.archiviert = 0
+         AND p.archiviert = 0
          AND p.status = 'zur_pruefung'`,
       [betriebId]
     );
@@ -92,7 +93,7 @@ export async function GET() {
     const offeneAuftraege = await countSafe(
       pool,
       `SELECT COUNT(*) AS c FROM auftraege
-       WHERE betrieb_id = ? AND status = 'offen'`,
+       WHERE betrieb_id = ? AND archiviert = 0 AND status = 'offen'`,
       [betriebId]
     );
 

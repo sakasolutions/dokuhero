@@ -100,7 +100,7 @@ export async function GET(
          (SELECT COUNT(*) FROM fotos f WHERE f.protokoll_id = p.id) AS foto_anzahl
        FROM auftraege a
        LEFT JOIN protokolle p ON p.auftrag_id = a.id
-       WHERE a.kunde_id = ? AND a.betrieb_id = ?
+       WHERE a.kunde_id = ? AND a.betrieb_id = ? AND a.archiviert = 0
        ORDER BY a.erstellt_am DESC`,
       [kundeId, session.user.betrieb_id]
     );

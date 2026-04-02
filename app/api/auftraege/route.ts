@@ -15,6 +15,7 @@ interface AuftragRow extends RowDataPacket {
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
+  archiviert: number;
   kunde_name: string | null;
   protokoll_id: number | null;
   protokoll_status: string | null;
@@ -36,10 +37,14 @@ export async function GET(request: Request) {
     const protokollStatusFilter =
       searchParams.get("protokoll_status")?.trim() ?? "";
     const filterZurPruefung = protokollStatusFilter === "zur_pruefung";
+    const showArchiv = searchParams.get("archiv") === "1";
+    const archClause = showArchiv
+      ? "AND a.archiviert = 1"
+      : "AND a.archiviert = 0";
 
     const pool = getPool();
     const [rows] = await pool.execute<AuftragRow[]>(
-      `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am,
+      `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am, a.archiviert,
               k.name AS kunde_name,
               pr.id AS protokoll_id,
               pr.status AS protokoll_status
@@ -53,6 +58,7 @@ export async function GET(request: Request) {
            LIMIT 1
          )
        WHERE a.betrieb_id = ?
+         ${archClause}
          ${filterZurPruefung ? "AND pr.status = 'zur_pruefung'" : ""}
        ORDER BY a.erstellt_am DESC`,
       [session.user.betrieb_id]
@@ -93,8 +99,8 @@ export async function POST(request: Request) {
     }
 
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO auftraege (betrieb_id, kunde_id, beschreibung, status, erstellt_am, abgeschlossen_am)
-       VALUES (?, ?, ?, ?, NOW(), NULL)`,
+      `INSERT INTO auftraege (betrieb_id, kunde_id, beschreibung, status, erstellt_am, abgeschlossen_am, archiviert)
+       VALUES (?, ?, ?, ?, NOW(), NULL, 0)`,
       [
         session.user.betrieb_id,
         kunde_id,

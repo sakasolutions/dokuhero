@@ -17,6 +17,7 @@ interface JoinRow extends RowDataPacket {
   gesendet_am: Date | null;
   erstellt_am: Date;
   status: string;
+  archiviert: number;
   kunde_name: string | null;
   kunde_email: string | null;
   auftrag_beschreibung: string | null;
@@ -37,6 +38,8 @@ const patchSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("submit_review") }),
 ]);
 
+const putArchiveSchema = z.object({ archivieren: z.literal(true) });
+
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
@@ -52,7 +55,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const pool = getPool();
 
     const [prows] = await pool.execute<JoinRow[]>(
-      `SELECT p.id, p.auftrag_id, p.notiz, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status,
+      `SELECT p.id, p.auftrag_id, p.notiz, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
               k.name AS kunde_name, k.email AS kunde_email,
               a.beschreibung AS auftrag_beschreibung
        FROM protokolle p
@@ -77,6 +80,7 @@ export async function GET(_request: Request, context: RouteContext) {
       gesendet_am: j.gesendet_am,
       erstellt_am: j.erstellt_am,
       status: j.status,
+      archiviert: j.archiviert,
     };
 
     const [frows] = await pool.execute<FotoRow[]>(
@@ -96,6 +100,56 @@ export async function GET(_request: Request, context: RouteContext) {
     });
   } catch (error) {
     console.error("Protokoll GET Fehler:", error);
+    return NextResponse.json({ error: "Fehler" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request, context: RouteContext) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.betrieb_id) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const protokollId = Number(context.params.id);
+    if (!Number.isFinite(protokollId)) {
+      return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });
+    }
+
+    let json: unknown;
+    try {
+      json = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Ungültiger JSON-Body" }, { status: 400 });
+    }
+
+    const parsed = putArchiveSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültiger Body (erwartet { archivieren: true })." },
+        { status: 400 }
+      );
+    }
+
+    const pool = getPool();
+    const [res] = await pool.execute<ResultSetHeader>(
+      `UPDATE protokolle p
+       INNER JOIN auftraege a ON p.auftrag_id = a.id
+       SET p.archiviert = 1
+       WHERE p.id = ? AND a.betrieb_id = ?
+         AND p.status = 'freigegeben'
+         AND p.archiviert = 0`,
+      [protokollId, session.user.betrieb_id]
+    );
+    if (res.affectedRows === 0) {
+      return NextResponse.json(
+        { error: "Archivieren nicht möglich (Status, bereits archiviert oder nicht gefunden)." },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Protokoll PUT Fehler:", error);
     return NextResponse.json({ error: "Fehler" }, { status: 500 });
   }
 }
@@ -138,7 +192,8 @@ export async function PATCH(request: Request, context: RouteContext) {
         `UPDATE protokolle p
          INNER JOIN auftraege a ON p.auftrag_id = a.id
          SET p.status = 'entwurf'
-         WHERE p.id = ? AND a.betrieb_id = ? AND p.status = 'zur_pruefung'`,
+         WHERE p.id = ? AND a.betrieb_id = ? AND p.status = 'zur_pruefung'
+           AND p.archiviert = 0 AND a.archiviert = 0`,
         [protokollId, session.user.betrieb_id]
       );
       if (res.affectedRows === 0) {
@@ -156,6 +211,7 @@ export async function PATCH(request: Request, context: RouteContext) {
        SET p.status = 'zur_pruefung'
        WHERE p.id = ? AND a.betrieb_id = ?
          AND p.status = 'entwurf'
+         AND p.archiviert = 0 AND a.archiviert = 0
          AND p.ki_text IS NOT NULL
          AND TRIM(p.ki_text) <> ''`,
       [protokollId, session.user.betrieb_id]

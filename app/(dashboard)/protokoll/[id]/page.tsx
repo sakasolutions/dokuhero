@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
+  Archive,
   ArrowLeft,
   FileDown,
   Loader2,
@@ -35,7 +36,7 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail" | "reject" | "submit";
+type Busy = null | "preview" | "pdf" | "mail" | "reject" | "submit" | "archiv";
 
 function protokollStatusLabel(s: ProtokollStatus | string): string {
   switch (s) {
@@ -61,6 +62,7 @@ const REGENERATE_PRESETS: { label: string; text: string }[] = [
 
 export default function ProtokollAnsichtPage() {
   const params = useParams();
+  const router = useRouter();
   const id = String(params.id);
 
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -230,6 +232,35 @@ export default function ProtokollAnsichtPage() {
     }
   }
 
+  async function postArchivieren() {
+    setBannerError(null);
+    setBannerSuccess(null);
+    setBusy("archiv");
+    try {
+      const res = await fetch(`/api/protokoll/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archivieren: true }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBannerError(
+          typeof j.error === "string"
+            ? j.error
+            : "Archivieren fehlgeschlagen."
+        );
+        return;
+      }
+      setBannerSuccess("Protokoll wurde archiviert.");
+      await load();
+      router.refresh();
+    } catch {
+      setBannerError("Netzwerkfehler.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function postSubmitReview() {
     setBannerError(null);
     setBannerSuccess(null);
@@ -336,12 +367,15 @@ export default function ProtokollAnsichtPage() {
   const emailDisplay = kunde_email?.trim() ?? "";
 
   const pStatus = protokoll.status;
+  const isArchiviert = Number(protokoll.archiviert) === 1;
   const isFreigegeben = pStatus === "freigegeben";
   const isZurPruefung = pStatus === "zur_pruefung";
   const isEntwurf = pStatus === "entwurf";
-  const kiReadonly = isFreigegeben;
-  const showChefFreigabeBar = isZurPruefung && chef;
-  const showWorkerWarten = isZurPruefung && !chef;
+  const kiReadonly = isFreigegeben || isArchiviert;
+  const showChefFreigabeBar = isZurPruefung && chef && !isArchiviert;
+  const showWorkerWarten = isZurPruefung && !chef && !isArchiviert;
+  const showProtokollArchivieren =
+    isFreigegeben && !isArchiviert;
   const hideSendInStep2 = showChefFreigabeBar;
   const showWeiterZuPdf = isZurPruefung && chef;
 
@@ -395,6 +429,16 @@ export default function ProtokollAnsichtPage() {
           className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
         >
           {bannerSuccess}
+        </div>
+      ) : null}
+
+      {isArchiviert ? (
+        <div
+          className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-800"
+          role="status"
+        >
+          Dieses Protokoll ist <strong>archiviert</strong> und nur noch
+          einsehbar.
         </div>
       ) : null}
 
@@ -590,7 +634,7 @@ export default function ProtokollAnsichtPage() {
         ) : null}
       </Card>
 
-      {isEntwurf && hasKiText ? (
+      {isEntwurf && hasKiText && !isArchiviert ? (
         <Card>
           <p className="text-sm text-slate-600">
             Wenn der Protokolltext fertig ist, reiche ihn wieder zur Prüfung ein.
@@ -772,6 +816,31 @@ export default function ProtokollAnsichtPage() {
               Ablehnen
             </Button>
           </div>
+        </Card>
+      ) : null}
+
+      {showProtokollArchivieren ? (
+        <Card>
+          <h2 className="text-lg font-semibold text-slate-900">Archiv</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Protokolle werden <strong>10 Jahre</strong> aufbewahrt. Nach dem
+            Archivieren bleibt der Eintrag gespeichert und ist unter
+            Aufträge → Archiv weiterhin abrufbar.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 min-h-12 gap-2 border-slate-300 text-base"
+            disabled={busy !== null}
+            onClick={() => void postArchivieren()}
+          >
+            {busy === "archiv" ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Archive className="h-5 w-5" />
+            )}
+            {busy === "archiv" ? "Wird archiviert…" : "Archivieren"}
+          </Button>
         </Card>
       ) : null}
     </div>

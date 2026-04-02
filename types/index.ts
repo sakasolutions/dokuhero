@@ -38,6 +38,8 @@ export interface Auftrag {
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
+  /** 1 = archiviert (nicht in Standardlisten) */
+  archiviert?: number;
 }
 
 /** API-Liste GET /api/auftraege */
@@ -70,6 +72,8 @@ export interface Protokoll {
   gesendet_am: Date | null;
   erstellt_am: Date;
   status: ProtokollStatus;
+  /** 1 = archiviert */
+  archiviert?: number;
 }
 
 export interface FotoEintrag {

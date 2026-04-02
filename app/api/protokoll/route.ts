@@ -50,12 +50,16 @@ export async function POST(request: Request) {
     const pool = getPool();
 
     const [aufRows] = await pool.execute<RowDataPacket[]>(
-      `SELECT id, status FROM auftraege WHERE id = ? AND betrieb_id = ? LIMIT 1`,
+      `SELECT id, status FROM auftraege
+       WHERE id = ? AND betrieb_id = ? AND archiviert = 0 LIMIT 1`,
       [auftrag_id, session.user.betrieb_id]
     );
     const auf = aufRows[0] as { id: number; status: string } | undefined;
     if (!auf) {
-      return NextResponse.json({ error: "Auftrag nicht gefunden" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Auftrag nicht gefunden oder archiviert." },
+        { status: 404 }
+      );
     }
     if (auf.status !== "offen") {
       return NextResponse.json(
@@ -71,6 +75,7 @@ export async function POST(request: Request) {
          FROM protokolle p
          INNER JOIN auftraege a ON a.id = p.auftrag_id
          WHERE a.betrieb_id = ?
+           AND p.archiviert = 0 AND a.archiviert = 0
            AND MONTH(p.erstellt_am) = MONTH(NOW())
            AND YEAR(p.erstellt_am) = YEAR(NOW())`,
         [session.user.betrieb_id]
@@ -99,8 +104,8 @@ export async function POST(request: Request) {
 
     try {
       const [pRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO protokolle (auftrag_id, notiz, ki_text, pdf_pfad, gesendet_am, erstellt_am, status)
-         VALUES (?, ?, NULL, NULL, NULL, NOW(), 'zur_pruefung')`,
+        `INSERT INTO protokolle (auftrag_id, notiz, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert)
+         VALUES (?, ?, NULL, NULL, NULL, NOW(), 'zur_pruefung', 0)`,
         [auftrag_id, notizText]
       );
       const protokollId = pRes.insertId;

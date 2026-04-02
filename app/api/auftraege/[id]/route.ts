@@ -13,6 +13,7 @@ interface AuftragRow extends RowDataPacket {
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
+  archiviert: number;
   kunde_name: string | null;
 }
 
@@ -49,7 +50,7 @@ export async function GET(
 
     const pool = getPool();
     const [rows] = await pool.execute<AuftragRow[]>(
-      `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am,
+      `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am, a.archiviert,
               k.name AS kunde_name
        FROM auftraege a
        LEFT JOIN kunden k ON k.id = a.kunde_id AND k.betrieb_id = a.betrieb_id
@@ -111,7 +112,29 @@ export async function PUT(
       return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });
     }
 
-    const body = await request.json();
+    const body: unknown = await request.json();
+    const pool = getPool();
+
+    if (
+      body &&
+      typeof body === "object" &&
+      !Array.isArray(body) &&
+      (body as { archivieren?: unknown }).archivieren === true
+    ) {
+      const [result] = await pool.execute<ResultSetHeader>(
+        `UPDATE auftraege SET archiviert = 1
+         WHERE id = ? AND betrieb_id = ? AND archiviert = 0`,
+        [auftragId, session.user.betrieb_id]
+      );
+      if (result.affectedRows === 0) {
+        return NextResponse.json(
+          { error: "Archivieren nicht möglich (bereits archiviert oder nicht gefunden)." },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -121,13 +144,12 @@ export async function PUT(
     }
 
     const { beschreibung, status } = parsed.data;
-    const pool = getPool();
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE auftraege
        SET beschreibung = ?, status = ?,
            abgeschlossen_am = IF(? = 'abgeschlossen', COALESCE(abgeschlossen_am, NOW()), NULL)
-       WHERE id = ? AND betrieb_id = ?`,
+       WHERE id = ? AND betrieb_id = ? AND archiviert = 0`,
       [
         beschreibung?.trim() ?? null,
         status,
