@@ -9,7 +9,7 @@ const inputClass =
   "box-border w-full min-w-0 max-w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 const btnPrimary =
-  "mt-6 box-border w-full min-w-0 max-w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
+  "box-border w-full min-w-0 max-w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
 
 function LoginFormInner() {
   const router = useRouter();
@@ -74,14 +74,11 @@ function LoginFormInner() {
       )}
 
       <h1 className="text-2xl font-bold text-slate-900">Willkommen zurück</h1>
-      <p className="mt-1 text-sm text-slate-500">Meld dich in deinem Konto an.</p>
+      <p className="mt-1 text-slate-500">Meld dich in deinem Konto an.</p>
 
-      <form onSubmit={handleSubmit} className="mt-6 min-w-0 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-8 min-w-0 space-y-4">
         <div className="min-w-0">
-          <label
-            htmlFor="login-email"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700">
             E-Mail
           </label>
           <input
@@ -98,10 +95,7 @@ function LoginFormInner() {
         </div>
         <div className="min-w-0">
           <div className="mb-1.5 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <label
-              htmlFor="login-password"
-              className="shrink-0 text-sm font-medium text-slate-700"
-            >
+            <label htmlFor="login-password" className="shrink-0 text-sm font-medium text-slate-700">
               Passwort
             </label>
             <Link
@@ -132,12 +126,9 @@ function LoginFormInner() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-slate-500">
+      <p className="mt-8 text-center text-sm text-slate-500 lg:hidden">
         Noch kein Konto?{" "}
-        <Link
-          href="/register"
-          className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
-        >
+        <Link href="/register" className="font-medium text-blue-600 hover:text-blue-700 hover:underline">
           Registrieren
         </Link>
       </p>
