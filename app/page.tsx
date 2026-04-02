@@ -3,21 +3,42 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  Archive,
   Building2,
   Camera,
   Check,
   ChevronDown,
   ClipboardList,
   HardHat,
+  Lock,
   Mail,
   Menu,
   Mic,
   Send,
+  Shield,
   Sparkles,
   Star,
   Wrench,
   X,
 } from "lucide-react";
+
+const trustComplianceItems = [
+  {
+    icon: Shield,
+    title: "DSGVO-konform",
+    text: "Server in der EU, AVV mit allen Dienstleistern",
+  },
+  {
+    icon: Archive,
+    title: "10 Jahre Aufbewahrung",
+    text: "Rechtssicher nach § 147 AO",
+  },
+  {
+    icon: Lock,
+    title: "SSL-verschlüsselt",
+    text: "Alle Daten sicher übertragen",
+  },
+] as const;
 
 const steps = [
   {
@@ -500,6 +521,36 @@ export default function LandingPage() {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        {/* Trust: DSGVO, Aufbewahrung, SSL */}
+        <section
+          className="scroll-mt-20 border-y border-slate-200/80 bg-slate-100 px-4 py-12 sm:py-14 md:py-16"
+          aria-label="Sicherheit und Compliance"
+        >
+          <div className="mx-auto max-w-6xl">
+            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-6 md:gap-8">
+              {trustComplianceItems.map(({ icon: Icon, title, text }) => (
+                <li
+                  key={title}
+                  className="flex flex-col items-center rounded-xl border border-slate-200/90 bg-white/60 px-5 py-6 text-center shadow-sm shadow-slate-200/40 backdrop-blur-[2px] sm:px-6"
+                >
+                  <div
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                    aria-hidden
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">
+                    {title}
+                  </p>
+                  <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-600 sm:text-sm">
+                    {text}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
