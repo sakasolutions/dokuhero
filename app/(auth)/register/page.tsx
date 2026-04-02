@@ -9,10 +9,10 @@ import { z } from "zod";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "box-border w-full min-w-0 max-w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 const btnPrimary =
-  "w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
+  "box-border w-full min-w-0 max-w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
 
 const registerSchema = z
   .object({
@@ -94,7 +94,7 @@ export default function RegisterPage() {
         label: "Anmelden",
       }}
     >
-      <div className="w-full">
+      <div className="w-full min-w-0 max-w-full">
         <h1 className="text-2xl font-bold text-slate-900">Konto erstellen</h1>
         <p className="mt-1 text-slate-500">
           30 Tage kostenlos — keine Kreditkarte.
@@ -102,19 +102,19 @@ export default function RegisterPage() {
 
         <form
           onSubmit={handleSubmit((values) => void onSubmit(values))}
-          className="mt-8 space-y-4"
+          className="mt-8 min-w-0 space-y-4"
           noValidate
         >
           {formError ? (
             <p
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              className="min-w-0 break-words rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
               role="alert"
             >
               {formError}
             </p>
           ) : null}
 
-          <div>
+          <div className="min-w-0">
             <label
               htmlFor="reg-name"
               className="mb-1.5 block text-sm font-medium text-slate-700"
@@ -133,7 +133,7 @@ export default function RegisterPage() {
             ) : null}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label
               htmlFor="reg-email"
               className="mb-1.5 block text-sm font-medium text-slate-700"
@@ -153,7 +153,7 @@ export default function RegisterPage() {
             ) : null}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label
               htmlFor="reg-password"
               className="mb-1.5 block text-sm font-medium text-slate-700"
@@ -174,7 +174,7 @@ export default function RegisterPage() {
             ) : null}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label
               htmlFor="reg-password-confirm"
               className="mb-1.5 block text-sm font-medium text-slate-700"
@@ -195,12 +195,12 @@ export default function RegisterPage() {
             ) : null}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <Controller
               name="acceptAgb"
               control={control}
               render={({ field }) => (
-                <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700">
+                <label className="flex min-w-0 cursor-pointer items-start gap-3 text-sm text-slate-700">
                   <input
                     type="checkbox"
                     className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
@@ -209,7 +209,7 @@ export default function RegisterPage() {
                     onBlur={field.onBlur}
                     ref={field.ref}
                   />
-                  <span>
+                  <span className="min-w-0 break-words">
                     Ich habe die{" "}
                     <Link
                       href="/agb"

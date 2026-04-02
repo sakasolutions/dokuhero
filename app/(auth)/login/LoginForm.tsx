@@ -6,10 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "box-border w-full min-w-0 max-w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 const btnPrimary =
-  "w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
+  "box-border w-full min-w-0 max-w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
 
 function LoginFormInner() {
   const router = useRouter();
@@ -55,10 +55,10 @@ function LoginFormInner() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0 max-w-full">
       {registered === "1" && (
         <div
-          className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          className="mb-4 min-w-0 break-words rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
           role="status"
         >
           Registrierung erfolgreich. Du kannst dich jetzt anmelden.
@@ -66,7 +66,7 @@ function LoginFormInner() {
       )}
       {reset === "1" && (
         <div
-          className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          className="mb-4 min-w-0 break-words rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
           role="status"
         >
           Passwort wurde geändert. Du kannst dich jetzt anmelden.
@@ -76,8 +76,8 @@ function LoginFormInner() {
       <h1 className="text-2xl font-bold text-slate-900">Willkommen zurück</h1>
       <p className="mt-1 text-slate-500">Meld dich in deinem Konto an.</p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <div>
+      <form onSubmit={handleSubmit} className="mt-8 min-w-0 space-y-4">
+        <div className="min-w-0">
           <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700">
             E-Mail
           </label>
@@ -93,14 +93,14 @@ function LoginFormInner() {
             placeholder="name@betrieb.de"
           />
         </div>
-        <div>
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <label htmlFor="login-password" className="text-sm font-medium text-slate-700">
+        <div className="min-w-0">
+          <div className="mb-1.5 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+            <label htmlFor="login-password" className="shrink-0 text-sm font-medium text-slate-700">
               Passwort
             </label>
             <Link
               href="/passwort-vergessen"
-              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+              className="min-w-0 shrink-0 text-sm text-blue-600 hover:text-blue-700 hover:underline"
             >
               Passwort vergessen?
             </Link>
@@ -140,7 +140,7 @@ export function LoginForm() {
   return (
     <Suspense
       fallback={
-        <div className="w-full space-y-4 animate-pulse">
+        <div className="w-full min-w-0 max-w-full space-y-4 animate-pulse">
           <div className="h-8 w-48 rounded bg-slate-200" />
           <div className="h-4 w-full rounded bg-slate-200" />
           <div className="h-12 w-full rounded-xl bg-slate-200" />

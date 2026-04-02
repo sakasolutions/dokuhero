@@ -17,9 +17,9 @@ export function AuthSplitLayout({
   desktopAuthLink: DesktopAuthLink;
 }) {
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-2">
-      {/* Brand — Desktop only */}
-      <aside className="relative hidden h-screen flex-col bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 lg:sticky lg:top-0 lg:flex">
+    <div className="min-h-screen w-full overflow-x-hidden lg:grid lg:grid-cols-2">
+      {/* Brand — nur Desktop */}
+      <aside className="relative hidden h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 lg:sticky lg:top-0 lg:block">
         <div className="flex h-full min-h-0 flex-col justify-between p-12">
           <div>
             <Link
@@ -73,17 +73,27 @@ export function AuthSplitLayout({
       </aside>
 
       {/* Formular */}
-      <div className="flex h-screen min-h-0 flex-col overflow-y-auto bg-slate-50">
-        <div className="flex shrink-0 justify-end p-4 lg:hidden">
-          <Link
-            href="/"
-            className="text-sm text-slate-500 transition hover:text-slate-800"
-          >
-            ← Zurück zur Startseite
-          </Link>
-        </div>
-        <div className="flex flex-1 items-center justify-center overflow-y-auto px-8 py-8 lg:px-16 lg:py-12">
-          <div className="w-full max-w-sm">
+      <div className="relative flex w-full min-h-screen flex-col overflow-x-hidden bg-slate-50 lg:h-screen lg:min-h-0 lg:overflow-y-auto">
+        <Link
+          href="/"
+          className="absolute left-6 top-6 z-10 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 lg:hidden"
+        >
+          ← Zurück zur Startseite
+        </Link>
+
+        <div className="flex w-full flex-1 flex-col px-6 pb-8 pt-16 lg:flex-1 lg:items-center lg:justify-center lg:px-16 lg:py-12">
+          <div className="mx-auto w-full max-w-sm min-w-0">
+            <div className="mb-8 flex items-center gap-2 lg:hidden">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary">
+                <FileText
+                  className="h-5 w-5 text-white"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </span>
+              <span className="font-bold text-slate-900">DokuHero</span>
+            </div>
+
             <div className="mb-8 hidden justify-end text-sm text-slate-500 lg:flex">
               <span>
                 {desktopAuthLink.preface}{" "}
@@ -95,6 +105,7 @@ export function AuthSplitLayout({
                 </Link>
               </span>
             </div>
+
             {children}
           </div>
         </div>
