@@ -1,16 +1,12 @@
-import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
+import { AuthCard, AuthPageShell } from "@/components/auth/AuthPageShell";
 import { LoginForm } from "./LoginForm";
 
 export default function LoginPage() {
   return (
-    <AuthSplitLayout
-      desktopAuthLink={{
-        href: "/register",
-        preface: "Noch kein Konto?",
-        label: "Registrieren",
-      }}
-    >
-      <LoginForm />
-    </AuthSplitLayout>
+    <AuthPageShell>
+      <AuthCard>
+        <LoginForm />
+      </AuthCard>
+    </AuthPageShell>
   );
 }
