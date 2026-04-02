@@ -16,6 +16,8 @@ interface BetriebRow extends RowDataPacket {
   telefon: string | null;
   branche: string | null;
   adresse: string | null;
+  plz: string | null;
+  stadt: string | null;
   logo_pfad: string | null;
   google_bewertung_link: string | null;
   plan?: string | null;
@@ -30,6 +32,8 @@ const putSchema = z
     telefon: z.string().nullable().optional(),
     branche: z.string().nullable().optional(),
     adresse: z.string().nullable().optional(),
+    plz: z.string().nullable().optional(),
+    stadt: z.string().nullable().optional(),
     google_bewertung_link: z.string().nullable().optional(),
     neuesPasswort: z.string().optional(),
     neuesPasswortBestaetigung: z.string().optional(),
@@ -66,7 +70,7 @@ export async function GET() {
 
     const pool = getPool();
     const [rows] = await pool.execute<BetriebRow[]>(
-      `SELECT id, name, email, telefon, branche, adresse, logo_pfad, google_bewertung_link,
+      `SELECT id, name, email, telefon, branche, adresse, plz, stadt, logo_pfad, google_bewertung_link,
               plan, abo_bis, stripe_customer_id, erstellt_am
        FROM betriebe WHERE id = ? LIMIT 1`,
       [session.user.betrieb_id]
@@ -85,6 +89,8 @@ export async function GET() {
         telefon: row.telefon,
         branche: row.branche,
         adresse: row.adresse,
+        plz: row.plz,
+        stadt: row.stadt,
         logo_pfad: row.logo_pfad,
         google_bewertung_link: row.google_bewertung_link,
         plan: typeof row.plan === "string" ? row.plan : null,
@@ -103,7 +109,7 @@ export async function GET() {
         : "";
     const msg =
       code === "ER_BAD_FIELD_ERROR"
-        ? "Datenbank: Spalte „adresse“ fehlt – Migration ausführen (migrations/add_betrieb_adresse.sql)."
+        ? "Datenbank: Spalte fehlt – Migrationen ausführen (u. a. adresse, plz, stadt auf betriebe)."
         : "Laden fehlgeschlagen.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -139,6 +145,8 @@ export async function PUT(request: Request) {
     const telefon = nullIfEmpty(d.telefon ?? undefined);
     const branche = nullIfEmpty(d.branche ?? undefined);
     const adresse = nullIfEmpty(d.adresse ?? undefined);
+    const plz = nullIfEmpty(d.plz ?? undefined);
+    const stadt = nullIfEmpty(d.stadt ?? undefined);
     const google_bewertung_link = nullIfEmpty(
       d.google_bewertung_link ?? undefined
     );
@@ -149,13 +157,15 @@ export async function PUT(request: Request) {
     if (pw) {
       const hash = await bcrypt.hash(pw, 12);
       await pool.execute(
-        `UPDATE betriebe SET name = ?, telefon = ?, branche = ?, adresse = ?, google_bewertung_link = ?, passwort = ?
+        `UPDATE betriebe SET name = ?, telefon = ?, branche = ?, adresse = ?, plz = ?, stadt = ?, google_bewertung_link = ?, passwort = ?
          WHERE id = ?`,
         [
           d.name.trim(),
           telefon,
           branche,
           adresse,
+          plz,
+          stadt,
           google_bewertung_link,
           hash,
           session.user.betrieb_id,
@@ -163,13 +173,15 @@ export async function PUT(request: Request) {
       );
     } else {
       await pool.execute(
-        `UPDATE betriebe SET name = ?, telefon = ?, branche = ?, adresse = ?, google_bewertung_link = ?
+        `UPDATE betriebe SET name = ?, telefon = ?, branche = ?, adresse = ?, plz = ?, stadt = ?, google_bewertung_link = ?
          WHERE id = ?`,
         [
           d.name.trim(),
           telefon,
           branche,
           adresse,
+          plz,
+          stadt,
           google_bewertung_link,
           session.user.betrieb_id,
         ]
@@ -182,7 +194,7 @@ export async function PUT(request: Request) {
     console.error("PUT einstellungen:", e);
     const msg =
       e && typeof e === "object" && "code" in e && (e as { code: string }).code === "ER_BAD_FIELD_ERROR"
-        ? "Datenbank: Spalte „adresse“ fehlt – Migration ausführen (siehe migrations/add_betrieb_adresse.sql)."
+        ? "Datenbank: Spalte fehlt – prüfen ob Spalten adresse, plz, stadt existieren."
         : "Speichern fehlgeschlagen.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

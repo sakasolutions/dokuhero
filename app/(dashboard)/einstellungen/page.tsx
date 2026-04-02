@@ -8,7 +8,6 @@ import { z } from "zod";
 import { ArrowLeft, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { Card } from "@/components/ui/Card";
 
 const BRANCHEN = [
@@ -29,6 +28,8 @@ type BetriebApi = {
   telefon: string | null;
   branche: string | null;
   adresse: string | null;
+  plz: string | null;
+  stadt: string | null;
   logo_pfad: string | null;
   google_bewertung_link: string | null;
   plan: string | null;
@@ -66,6 +67,8 @@ const formSchema = z
     telefon: z.string().nullable().optional(),
     branche: z.string().nullable().optional(),
     adresse: z.string().nullable().optional(),
+    plz: z.string().nullable().optional(),
+    stadt: z.string().nullable().optional(),
     google_bewertung_link: z.string().nullable().optional(),
     neuesPasswort: z.string().optional(),
     neuesPasswortBestaetigung: z.string().optional(),
@@ -151,6 +154,8 @@ export default function EinstellungenPage() {
       telefon: "",
       branche: "",
       adresse: "",
+      plz: "",
+      stadt: "",
       google_bewertung_link: "",
       neuesPasswort: "",
       neuesPasswortBestaetigung: "",
@@ -179,6 +184,8 @@ export default function EinstellungenPage() {
       telefon: b.telefon ?? "",
       branche: b.branche ?? "",
       adresse: b.adresse ?? "",
+      plz: b.plz ?? "",
+      stadt: b.stadt ?? "",
       google_bewertung_link: b.google_bewertung_link ?? "",
       neuesPasswort: "",
       neuesPasswortBestaetigung: "",
@@ -310,6 +317,8 @@ export default function EinstellungenPage() {
       telefon: data.telefon?.trim() || null,
       branche: data.branche?.trim() || null,
       adresse: data.adresse?.trim() || null,
+      plz: data.plz?.trim() || null,
+      stadt: data.stadt?.trim() || null,
       google_bewertung_link: data.google_bewertung_link?.trim() || null,
     };
     if (mode === "passwort" && data.neuesPasswort?.trim()) {
@@ -343,6 +352,8 @@ export default function EinstellungenPage() {
       "telefon",
       "branche",
       "adresse",
+      "plz",
+      "stadt",
       "google_bewertung_link",
     ]);
     if (!ok) return;
@@ -355,6 +366,8 @@ export default function EinstellungenPage() {
       "telefon",
       "branche",
       "adresse",
+      "plz",
+      "stadt",
       "google_bewertung_link",
     ]);
     if (!ok) return;
@@ -487,12 +500,32 @@ export default function EinstellungenPage() {
               </select>
             </div>
 
-            <Textarea
-              label="Adresse"
-              rows={3}
+            <Input
+              label="Straße & Hausnummer"
+              autoComplete="street-address"
               {...register("adresse")}
               value={watch("adresse") ?? ""}
             />
+
+            <div className="flex flex-row gap-3">
+              <div className="w-1/3 min-w-0 shrink-0">
+                <Input
+                  label="PLZ"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  {...register("plz")}
+                  value={watch("plz") ?? ""}
+                />
+              </div>
+              <div className="w-2/3 min-w-0">
+                <Input
+                  label="Stadt"
+                  autoComplete="address-level2"
+                  {...register("stadt")}
+                  value={watch("stadt") ?? ""}
+                />
+              </div>
+            </div>
 
             <Button
               type="button"
