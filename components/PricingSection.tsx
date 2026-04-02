@@ -46,6 +46,7 @@ const proFeatures = [
   "Alles aus Starter",
   "Priority Support",
   "Early Access zu neuen Features",
+  "GoBD-konforme Dokumentation",
 ];
 
 const businessFeatures = [
@@ -260,7 +261,7 @@ export function PricingSection() {
 
           {/* Pro — mobile zuerst */}
           <div
-            className={`order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 px-6 py-10 shadow-xl transition-all ease-out sm:px-8 md:order-2 md:z-10 md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
+            className={`order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 px-6 py-12 shadow-xl transition-all ease-out sm:px-8 md:order-2 md:z-10 md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
               pricingInView
                 ? "translate-y-0 opacity-100"
                 : "translate-y-8 opacity-0"
