@@ -11,10 +11,17 @@ const ctaBtnTransform =
 
 type Billing = "monthly" | "yearly";
 
+// ⚠️ STRIPE PREISE MÜSSEN ANGEPASST WERDEN:
+// Starter Monatlich: 30,00€ brutto (price_1THqxtJ4dcGJEa2GrvmUN9YT)
+// Starter Jährlich: 300,00€ brutto (price_1THqxtJ4dcGJEa2GCSMPEpxj)
+// Pro Monatlich: 70,00€ brutto (price_1THhWvJ4dcGJEa2GeTQZUwoJ)
+// Pro Jährlich: 700,00€ brutto (price_1THhWvJ4dcGJEa2G1zIKXiZP)
+// Business Monatlich: 175,00€ brutto (price_1THqFBJ4dcGJEa2G0KR0hQ3E)
+// Business Jährlich: 1.750,00€ brutto (price_1THqFBJ4dcGJEa2Gg7fMTOHg)
 const PRICE_IDS = {
   starter: {
-    monthly: "price_1THhVxJ4dcGJEa2Gv9C89qGR",
-    yearly: "price_1THhVxJ4dcGJEa2GGSnbCjCr",
+    monthly: "price_1THqxtJ4dcGJEa2GrvmUN9YT",
+    yearly: "price_1THqxtJ4dcGJEa2GCSMPEpxj",
   },
   pro: {
     monthly: "price_1THhWvJ4dcGJEa2GeTQZUwoJ",
@@ -123,33 +130,33 @@ export function PricingSection() {
     billing === "monthly" ? PRICE_IDS[plan].monthly : PRICE_IDS[plan].yearly;
 
   const starterBruttoMain =
-    billing === "monthly" ? "35,58 €" : "27,37 €";
+    billing === "monthly" ? "30,00 €" : "25,00 €";
   const starterBruttoStrike =
-    billing === "yearly" ? "35,58 €" : null;
+    billing === "yearly" ? "30,00 €" : null;
   const starterNettoLabel =
-    billing === "monthly" ? "29,90 €" : "23,00 €";
+    billing === "monthly" ? "25,21 €" : "21,01 €";
   const starterJahrFooter =
     billing === "yearly"
-      ? "328,44 € brutto / Jahr (276,00 € netto)"
+      ? "300,00 € brutto / Jahr (252,10 € netto)"
       : null;
 
-  const proBruttoMain = billing === "monthly" ? "70,21 €" : "55,93 €";
-  const proBruttoStrike = billing === "yearly" ? "70,21 €" : null;
-  const proNettoLabel = billing === "monthly" ? "59,00 €" : "47,00 €";
+  const proBruttoMain = billing === "monthly" ? "70,00 €" : "58,00 €";
+  const proBruttoStrike = billing === "yearly" ? "70,00 €" : null;
+  const proNettoLabel = billing === "monthly" ? "58,82 €" : "49,02 €";
   const proJahrFooter =
     billing === "yearly"
-      ? "671,16 € brutto / Jahr (564,00 € netto)"
+      ? "700,00 € brutto / Jahr (588,24 € netto)"
       : null;
 
   const businessBruttoMain =
-    billing === "monthly" ? "177,31 €" : "141,61 €";
+    billing === "monthly" ? "175,00 €" : "146,00 €";
   const businessBruttoStrike =
-    billing === "yearly" ? "177,31 €" : null;
+    billing === "yearly" ? "175,00 €" : null;
   const businessNettoLabel =
-    billing === "monthly" ? "149,00 €" : "119,00 €";
+    billing === "monthly" ? "147,06 €" : "122,55 €";
   const businessJahrFooter =
     billing === "yearly"
-      ? "1.699,32 € brutto / Jahr (1.428,00 € netto)"
+      ? "1.750,00 € brutto / Jahr (1.470,59 € netto)"
       : null;
 
   return (
