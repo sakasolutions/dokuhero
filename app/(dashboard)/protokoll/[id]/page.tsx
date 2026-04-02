@@ -408,54 +408,6 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
-      {showChefFreigabeBar ? (
-        <Card className="border-primary/30 bg-primary/[0.06]">
-          <h2 className="text-lg font-semibold text-slate-900">Freigabe</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Prüfe den Protokolltext und die PDF-Vorschau (Schritt 2). Wenn alles
-            passt: freigeben und an den Kunden senden.
-          </p>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button
-              type="button"
-              className="min-h-12 gap-2 text-base shadow-sm"
-              disabled={
-                busy !== null ||
-                !hasKiText ||
-                !emailDisplay
-              }
-              onClick={() => void postGenerate(true)}
-              title={
-                !emailDisplay
-                  ? "Keine E-Mail beim Kunden hinterlegt"
-                  : undefined
-              }
-            >
-              {busy === "mail" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-              {busy === "mail"
-                ? "Wird gesendet…"
-                : "Freigeben & Senden"}
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              className="min-h-12 text-base"
-              disabled={busy !== null}
-              onClick={() => void postReject()}
-            >
-              {busy === "reject" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : null}
-              Ablehnen
-            </Button>
-          </div>
-        </Card>
-      ) : null}
-
       <Card>
         <div className="space-y-4">
           <div>
@@ -474,6 +426,30 @@ export default function ProtokollAnsichtPage() {
           </div>
         </div>
       </Card>
+
+      {fotos.length > 0 ? (
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-slate-500">Fotos</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {fotos.map((f) => (
+              <a
+                key={f.id}
+                href={f.datei_pfad}
+                target="_blank"
+                rel="noreferrer"
+                className="aspect-square overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={f.datei_pfad}
+                  alt={f.dateiname}
+                  className="h-full w-full object-cover"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <Card>
         <h2 className="text-lg font-semibold text-slate-900">
@@ -637,30 +613,6 @@ export default function ProtokollAnsichtPage() {
         </Card>
       ) : null}
 
-      {fotos.length > 0 ? (
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-slate-500">Fotos</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {fotos.map((f) => (
-              <a
-                key={f.id}
-                href={f.datei_pfad}
-                target="_blank"
-                rel="noreferrer"
-                className="aspect-square overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={f.datei_pfad}
-                  alt={f.dateiname}
-                  className="h-full w-full object-cover"
-                />
-              </a>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {stepPdf ? (
         <Card>
           <h2 className="text-lg font-semibold text-slate-900">
@@ -670,7 +622,7 @@ export default function ProtokollAnsichtPage() {
             {isFreigegeben
               ? "Freigegebenes Protokoll – Vorschau und Download."
               : hideSendInStep2
-                ? "Erstelle die PDF-Vorschau. Der Versand an den Kunden erfolgt über „Freigeben & Senden“ oben."
+                ? "Erstelle die PDF-Vorschau. Der Versand an den Kunden erfolgt über „Freigeben & Senden“ unten."
                 : "Erstelle das PDF aus dem aktuellen Text. Versand per E-Mail ist optional."}
           </p>
 
@@ -770,6 +722,55 @@ export default function ProtokollAnsichtPage() {
                 einfügen.
               </p>
             ) : null}
+          </div>
+        </Card>
+      ) : null}
+
+      {showChefFreigabeBar ? (
+        <Card className="border-primary/30 bg-primary/[0.06]">
+          <h2 className="text-lg font-semibold text-slate-900">Freigabe</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Wenn Text und PDF-Vorschau passen, kannst du das Protokoll
+            freigeben und an den Kunden senden – oder ablehnen, damit der
+            Entwurf überarbeitet wird.
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button
+              type="button"
+              className="min-h-12 gap-2 text-base shadow-sm"
+              disabled={
+                busy !== null ||
+                !hasKiText ||
+                !emailDisplay
+              }
+              onClick={() => void postGenerate(true)}
+              title={
+                !emailDisplay
+                  ? "Keine E-Mail beim Kunden hinterlegt"
+                  : undefined
+              }
+            >
+              {busy === "mail" ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+              {busy === "mail"
+                ? "Wird gesendet…"
+                : "Freigeben & Senden"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-12 gap-2 border-red-300 text-base text-red-700 hover:border-red-400 hover:bg-red-50 focus-visible:ring-red-400"
+              disabled={busy !== null}
+              onClick={() => void postReject()}
+            >
+              {busy === "reject" ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : null}
+              Ablehnen
+            </Button>
           </div>
         </Card>
       ) : null}
