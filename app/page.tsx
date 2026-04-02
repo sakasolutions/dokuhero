@@ -589,7 +589,7 @@ export default function LandingPage() {
             </motion.p>
           </div>
         </section>
-
+        
         {/* Features */}
         <section
           id="features"
