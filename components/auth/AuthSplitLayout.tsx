@@ -3,25 +3,13 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
 
-type DesktopAuthLink = {
-  href: string;
-  preface: string;
-  label: string;
-};
-
 const trustLines = [
   "30 Tage kostenlos testen",
   "Keine Kreditkarte nötig",
   "DSGVO-konform & Made in Germany",
 ] as const;
 
-export function AuthSplitLayout({
-  children,
-  desktopAuthLink,
-}: {
-  children: React.ReactNode;
-  desktopAuthLink: DesktopAuthLink;
-}) {
+export function AuthSplitLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full overflow-x-hidden lg:grid lg:grid-cols-2">
       {/* Brand — nur Desktop */}
@@ -88,20 +76,7 @@ export function AuthSplitLayout({
         </div>
 
         <div className="flex flex-1 items-center justify-center p-8 lg:p-16">
-          <div className="w-full min-w-0 max-w-sm">
-            <div className="mb-8 hidden justify-end text-sm text-slate-500 lg:flex">
-              <span>
-                {desktopAuthLink.preface}{" "}
-                <Link
-                  href={desktopAuthLink.href}
-                  className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
-                >
-                  {desktopAuthLink.label}
-                </Link>
-              </span>
-            </div>
-            {children}
-          </div>
+          <div className="w-full min-w-0 max-w-sm">{children}</div>
         </div>
       </div>
     </div>

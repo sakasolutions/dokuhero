@@ -132,7 +132,7 @@ function LoginFormInner() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500 lg:hidden">
+      <p className="mt-6 text-center text-sm text-slate-500">
         Noch kein Konto?{" "}
         <Link
           href="/register"
