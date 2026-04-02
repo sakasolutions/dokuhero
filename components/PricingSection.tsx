@@ -27,26 +27,23 @@ const PRICE_IDS = {
 } as const;
 
 const starterFeatures = [
-  "Bis 50 Protokolle/Monat",
+  "50 Protokolle/Monat",
   "KI-Protokolltext",
   "PDF-Generierung",
   "Automatischer Mail-Versand",
   "Bewertungs-Automatik",
-  "1 Benutzer",
 ];
 
 const proFeatures = [
-  "Unbegrenzte Protokolle",
+  "350 Protokolle/Monat",
   "Alles aus Starter",
-  "Bis 5 Benutzer",
   "Priority Support",
   "Early Access zu neuen Features",
 ];
 
 const businessFeatures = [
-  "Unbegrenzte Protokolle",
+  "800 Protokolle/Monat",
   "Alles aus Pro",
-  "Bis 15 Benutzer",
   "Persönlicher Onboarding-Support",
   "Dedizierter Ansprechpartner",
 ];
@@ -74,11 +71,13 @@ function PriceBlock({
   main,
   compare,
   variant,
+  yearlyTotalLine,
 }: {
   billing: Billing;
   main: string;
   compare: string | null;
   variant: "light" | "dark";
+  yearlyTotalLine?: string | null;
 }) {
   const mainCls =
     variant === "dark"
@@ -88,12 +87,12 @@ function PriceBlock({
     variant === "dark"
       ? "text-sm font-semibold text-slate-300 md:text-base"
       : "text-sm font-semibold text-slate-600 md:text-base";
-  const hintCls =
-    variant === "dark" ? "text-slate-400 md:text-sm" : "text-slate-500 md:text-sm";
   const compareCls =
     variant === "dark"
       ? "text-lg font-medium text-slate-500 line-through md:text-xl"
       : "text-lg font-medium text-slate-400 line-through md:text-xl";
+  const yearlyNoteCls =
+    variant === "dark" ? "text-slate-400" : "text-slate-500";
 
   return (
     <div className="mt-4 shrink-0">
@@ -104,9 +103,9 @@ function PriceBlock({
         ) : null}
         <span className={unitCls}>/ Monat</span>
       </div>
-      {billing === "yearly" ? (
-        <p className={`mt-1 text-xs font-medium ${hintCls}`}>
-          bei jährlicher Zahlung, pro Monat
+      {billing === "yearly" && yearlyTotalLine ? (
+        <p className={`mt-1 text-xs font-medium ${yearlyNoteCls}`}>
+          {yearlyTotalLine}
         </p>
       ) : null}
       <p
@@ -129,7 +128,7 @@ export function PricingSection() {
   const pid = (plan: keyof typeof PRICE_IDS) =>
     billing === "monthly" ? PRICE_IDS[plan].monthly : PRICE_IDS[plan].yearly;
 
-  const starterMain = billing === "monthly" ? "29,90 €" : "29,90 €";
+  const starterMain = billing === "monthly" ? "29,90 €" : "23,00 €";
   const proMain = billing === "monthly" ? "59,00 €" : "47,00 €";
   const businessMain = billing === "monthly" ? "149,00 €" : "119,00 €";
 
@@ -140,23 +139,20 @@ export function PricingSection() {
       className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
     >
       <div className="mx-auto max-w-6xl">
-        <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
-          Preise
-        </h2>
-        <p className="mx-auto mt-3 max-w-lg text-center text-sm text-slate-600 md:text-base">
-          Einfache Pakete — du entscheidest, wie viel du protokollierst.
-        </p>
-
-        <div className="mx-auto mt-8 flex justify-center md:mt-10">
-          <p className="inline-flex max-w-xl flex-col items-center gap-1 rounded-2xl bg-primary/10 px-5 py-3 text-center text-sm font-semibold text-primary sm:flex-row sm:gap-2 sm:px-8 sm:py-4 sm:text-base md:text-lg">
-            <span className="leading-snug">
-              30 Tage kostenlos testen — keine Kreditkarte nötig
-            </span>
+        <header className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-medium uppercase tracking-widest text-blue-600">
+            Preise
           </p>
-        </div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
+            Einfach. Fair. Transparent.
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-sm text-slate-600 md:text-base">
+            30 Tage kostenlos testen — keine Kreditkarte nötig.
+          </p>
+        </header>
 
         <div
-          className="mx-auto mt-8 flex w-full max-w-2xl flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center"
+          className="mx-auto mt-10 flex w-full max-w-2xl flex-col items-stretch gap-3 sm:mt-12 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center"
           role="group"
           aria-label="Abrechnungszeitraum"
         >
@@ -184,15 +180,15 @@ export function PricingSection() {
               Jährlich
             </button>
           </div>
-          <span className="mx-auto inline-flex items-center justify-center rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 sm:mx-0">
+          <span className="mx-auto inline-flex min-h-[44px] items-center justify-center rounded-full bg-green-100 px-3 text-xs font-semibold text-green-800 sm:mx-0 sm:min-h-0 sm:py-1.5">
             2 Monate gratis
           </span>
         </div>
 
         <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 md:mt-12 md:grid md:grid-cols-3 md:items-stretch md:gap-6 lg:gap-8">
-          {/* Starter — desktop links */}
+          {/* Starter */}
           <div
-            className={`order-2 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all ease-out sm:p-8 md:order-1 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
+            className={`order-2 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm transition-all ease-out sm:px-8 md:order-1 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
               pricingInView
                 ? "translate-y-0 opacity-100"
                 : "translate-y-8 opacity-0"
@@ -205,7 +201,10 @@ export function PricingSection() {
               variant="light"
               billing={billing}
               main={starterMain}
-              compare={null}
+              compare={billing === "yearly" ? "29,90 €" : null}
+              yearlyTotalLine={
+                billing === "yearly" ? "276€/Jahr" : null
+              }
             />
             <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
               {starterFeatures.map((line) => (
@@ -219,7 +218,7 @@ export function PricingSection() {
                 </li>
               ))}
             </ul>
-            <div className="mt-auto flex flex-col pt-6">
+            <div className="mt-auto flex flex-col gap-1 pt-6">
               <Link
                 href="/register"
                 data-price-id={pid("starter")}
@@ -227,12 +226,15 @@ export function PricingSection() {
               >
                 30 Tage kostenlos starten
               </Link>
+              <p className="text-center text-xs text-slate-500">
+                Keine Kreditkarte nötig
+              </p>
             </div>
           </div>
 
-          {/* Pro — mobile zuerst, hervorgehoben */}
+          {/* Pro — mobile zuerst */}
           <div
-            className={`relative order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-7 shadow-xl transition-all ease-out sm:p-9 md:order-2 md:z-10 md:scale-[1.04] md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
+            className={`relative order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 px-6 py-10 shadow-xl transition-all ease-out sm:px-8 md:order-2 md:z-10 md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
               pricingInView
                 ? "translate-y-0 opacity-100"
                 : "translate-y-8 opacity-0"
@@ -263,7 +265,7 @@ export function PricingSection() {
                 </li>
               ))}
             </ul>
-            <div className="mt-auto flex flex-col pt-6">
+            <div className="mt-auto flex flex-col gap-1 pt-6">
               <Link
                 href="/register"
                 data-price-id={pid("pro")}
@@ -271,12 +273,15 @@ export function PricingSection() {
               >
                 30 Tage kostenlos starten
               </Link>
+              <p className="text-center text-xs text-slate-400">
+                Keine Kreditkarte nötig
+              </p>
             </div>
           </div>
 
           {/* Business */}
           <div
-            className={`order-3 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all ease-out sm:p-8 md:order-3 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
+            className={`order-3 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm transition-all ease-out sm:px-8 md:order-3 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
               pricingInView
                 ? "translate-y-0 opacity-100"
                 : "translate-y-8 opacity-0"
@@ -285,7 +290,7 @@ export function PricingSection() {
               transitionDelay: pricingInView ? "160ms" : "0ms",
             }}
           >
-            <span className="w-fit rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+            <span className="w-fit rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-white">
               Neu
             </span>
             <h3 className="mt-2 shrink-0 text-xl font-bold text-slate-900">
@@ -325,17 +330,13 @@ export function PricingSection() {
         </div>
 
         <p className="mx-auto mt-10 max-w-xl text-center text-sm text-slate-500 md:mt-12">
-          Ab 15+ Mitarbeitern? →{" "}
+          Ab 800+ Protokollen? Meld dich:{" "}
           <a
             href="mailto:kontakt@dokuhero.de"
             className="font-medium text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
           >
             kontakt@dokuhero.de
           </a>
-        </p>
-
-        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-slate-600 md:mt-8 md:text-base">
-          Monatlich kündbar · Keine versteckten Kosten
         </p>
       </div>
     </section>
