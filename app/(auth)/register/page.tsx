@@ -39,7 +39,8 @@ const registerSchema = z
     path: ["passwordConfirm"],
   })
   .refine((data) => data.acceptAgb === true, {
-    message: "Bitte die AGB akzeptieren.",
+    message:
+      "Bitte bestätigen, dass du die AGB und die Datenschutzerklärung gelesen hast und akzeptierst.",
     path: ["acceptAgb"],
   });
 
@@ -253,7 +254,7 @@ export default function RegisterPage() {
                     ref={field.ref}
                   />
                   <span>
-                    Ich akzeptiere die{" "}
+                    Ich habe die{" "}
                     <Link
                       href="/agb"
                       className="font-medium text-primary hover:text-primary/80 hover:underline"
@@ -262,7 +263,16 @@ export default function RegisterPage() {
                     >
                       AGB
                     </Link>{" "}
-                    *
+                    und{" "}
+                    <Link
+                      href="/datenschutz"
+                      className="font-medium text-primary hover:text-primary/80 hover:underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Datenschutzerklärung
+                    </Link>{" "}
+                    gelesen und akzeptiere diese. *
                   </span>
                 </label>
               )}

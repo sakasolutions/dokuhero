@@ -745,6 +745,12 @@ export default function LandingPage() {
             >
               Impressum
             </Link>
+            <Link
+              href="/agb"
+              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
+            >
+              AGB
+            </Link>
             <a
               href="mailto:kontakt@dokuhero.de"
               className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"

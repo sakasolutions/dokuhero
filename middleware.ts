@@ -11,6 +11,15 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public paths - immer erlaubt
+  if (
+    pathname === "/" ||
+    pathname === "/impressum" ||
+    pathname === "/datenschutz" ||
+    pathname === "/agb"
+  ) {
+    return NextResponse.next();
+  }
+
   const publicPaths = [
     "/login",
     "/register",

@@ -35,7 +35,8 @@ const registerSchema = z
     path: ["passwordConfirm"],
   })
   .refine((data) => data.acceptAgb === true, {
-    message: "Bitte die AGB akzeptieren.",
+    message:
+      "Bitte bestätigen, dass du die AGB und die Datenschutzerklärung gelesen hast und akzeptierst.",
     path: ["acceptAgb"],
   });
 
