@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,7 +19,33 @@ type BetriebApi = {
   adresse: string | null;
   logo_pfad: string | null;
   google_bewertung_link: string | null;
+  plan: string | null;
+  abo_bis: string | null;
+  erstellt_am: string | null;
 };
+
+const TRIAL_MS = 30 * 24 * 60 * 60 * 1000;
+
+function planLabelFromApi(plan: string | null): string {
+  const p = (plan ?? "").trim().toLowerCase();
+  if (p === "starter") return "Starter";
+  if (p === "pro") return "Pro";
+  if (p === "trial") return "Trial";
+  if (p === "expired") return "Abgelaufen";
+  if (!p) return "Trial";
+  return (plan ?? "").trim();
+}
+
+function formatDeDatum(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("de-DE", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 const formSchema = z
   .object({
@@ -80,7 +105,6 @@ function fileToJpegDataUrl(file: File): Promise<string> {
 }
 
 export default function EinstellungenPage() {
-  const { update } = useSession();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailReadonly, setEmailReadonly] = useState("");
@@ -93,7 +117,9 @@ export default function EinstellungenPage() {
   const [logoMsg, setLogoMsg] = useState<string | null>(null);
   const [logoErr, setLogoErr] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [formOk, setFormOk] = useState<string | null>(null);
+  const [aboPlan, setAboPlan] = useState<string | null>(null);
+  const [aboBisIso, setAboBisIso] = useState<string | null>(null);
+  const [erstelltAmIso, setErstelltAmIso] = useState<string | null>(null);
 
   const {
     register,
@@ -126,6 +152,9 @@ export default function EinstellungenPage() {
     setEmailReadonly(b.email);
     setBetriebId(b.id);
     setHasLogo(Boolean(b.logo_pfad?.trim()));
+    setAboPlan(typeof b.plan === "string" ? b.plan : null);
+    setAboBisIso(typeof b.abo_bis === "string" ? b.abo_bis : null);
+    setErstelltAmIso(typeof b.erstellt_am === "string" ? b.erstellt_am : null);
     reset({
       name: b.name,
       telefon: b.telefon ?? "",
@@ -150,6 +179,28 @@ export default function EinstellungenPage() {
       cancelled = true;
     };
   }, [load]);
+
+  const aboAnzeige = useMemo(() => {
+    const planKey = (aboPlan ?? "").trim().toLowerCase();
+    const planText = planLabelFromApi(aboPlan);
+    let endIso = aboBisIso;
+    if (!endIso && planKey === "trial" && erstelltAmIso) {
+      const start = new Date(erstelltAmIso).getTime();
+      if (Number.isFinite(start)) {
+        endIso = new Date(start + TRIAL_MS).toISOString();
+      }
+    }
+    const datum = formatDeDatum(endIso);
+    const datumZeile =
+      planKey === "trial"
+        ? datum
+          ? { prefix: "Trial läuft ab:", text: datum }
+          : null
+        : datum
+          ? { prefix: "Aktiv bis:", text: datum }
+          : null;
+    return { planText, datumZeile };
+  }, [aboPlan, aboBisIso, erstelltAmIso]);
 
   async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -191,7 +242,6 @@ export default function EinstellungenPage() {
 
   async function onSubmit(data: FormValues) {
     setFormError(null);
-    setFormOk(null);
     const body: Record<string, unknown> = {
       name: data.name.trim(),
       telefon: data.telefon?.trim() || null,
@@ -212,22 +262,7 @@ export default function EinstellungenPage() {
       setFormError(typeof j.error === "string" ? j.error : "Speichern fehlgeschlagen.");
       return;
     }
-    const neuerName =
-      typeof j.name === "string" && j.name.trim() !== ""
-        ? j.name.trim()
-        : data.name.trim();
-    try {
-      await update({ name: neuerName });
-    } catch {
-      /* JWT-Update optional; Dashboard lädt den Namen per GET */
-    }
-    reset({
-      ...data,
-      neuesPasswort: "",
-      neuesPasswortBestaetigung: "",
-    });
-    setFormOk("Änderungen wurden gespeichert.");
-    await load();
+    window.location.reload();
   }
 
   if (loading) {
@@ -269,14 +304,36 @@ export default function EinstellungenPage() {
         <p className="text-slate-600">Betriebsdaten und Logo für DokuHero</p>
       </div>
 
+      <Card className="border-primary/20 bg-primary/5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm text-slate-600">
+              Dein Plan:{" "}
+              <span className="font-semibold text-slate-900">
+                {aboAnzeige.planText}
+              </span>
+            </p>
+            {aboAnzeige.datumZeile ? (
+              <p className="text-sm text-slate-600">
+                {aboAnzeige.datumZeile.prefix}{" "}
+                <span className="font-medium text-slate-900">
+                  {aboAnzeige.datumZeile.text}
+                </span>
+              </p>
+            ) : null}
+          </div>
+          <Link
+            href="/preise"
+            className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            Plan upgraden
+          </Link>
+        </div>
+      </Card>
+
       {formError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
           {formError}
-        </p>
-      ) : null}
-      {formOk ? (
-        <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-dark">
-          {formOk}
         </p>
       ) : null}
 
