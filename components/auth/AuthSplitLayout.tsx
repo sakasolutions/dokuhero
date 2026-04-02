@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Check, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
 type DesktopAuthLink = {
   href: string;
   preface: string;
   label: string;
 };
+
+const trustLines = [
+  "30 Tage kostenlos testen",
+  "Keine Kreditkarte nötig",
+  "DSGVO-konform & Made in Germany",
+] as const;
 
 export function AuthSplitLayout({
   children,
@@ -17,8 +23,8 @@ export function AuthSplitLayout({
   desktopAuthLink: DesktopAuthLink;
 }) {
   return (
-    <div className="w-full min-h-0 overflow-x-hidden lg:grid lg:min-h-screen lg:grid-cols-2">
-      {/* Brand — nur Desktop (Split links) */}
+    <div className="min-h-screen w-full overflow-x-hidden lg:grid lg:grid-cols-2">
+      {/* Brand — nur Desktop */}
       <aside className="relative hidden h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 lg:sticky lg:top-0 lg:flex lg:flex-col">
         <div className="flex h-full min-h-0 flex-col justify-between p-12">
           <div>
@@ -27,7 +33,11 @@ export function AuthSplitLayout({
               className="inline-flex items-center gap-2 font-bold text-white outline-none ring-offset-2 ring-offset-slate-900 focus-visible:ring-2 focus-visible:ring-white/40"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary">
-                <FileText className="h-5 w-5 text-white" strokeWidth={2} aria-hidden />
+                <FileText
+                  className="h-5 w-5 text-white"
+                  strokeWidth={2}
+                  aria-hidden
+                />
               </span>
               <span className="text-lg font-bold">DokuHero</span>
             </Link>
@@ -42,20 +52,14 @@ export function AuthSplitLayout({
                 Foto machen, kurz sprechen — fertig.
               </p>
               <div className="mt-8 space-y-3">
-                {[
-                  "30 Tage kostenlos testen",
-                  "Keine Kreditkarte nötig",
-                  "DSGVO-konform & Made in Germany",
-                ].map((line) => (
+                {trustLines.map((line) => (
                   <div
                     key={line}
                     className="flex items-center gap-3 text-blue-100"
                   >
-                    <Check
-                      className="h-5 w-5 shrink-0 text-blue-300"
-                      strokeWidth={2.5}
-                      aria-hidden
-                    />
+                    <span className="shrink-0 text-blue-300" aria-hidden>
+                      ✓
+                    </span>
                     <span>{line}</span>
                   </div>
                 ))}
@@ -72,29 +76,19 @@ export function AuthSplitLayout({
         </div>
       </aside>
 
-      {/* Rechte Spalte: Mobile = Header + Formular; Desktop = wie bisher */}
-      <div className="flex w-full flex-col overflow-x-hidden bg-white lg:h-screen lg:min-h-0 lg:bg-slate-50 lg:overflow-y-auto">
-        {/* Mobile: dunkler Header */}
-        <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 px-6 pb-8 pt-6 lg:hidden">
+      {/* Formular */}
+      <div className="flex h-screen min-h-0 w-full flex-col overflow-y-auto overflow-x-hidden bg-slate-50">
+        <div className="flex shrink-0 justify-end p-4 lg:hidden">
           <Link
             href="/"
-            className="mb-6 flex items-center gap-1 text-sm text-blue-300 hover:text-blue-200"
+            className="flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
           >
             ← Zurück zur Startseite
           </Link>
-          <h2 className="text-xl font-bold leading-snug text-white">
-            Dokumentation die sich
-            <br />
-            von selbst erledigt.
-          </h2>
-          <p className="mt-2 text-sm text-blue-300">
-            Foto machen, kurz sprechen — fertig.
-          </p>
         </div>
 
-        {/* Mobile: weißer Formularblock | Desktop: zentrierte Spalte */}
-        <div className="px-6 pb-10 pt-8 lg:flex lg:flex-1 lg:items-center lg:justify-center lg:px-16 lg:py-12">
-          <div className="mx-auto w-full min-w-0 max-w-sm">
+        <div className="flex flex-1 items-center justify-center p-8 lg:p-16">
+          <div className="w-full min-w-0 max-w-sm">
             <div className="mb-8 hidden justify-end text-sm text-slate-500 lg:flex">
               <span>
                 {desktopAuthLink.preface}{" "}
@@ -106,7 +100,6 @@ export function AuthSplitLayout({
                 </Link>
               </span>
             </div>
-
             {children}
           </div>
         </div>
