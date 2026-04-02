@@ -13,6 +13,7 @@ import {
   Mail,
   Menu,
   Mic,
+  PenLine,
   Send,
   Shield,
   Sparkles,
@@ -92,28 +93,46 @@ const proPricingFeatures = [
   "Team-Zugang (coming soon)",
 ];
 
-const features = [
+const landingFeatures = [
   {
     icon: Camera,
+    eyebrow: "Nie wieder Fotos suchen",
     title: "Foto-Upload & Sprachnotiz",
-    text: "Mehrere Fotos, dazu kurz gesprochene Notiz — alles in einem Auftrag.",
+    text: "Einfach vor Ort fotografieren und kurz einsprechen\n— alles wird automatisch dem Auftrag zugeordnet.",
   },
   {
     icon: Sparkles,
+    eyebrow: "Kein Tippen nach der Arbeit",
     title: "KI-Protokolltext",
-    text: "Aus deinen Stichworten wird ein professioneller Fließtext.",
+    text: "Deine Stichpunkte werden in einen professionellen\nProtokolltext verwandelt — in Sekunden.",
   },
   {
-    icon: Mail,
+    icon: Send,
+    eyebrow: "Kein Zettelchaos mehr",
     title: "PDF per Mail",
-    text: "Versand an den Kunden, sobald du freigibst.",
+    text: "Das fertige PDF geht automatisch per Mail an\ndeinen Kunden — sobald du freigibst.",
   },
   {
     icon: Star,
+    eyebrow: "Mehr Google-Bewertungen",
     title: "Bewertungs-Automatik",
-    text: "Feedback-Anfrage nach dem Einsatz — du behältst den Überblick.",
+    text: "2 Stunden nach dem Einsatz fragt DokuHero\nautomatisch nach Feedback — zufriedene Kunden landen\ndirekt auf deiner Google-Seite.",
   },
-];
+  {
+    icon: PenLine,
+    eyebrow: "Kein Streit bei Reklamationen",
+    title: "Digitale Abnahme",
+    text: "Kunde bestätigt das Protokoll digital —\nrechtssicher gespeichert.",
+    badge: { label: "Coming Soon", variant: "amber" as const },
+  },
+  {
+    icon: Shield,
+    eyebrow: "Gesetzlich auf der sicheren Seite",
+    title: "Rechtssichere Aufbewahrung",
+    text: "Alle Protokolle werden 10 Jahre gespeichert\n— DSGVO-konform, manipulationssicher.",
+    badge: { label: "GoBD-konform", variant: "green" as const },
+  },
+] as const;
 
 /** Dauer für Scroll-Einblendungen: mobil kürzer */
 const animD = "duration-[400ms] md:duration-700";
@@ -573,19 +592,25 @@ export default function LandingPage() {
         <section
           id="features"
           ref={featuresRef}
-          className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
+          className="scroll-mt-20 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
-              Funktionen
+              Alles was du brauchst
             </h2>
+            <p className="mx-auto mt-3 max-w-2xl whitespace-pre-line text-center text-base leading-relaxed text-slate-600 md:text-lg">
+              Kein Schnickschnack — nur die Funktionen{"\n"}die deinen Alltag
+              wirklich einfacher machen.
+            </p>
             <div className="mt-10 grid grid-cols-1 gap-6 md:mt-14 md:grid-cols-2 md:gap-8">
-              {features.map(({ icon: Icon, title, text }, index) => {
-                const diagMs = [0, 150, 150, 300][index] ?? 0;
+              {landingFeatures.map((item, index) => {
+                const Icon = item.icon;
+                const diagMs = index * 75;
+                const badge = "badge" in item ? item.badge : undefined;
                 return (
                   <div
-                    key={title}
-                    className={`rounded-2xl border border-slate-200 bg-slate-50/50 p-6 transition-all ease-out md:p-8 ${animD} md:hover:-translate-y-1 md:hover:shadow-lg active:-translate-y-0.5 active:shadow-md ${
+                    key={item.title}
+                    className={`relative rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-shadow duration-200 ease-out hover:shadow-md ${animD} ${
                       featuresInView
                         ? "translate-y-0 opacity-100"
                         : "translate-y-10 opacity-0"
@@ -594,14 +619,28 @@ export default function LandingPage() {
                       transitionDelay: featuresInView ? `${diagMs}ms` : "0ms",
                     }}
                   >
+                    {badge ? (
+                      <span
+                        className={`absolute right-4 top-4 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          badge.variant === "amber"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {badge.label}
+                      </span>
+                    ) : null}
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <Icon className="h-6 w-6" strokeWidth={2} />
                     </div>
-                    <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                      {title}
+                    <p className="mt-4 text-sm font-medium text-slate-500">
+                      {item.eyebrow}
+                    </p>
+                    <h3 className="mt-1 text-lg font-semibold text-slate-900">
+                      {item.title}
                     </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600 md:text-base">
-                      {text}
+                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600 md:text-base">
+                      {item.text}
                     </p>
                   </div>
                 );
