@@ -12,18 +12,19 @@ import {
 } from "lucide-react";
 import type { DashboardStats } from "@/types";
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Guten Morgen";
-  if (hour < 18) return "Guten Tag";
-  return "Guten Abend";
-}
-
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [betriebName, setBetriebName] = useState("Betrieb");
   const [paymentOk, setPaymentOk] = useState(false);
+  const [greeting, setGreeting] = useState("Hallo");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting("Guten Morgen");
+    else if (hour < 18) setGreeting("Guten Tag");
+    else setGreeting("Guten Abend");
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,7 +114,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
-          {getGreeting()}, {betriebName}
+          {greeting}, {betriebName}
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Hier ist deine Übersicht für heute.
