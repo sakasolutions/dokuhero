@@ -171,9 +171,10 @@ function useCountUp(target: number, durationMs: number, enabled: boolean) {
   return value;
 }
 
+/** Pfade relativ zur Site-Root: Dateien liegen in public/images/ (ohne „public“ im URL-Pfad). */
 const HERO_FOTO_PATHS = [
-  { src: "public/images/hero-foto1.png", label: "Foto 1" },
-  { src: "public/images/hero-foto2.png", label: "Foto 2" },
+  { src: "/images/hero-foto1.png", label: "Foto 1" },
+  { src: "/images/hero-foto2.png", label: "Foto 2" },
 ] as const;
 
 function HeroPhotoThumb({
