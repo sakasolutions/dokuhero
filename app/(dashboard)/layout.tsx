@@ -16,14 +16,34 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="h-screen w-60 flex-shrink-0 overflow-y-auto bg-slate-900">
+    <div
+      className="flex overflow-hidden"
+      style={{ display: "flex", height: "100vh", overflow: "hidden" }}
+    >
+      <aside
+        className="hidden flex-col border-r border-white/10 bg-slate-900 lg:flex"
+        style={{
+          width: 240,
+          height: "100vh",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          overflow: "hidden",
+          zIndex: 40,
+        }}
+      >
         <Sidebar />
       </aside>
 
-      <div className="flex h-screen flex-1 flex-col overflow-hidden">
+      <div
+        className="ml-0 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden lg:ml-[240px]"
+        style={{ flex: 1, height: "100vh" }}
+      >
         <Navbar />
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bg-surface lg:p-6 lg:pb-6">
+        <main
+          className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bg-surface lg:p-6 lg:pb-6"
+          style={{ flex: 1, overflowY: "auto" }}
+        >
           {children}
         </main>
       </div>

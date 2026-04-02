@@ -21,7 +21,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden min-h-screen w-56 shrink-0 flex-col border-r border-white/10 bg-dark lg:flex">
+    <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex h-14 shrink-0 items-center border-b border-white/10 px-4">
         <span className="text-lg font-bold tracking-tight text-white">DokuHero</span>
       </div>
@@ -58,6 +58,6 @@ export function Sidebar() {
           Einstellungen
         </Link>
       </div>
-    </aside>
+    </div>
   );
 }
