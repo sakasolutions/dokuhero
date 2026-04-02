@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
+import { getBetriebPlanFromDb } from "@/lib/betrieb-plan";
 import { STARTER_PROTOKOLL_MONATS_LIMIT } from "@/lib/protokoll-limit";
 import type { RowDataPacket } from "mysql2";
 
@@ -23,13 +24,13 @@ export async function GET() {
     }
 
     const betriebId = session.user.betrieb_id;
-    const planRaw = session.user.plan;
-    const plan =
-      typeof planRaw === "string" ? planRaw.trim().toLowerCase() : "";
-
     const pool = getPool();
+    const plan = await getBetriebPlanFromDb(pool, betriebId);
+
     const [rows] = await pool.execute<RowDataPacket[]>(COUNT_SQL, [betriebId]);
-    const count = Number((rows[0] as { c?: unknown })?.c ?? 0);
+    const rawC = (rows[0] as { c?: unknown })?.c;
+    const count =
+      typeof rawC === "bigint" ? Number(rawC) : Number(rawC ?? 0);
 
     if (plan !== "starter") {
       return NextResponse.json({

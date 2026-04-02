@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
+import { getBetriebPlanFromDb } from "@/lib/betrieb-plan";
 import { ensureFotosUploadDir } from "@/lib/protokoll-upload";
 import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
@@ -63,9 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const planRaw = session.user.plan;
-    const plan =
-      typeof planRaw === "string" ? planRaw.trim().toLowerCase() : "";
+    const plan = await getBetriebPlanFromDb(pool, session.user.betrieb_id);
     if (plan === "starter") {
       const [cntRows] = await pool.execute<RowDataPacket[]>(
         `SELECT COUNT(*) AS c
@@ -76,7 +75,9 @@ export async function POST(request: Request) {
            AND YEAR(p.erstellt_am) = YEAR(NOW())`,
         [session.user.betrieb_id]
       );
-      const monatsCount = Number((cntRows[0] as { c?: unknown })?.c ?? 0);
+      const rawC = (cntRows[0] as { c?: unknown })?.c;
+      const monatsCount =
+        typeof rawC === "bigint" ? Number(rawC) : Number(rawC ?? 0);
       if (monatsCount >= STARTER_PROTOKOLL_MONATS_LIMIT) {
         return NextResponse.json(
           {

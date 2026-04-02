@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
+import { getBetriebPlanFromDb } from "@/lib/betrieb-plan";
 import type { Pool } from "mysql2/promise";
 import type { RowDataPacket } from "mysql2";
 import { STARTER_PROTOKOLL_MONATS_LIMIT } from "@/lib/protokoll-limit";
@@ -39,13 +40,10 @@ export async function GET() {
     }
 
     const betriebId = session.user.betrieb_id;
-    const planRaw = session.user.plan;
-    const plan =
-      typeof planRaw === "string" ? planRaw.trim().toLowerCase() : "";
+    const pool = getPool();
+    const plan = await getBetriebPlanFromDb(pool, betriebId);
     const protokoll_limit =
       plan === "starter" ? STARTER_PROTOKOLL_MONATS_LIMIT : null;
-
-    const pool = getPool();
 
     const kundenGesamt = await countSafe(
       pool,
