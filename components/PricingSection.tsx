@@ -77,14 +77,12 @@ function useInView(threshold = 0.1) {
 function PriceBlock({
   billing,
   bruttoMain,
-  bruttoCompareStrike,
   nettoAmountLabel,
   yearlyBruttoTotalDisplay,
   variant,
 }: {
   billing: Billing;
   bruttoMain: string;
-  bruttoCompareStrike: string | null;
   nettoAmountLabel: string;
   /** Bruttobetrag für „= X / Jahr“ (nur bei billing === yearly) */
   yearlyBruttoTotalDisplay: string | null;
@@ -98,10 +96,6 @@ function PriceBlock({
     variant === "dark"
       ? "text-sm text-slate-300 md:text-base"
       : "text-sm text-slate-500 md:text-base";
-  const compareCls =
-    variant === "dark"
-      ? "text-lg font-medium text-slate-500 line-through md:text-xl"
-      : "text-lg font-medium text-slate-400 line-through md:text-xl";
   const nettoSmallCls =
     variant === "dark" ? "text-xs text-slate-300" : "text-xs text-slate-400";
   const yearHighlightCls =
@@ -113,9 +107,6 @@ function PriceBlock({
     <div className="mt-4 shrink-0">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className={mainCls}>{bruttoMain}</span>
-        {billing === "yearly" && bruttoCompareStrike ? (
-          <span className={compareCls}>{bruttoCompareStrike}</span>
-        ) : null}
         <span className={unitCls}>/ Monat</span>
       </div>
       {billing === "yearly" && yearlyBruttoTotalDisplay ? (
@@ -137,22 +128,17 @@ export function PricingSection() {
 
   const starterBruttoMain =
     billing === "monthly" ? "30,00 €" : "25,00 €";
-  const starterBruttoStrike =
-    billing === "yearly" ? "30,00 €" : null;
   const starterNettoLabel =
     billing === "monthly" ? "25,21 €" : "252,10 €";
   const starterYearBruttoTotal =
     billing === "yearly" ? "300,00 €" : null;
 
   const proBruttoMain = billing === "monthly" ? "70,00 €" : "58,00 €";
-  const proBruttoStrike = billing === "yearly" ? "70,00 €" : null;
   const proNettoLabel = billing === "monthly" ? "58,82 €" : "588,24 €";
   const proYearBruttoTotal = billing === "yearly" ? "700,00 €" : null;
 
   const businessBruttoMain =
     billing === "monthly" ? "175,00 €" : "146,00 €";
-  const businessBruttoStrike =
-    billing === "yearly" ? "175,00 €" : null;
   const businessNettoLabel =
     billing === "monthly" ? "147,06 €" : "1.470,59 €";
   const businessYearBruttoTotal =
@@ -178,11 +164,11 @@ export function PricingSection() {
         </header>
 
         <div
-          className="mx-auto mt-10 flex w-full max-w-2xl flex-col items-stretch gap-3 sm:mt-12 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center"
+          className="mx-auto mt-10 flex w-full max-w-2xl justify-center sm:mt-12"
           role="group"
           aria-label="Abrechnungszeitraum"
         >
-          <div className="flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:min-w-[280px] sm:flex-1 sm:max-w-md">
+          <div className="flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:min-w-[280px] sm:max-w-md">
             <button
               type="button"
               onClick={() => setBilling("monthly")}
@@ -197,18 +183,18 @@ export function PricingSection() {
             <button
               type="button"
               onClick={() => setBilling("yearly")}
-              className={`min-h-[44px] flex-1 rounded-lg px-3 text-sm font-semibold transition sm:px-4 sm:text-base ${
+              className={`inline-flex min-h-[44px] flex-1 flex-wrap items-center justify-center gap-x-1 gap-y-1 rounded-lg px-2 py-1.5 text-sm font-semibold transition sm:px-3 sm:text-base ${
                 billing === "yearly"
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
               }`}
             >
-              Jährlich
+              <span>Jährlich</span>
+              <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                2 Monate gratis
+              </span>
             </button>
           </div>
-          <span className="mx-auto inline-flex min-h-[44px] items-center justify-center rounded-full bg-green-100 px-3 text-xs font-semibold text-green-800 sm:mx-0 sm:min-h-0 sm:py-1.5">
-            2 Monate gratis
-          </span>
         </div>
 
         <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 md:mt-12 md:grid md:grid-cols-3 md:items-end md:gap-6 lg:gap-8">
@@ -226,7 +212,6 @@ export function PricingSection() {
                 variant="light"
                 billing={billing}
                 bruttoMain={starterBruttoMain}
-                bruttoCompareStrike={starterBruttoStrike}
                 nettoAmountLabel={starterNettoLabel}
                 yearlyBruttoTotalDisplay={starterYearBruttoTotal}
               />
@@ -279,7 +264,6 @@ export function PricingSection() {
                 variant="dark"
                 billing={billing}
                 bruttoMain={proBruttoMain}
-                bruttoCompareStrike={proBruttoStrike}
                 nettoAmountLabel={proNettoLabel}
                 yearlyBruttoTotalDisplay={proYearBruttoTotal}
               />
@@ -332,7 +316,6 @@ export function PricingSection() {
                 variant="light"
                 billing={billing}
                 bruttoMain={businessBruttoMain}
-                bruttoCompareStrike={businessBruttoStrike}
                 nettoAmountLabel={businessNettoLabel}
                 yearlyBruttoTotalDisplay={businessYearBruttoTotal}
               />
