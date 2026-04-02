@@ -172,8 +172,8 @@ function useCountUp(target: number, durationMs: number, enabled: boolean) {
 }
 
 const HERO_FOTO_PATHS = [
-  { src: "/images/hero-foto1.png", label: "Foto 1" },
-  { src: "/images/hero-foto2.png", label: "Foto 2" },
+  { src: "public/images/hero-foto1.png", label: "Foto 1" },
+  { src: "public/images/hero-foto2.png", label: "Foto 2" },
 ] as const;
 
 function HeroPhotoThumb({
