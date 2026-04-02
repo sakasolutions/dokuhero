@@ -8,6 +8,7 @@ declare module "next-auth" {
       email: string;
       gesperrt?: number;
       plan?: string;
+      registriert_am?: string | null;
       abo_bis?: string | null;
       erstellt_am?: string | null;
     };
@@ -19,6 +20,7 @@ declare module "next-auth" {
     email: string;
     gesperrt?: number;
     plan?: string;
+    registriert_am?: string | null;
     abo_bis?: string | null;
     erstellt_am?: string | null;
   }
@@ -31,6 +33,7 @@ declare module "next-auth/jwt" {
     email: string;
     gesperrt?: number;
     plan?: string;
+    registriert_am?: string | null;
     abo_bis?: string | null;
     erstellt_am?: string | null;
   }

@@ -88,6 +88,66 @@ export const authOptions: NextAuthOptions = {
           token.abo_bis = (user as { abo_bis?: unknown }).abo_bis as any;
         if ("erstellt_am" in user)
           token.erstellt_am = (user as { erstellt_am?: unknown }).erstellt_am as any;
+        if ("registriert_am" in user)
+          token.registriert_am = (user as { registriert_am?: unknown }).registriert_am as any;
+
+        // Nach Login: Plan/Trial-Daten aus der DB holen (für Middleware-Gating)
+        try {
+          const pool = getPool();
+          type BetriebDataRow = RowDataPacket & {
+            plan: string | null;
+            registriert_am: Date | null;
+            abo_bis: Date | null;
+            gesperrt: number | null;
+          };
+
+          let rows: BetriebDataRow[] = [];
+          try {
+            const [r] = await pool.execute<BetriebDataRow[]>(
+              `SELECT plan,
+                      COALESCE(registriert_am, erstellt_am) AS registriert_am,
+                      abo_bis,
+                      gesperrt
+               FROM betriebe WHERE id = ? LIMIT 1`,
+              [token.betrieb_id]
+            );
+            rows = r;
+          } catch (e) {
+            // Falls registriert_am noch nicht existiert, fallback auf erstellt_am
+            const code =
+              e && typeof e === "object" && "code" in e
+                ? String((e as { code?: string }).code)
+                : "";
+            if (code === "ER_BAD_FIELD_ERROR") {
+              const [r] = await pool.execute<BetriebDataRow[]>(
+                `SELECT plan,
+                        erstellt_am AS registriert_am,
+                        abo_bis,
+                        gesperrt
+                 FROM betriebe WHERE id = ? LIMIT 1`,
+                [token.betrieb_id]
+              );
+              rows = r;
+            } else {
+              throw e;
+            }
+          }
+
+          const b = rows[0];
+          if (b) {
+            token.plan = typeof b.plan === "string" ? b.plan : token.plan;
+            token.gesperrt =
+              typeof b.gesperrt === "number" ? b.gesperrt : token.gesperrt;
+            token.abo_bis =
+              b.abo_bis instanceof Date ? b.abo_bis.toISOString() : null;
+            token.registriert_am =
+              b.registriert_am instanceof Date
+                ? b.registriert_am.toISOString()
+                : null;
+          }
+        } catch {
+          // Fallback: Token bleibt wie gehabt (UI funktioniert trotzdem)
+        }
       }
       if (trigger === "update" && session && typeof session === "object") {
         const s = session as { name?: unknown };
@@ -104,6 +164,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email;
         session.user.gesperrt = token.gesperrt ?? 0;
         session.user.plan = (token as any).plan;
+        session.user.registriert_am = (token as any).registriert_am;
         session.user.abo_bis = (token as any).abo_bis;
         session.user.erstellt_am = (token as any).erstellt_am;
       }
