@@ -66,17 +66,34 @@ export function AuthSplitLayout({ children }: { children: React.ReactNode }) {
 
       {/* Formular: Mobile gleicher Gradient wie Brand-Desktop; Desktop hell */}
       <div className="flex h-screen min-h-0 w-full flex-col overflow-y-auto overflow-x-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 lg:bg-slate-50">
-        <div className="flex shrink-0 justify-start px-6 pb-2 pt-6 lg:hidden">
-          <Link
-            href="/"
-            className="flex items-center gap-1 text-sm text-blue-300 transition-colors hover:text-white"
-          >
-            ← Zurück zur Startseite
-          </Link>
-        </div>
-
-        <div className="flex flex-1 items-center justify-center px-6 pb-10 pt-4 lg:p-16 lg:pt-16">
-          <div className="w-full min-w-0 max-w-sm">{children}</div>
+        <div className="flex flex-1 items-center justify-center px-6 pb-10 pt-8 lg:p-16 lg:pt-16">
+          <div className="w-full min-w-0 max-w-sm">
+            {/* Mobile: Kopfzeile Marke + Zurück (gleiche Spur wie Formular) */}
+            <div className="mb-8 flex w-full border-b border-white/15 pb-4 lg:hidden">
+              <div className="flex items-center justify-between gap-3">
+                <Link
+                  href="/"
+                  className="inline-flex min-w-0 items-center gap-2 rounded-md font-bold text-white outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                    <FileText
+                      className="h-4 w-4 text-white"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  </span>
+                  <span className="truncate text-base">DokuHero</span>
+                </Link>
+                <Link
+                  href="/"
+                  className="flex shrink-0 items-center gap-1 text-sm text-blue-100 transition-colors hover:text-white"
+                >
+                  ← Zurück
+                </Link>
+              </div>
+            </div>
+            {children}
+          </div>
         </div>
       </div>
     </div>

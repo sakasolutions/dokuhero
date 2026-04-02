@@ -6,18 +6,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 const inputClass =
-  "w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 " +
-  "border-white/20 bg-white/10 text-white placeholder:text-slate-400 focus:ring-blue-400 " +
-  "lg:border-slate-200 lg:bg-white lg:text-slate-900 lg:placeholder:text-slate-400 lg:focus:ring-blue-500";
+  "w-full rounded-xl border-2 px-4 py-3 shadow-sm focus:outline-none focus:ring-2 " +
+  "border-white/40 bg-white/[0.18] text-white placeholder:text-slate-300 focus:border-blue-400 focus:ring-blue-400 " +
+  "lg:border lg:border-slate-200 lg:bg-white lg:text-slate-900 lg:placeholder:text-slate-400 lg:shadow-none lg:focus:border-slate-200 lg:focus:ring-blue-500";
 
 const btnPrimary =
   "w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
 
 const labelClass =
-  "mb-1.5 block text-sm font-medium text-blue-100 lg:text-slate-700";
+  "mb-1.5 block text-sm font-medium text-white lg:text-slate-700";
 
 const labelInlineClass =
-  "text-sm font-medium text-blue-100 lg:text-slate-700";
+  "text-sm font-medium text-white lg:text-slate-700";
 
 function LoginFormInner() {
   const router = useRouter();
@@ -83,7 +83,7 @@ function LoginFormInner() {
       <h1 className="text-2xl font-bold text-white lg:text-slate-900">
         Willkommen zurück
       </h1>
-      <p className="mt-1 text-blue-200/90 lg:text-slate-500">
+      <p className="mt-1 text-blue-100/90 lg:text-slate-500">
         Meld dich in deinem Konto an.
       </p>
 
@@ -111,7 +111,7 @@ function LoginFormInner() {
             </label>
             <Link
               href="/passwort-vergessen"
-              className="text-sm text-blue-300 hover:text-white hover:underline lg:text-blue-600 lg:hover:text-blue-700"
+              className="text-sm text-sky-300 hover:text-white hover:underline lg:text-blue-600 lg:hover:text-blue-700"
             >
               Passwort vergessen?
             </Link>
@@ -140,11 +140,11 @@ function LoginFormInner() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-blue-200/90 lg:text-slate-500">
+      <p className="mt-6 text-center text-sm text-blue-100/90 lg:text-slate-500">
         Noch kein Konto?{" "}
         <Link
           href="/register"
-          className="font-medium text-blue-300 hover:text-white hover:underline lg:text-blue-600 lg:hover:text-blue-700"
+          className="font-medium text-sky-300 hover:text-white hover:underline lg:text-blue-600 lg:hover:text-blue-700"
         >
           Registrieren
         </Link>
