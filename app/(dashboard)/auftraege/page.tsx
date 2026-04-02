@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import type { AuftragMitKunde, AuftragStatus } from "@/types";
@@ -48,6 +49,9 @@ function formatDate(d: string | Date) {
 }
 
 export default function AuftraegeListePage() {
+  const searchParams = useSearchParams();
+  const freigabeOnly = searchParams.get("freigabe") === "1";
+
   const [auftraege, setAuftraege] = useState<AuftragMitKunde[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +62,13 @@ export default function AuftraegeListePage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await fetch("/api/auftraege");
+        const url = freigabeOnly
+          ? "/api/auftraege?protokoll_status=zur_pruefung"
+          : "/api/auftraege";
+        const res = await fetch(url);
         if (!res.ok) throw new Error("load");
         const data = (await res.json()) as AuftragMitKunde[];
         if (!cancelled) setAuftraege(data);
@@ -72,7 +81,7 @@ export default function AuftraegeListePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [freigabeOnly]);
 
   const filtered = useMemo(() => {
     if (statusFilter === "alle") return auftraege;
@@ -94,6 +103,22 @@ export default function AuftraegeListePage() {
           Neuer Auftrag
         </Link>
       </div>
+
+      {freigabeOnly ? (
+        <div
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="status"
+        >
+          Es werden nur Aufträge angezeigt, deren aktuelles Protokoll{" "}
+          <strong>zur Prüfung</strong> steht.{" "}
+          <Link
+            href="/auftraege"
+            className="font-medium text-amber-950 underline decoration-amber-700/50 underline-offset-2 hover:text-amber-950"
+          >
+            Alle Aufträge anzeigen
+          </Link>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <label className="text-sm font-medium text-slate-700">Filter</label>

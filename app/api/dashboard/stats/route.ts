@@ -79,6 +79,16 @@ export async function GET() {
       [betriebId]
     );
 
+    const protokolle_zur_pruefung = await countSafe(
+      pool,
+      `SELECT COUNT(*) AS c
+       FROM protokolle p
+       INNER JOIN auftraege a ON a.id = p.auftrag_id
+       WHERE a.betrieb_id = ?
+         AND p.status = 'zur_pruefung'`,
+      [betriebId]
+    );
+
     const offeneAuftraege = await countSafe(
       pool,
       `SELECT COUNT(*) AS c FROM auftraege
@@ -126,6 +136,7 @@ export async function GET() {
       protokolleDieseWoche,
       protokolle_monat,
       protokoll_limit,
+      protokolle_zur_pruefung,
       offeneAuftraege,
       bewertungen_positiv,
       bewertungen_negativ,

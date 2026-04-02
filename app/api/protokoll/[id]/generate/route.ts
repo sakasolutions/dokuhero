@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { generatePDF } from "@/lib/pdf";
 import { sendProtokollMail } from "@/lib/mail";
+import { sessionMayFreigebenProtokoll } from "@/lib/protokoll-freigabe";
 import type { RowDataPacket } from "mysql2";
 import { z } from "zod";
 
@@ -20,6 +21,7 @@ interface LoadRow extends RowDataPacket {
   protokoll_id: number;
   auftrag_id: number;
   protokoll_erstellt: Date;
+  protokoll_status: string;
   beschreibung: string | null;
   kunde_name: string | null;
   kunde_email: string | null;
@@ -63,8 +65,16 @@ export async function POST(request: Request, context: RouteContext) {
     const { kiText, sendMail } = parsed.data;
     const pool = getPool();
 
+    if (!sessionMayFreigebenProtokoll(session)) {
+      return NextResponse.json(
+        { error: "Keine Berechtigung für PDF-Erstellung oder Freigabe-Versand." },
+        { status: 403 }
+      );
+    }
+
     const [rows] = await pool.execute<LoadRow[]>(
       `SELECT p.id AS protokoll_id, p.auftrag_id, p.erstellt_am AS protokoll_erstellt,
+              p.status AS protokoll_status,
               a.beschreibung,
               k.name AS kunde_name, k.email AS kunde_email,
               b.name AS betrieb_name,
@@ -81,6 +91,16 @@ export async function POST(request: Request, context: RouteContext) {
     const row = rows[0];
     if (!row) {
       return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    }
+
+    if (row.protokoll_status !== "zur_pruefung") {
+      return NextResponse.json(
+        {
+          error:
+            "Nur Protokolle mit Status „zur Prüfung“ können hier verarbeitet werden.",
+        },
+        { status: 400 }
+      );
     }
 
     const [fotoRows] = await pool.execute<FotoPfadRow[]>(
@@ -140,6 +160,10 @@ export async function POST(request: Request, context: RouteContext) {
     );
 
     if (emailSent) {
+      await pool.execute(
+        `UPDATE protokolle SET status = 'freigegeben' WHERE id = ?`,
+        [protokollId]
+      );
       await pool.execute(
         `UPDATE auftraege
          SET status = 'abgeschlossen', abgeschlossen_am = NOW()

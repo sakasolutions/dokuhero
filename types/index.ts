@@ -28,6 +28,8 @@ export interface Kunde {
 
 export type AuftragStatus = "offen" | "in_bearbeitung" | "abgeschlossen";
 
+export type ProtokollStatus = "entwurf" | "zur_pruefung" | "freigegeben";
+
 export interface Auftrag {
   id: number;
   betrieb_id: number;
@@ -42,6 +44,8 @@ export interface Auftrag {
 export interface AuftragMitKunde extends Auftrag {
   kunde_name: string | null;
   protokoll_id: number | null;
+  /** Status des zuletzt verknüpften Protokolls (JOIN), falls vorhanden */
+  protokoll_status?: string | null;
 }
 
 /** GET /api/auftraege/:id inkl. Protokoll-Liste */
@@ -50,6 +54,7 @@ export interface ProtokollListeEintrag {
   erstellt_am: string;
   gesendet_am: string | null;
   pdf_pfad: string | null;
+  status?: ProtokollStatus | string | null;
 }
 
 export interface AuftragMitProtokollen extends AuftragMitKunde {
@@ -64,6 +69,7 @@ export interface Protokoll {
   pdf_pfad: string | null;
   gesendet_am: Date | null;
   erstellt_am: Date;
+  status: ProtokollStatus;
 }
 
 export interface FotoEintrag {
@@ -82,6 +88,8 @@ export interface DashboardStats {
   protokolle_monat: number;
   /** 50 bei Starter, sonst null (unbegrenzt) */
   protokoll_limit: number | null;
+  /** Protokolle mit Status „zur Prüfung“ (Betrieb) */
+  protokolle_zur_pruefung: number;
   offeneAuftraege: number;
   bewertungen_positiv: number;
   bewertungen_negativ: number;

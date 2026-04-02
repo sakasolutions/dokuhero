@@ -17,6 +17,7 @@ interface AuftragRow extends RowDataPacket {
   abgeschlossen_am: Date | null;
   kunde_name: string | null;
   protokoll_id: number | null;
+  protokoll_status: string | null;
 }
 
 const createSchema = z.object({
@@ -24,18 +25,24 @@ const createSchema = z.object({
   beschreibung: z.string().optional().nullable(),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.betrieb_id) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const protokollStatusFilter =
+      searchParams.get("protokoll_status")?.trim() ?? "";
+    const filterZurPruefung = protokollStatusFilter === "zur_pruefung";
+
     const pool = getPool();
     const [rows] = await pool.execute<AuftragRow[]>(
       `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am,
               k.name AS kunde_name,
-              pr.id AS protokoll_id
+              pr.id AS protokoll_id,
+              pr.status AS protokoll_status
        FROM auftraege a
        LEFT JOIN kunden k ON k.id = a.kunde_id AND k.betrieb_id = a.betrieb_id
        LEFT JOIN protokolle pr ON pr.auftrag_id = a.id
@@ -46,6 +53,7 @@ export async function GET() {
            LIMIT 1
          )
        WHERE a.betrieb_id = ?
+         ${filterZurPruefung ? "AND pr.status = 'zur_pruefung'" : ""}
        ORDER BY a.erstellt_am DESC`,
       [session.user.betrieb_id]
     );

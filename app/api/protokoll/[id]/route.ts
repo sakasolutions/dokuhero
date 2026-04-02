@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import type { RowDataPacket } from "mysql2";
+import { sessionMayFreigebenProtokoll } from "@/lib/protokoll-freigabe";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,7 @@ interface JoinRow extends RowDataPacket {
   pdf_pfad: string | null;
   gesendet_am: Date | null;
   erstellt_am: Date;
+  status: string;
   kunde_name: string | null;
   kunde_email: string | null;
   auftrag_beschreibung: string | null;
@@ -28,6 +31,11 @@ interface FotoRow extends RowDataPacket {
 }
 
 type RouteContext = { params: { id: string } };
+
+const patchSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("reject") }),
+  z.object({ action: z.literal("submit_review") }),
+]);
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
@@ -44,7 +52,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const pool = getPool();
 
     const [prows] = await pool.execute<JoinRow[]>(
-      `SELECT p.id, p.auftrag_id, p.notiz, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am,
+      `SELECT p.id, p.auftrag_id, p.notiz, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status,
               k.name AS kunde_name, k.email AS kunde_email,
               a.beschreibung AS auftrag_beschreibung
        FROM protokolle p
@@ -68,6 +76,7 @@ export async function GET(_request: Request, context: RouteContext) {
       pdf_pfad: j.pdf_pfad,
       gesendet_am: j.gesendet_am,
       erstellt_am: j.erstellt_am,
+      status: j.status,
     };
 
     const [frows] = await pool.execute<FotoRow[]>(
@@ -83,9 +92,83 @@ export async function GET(_request: Request, context: RouteContext) {
       kunde_email: j.kunde_email,
       auftrag_beschreibung: j.auftrag_beschreibung,
       fotos: frows,
+      freigabe_erlaubt: sessionMayFreigebenProtokoll(session),
     });
   } catch (error) {
     console.error("Protokoll GET Fehler:", error);
+    return NextResponse.json({ error: "Fehler" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request, context: RouteContext) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.betrieb_id) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const protokollId = Number(context.params.id);
+    if (!Number.isFinite(protokollId)) {
+      return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });
+    }
+
+    let json: unknown;
+    try {
+      json = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Ungültiger JSON-Body" }, { status: 400 });
+    }
+
+    const parsed = patchSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const pool = getPool();
+    const action = parsed.data.action;
+
+    if (action === "reject") {
+      if (!sessionMayFreigebenProtokoll(session)) {
+        return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 });
+      }
+      const [res] = await pool.execute<ResultSetHeader>(
+        `UPDATE protokolle p
+         INNER JOIN auftraege a ON p.auftrag_id = a.id
+         SET p.status = 'entwurf'
+         WHERE p.id = ? AND a.betrieb_id = ? AND p.status = 'zur_pruefung'`,
+        [protokollId, session.user.betrieb_id]
+      );
+      if (res.affectedRows === 0) {
+        return NextResponse.json(
+          { error: "Zurückweisen nicht möglich (Status oder Zugriff)." },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    const [res] = await pool.execute<ResultSetHeader>(
+      `UPDATE protokolle p
+       INNER JOIN auftraege a ON p.auftrag_id = a.id
+       SET p.status = 'zur_pruefung'
+       WHERE p.id = ? AND a.betrieb_id = ?
+         AND p.status = 'entwurf'
+         AND p.ki_text IS NOT NULL
+         AND TRIM(p.ki_text) <> ''`,
+      [protokollId, session.user.betrieb_id]
+    );
+    if (res.affectedRows === 0) {
+      return NextResponse.json(
+        { error: "Einreichen nicht möglich (Status oder fehlender Protokolltext)." },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Protokoll PATCH Fehler:", error);
     return NextResponse.json({ error: "Fehler" }, { status: 500 });
   }
 }

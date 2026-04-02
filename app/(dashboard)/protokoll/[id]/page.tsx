@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { FotoEintrag, Protokoll } from "@/types";
+import type { FotoEintrag, Protokoll, ProtokollStatus } from "@/types";
 
 type ApiResponse = {
   protokoll: Protokoll;
@@ -20,6 +20,7 @@ type ApiResponse = {
   kunde_email: string | null;
   auftrag_beschreibung: string | null;
   fotos: FotoEintrag[];
+  freigabe_erlaubt: boolean;
 };
 
 function formatDate(d: string | Date | null) {
@@ -34,7 +35,20 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail";
+type Busy = null | "preview" | "pdf" | "mail" | "reject" | "submit";
+
+function protokollStatusLabel(s: ProtokollStatus | string): string {
+  switch (s) {
+    case "entwurf":
+      return "Entwurf";
+    case "zur_pruefung":
+      return "Zur Prüfung";
+    case "freigegeben":
+      return "Freigegeben";
+    default:
+      return String(s);
+  }
+}
 
 const REGENERATE_PRESETS: { label: string; text: string }[] = [
   { label: "Kürzer", text: "Bitte kürzer fassen" },
@@ -94,8 +108,14 @@ export default function ProtokollAnsichtPage() {
   useEffect(() => {
     if (!data) return;
     setKiTextDraft(data.protokoll.ki_text ?? "");
-    if (data.protokoll.pdf_pfad) {
+    const st = data.protokoll.status;
+    const chef = data.freigabe_erlaubt;
+    if (st === "freigegeben") {
       setStepPdf(true);
+    } else if (st === "zur_pruefung") {
+      setStepPdf(chef && !!data.protokoll.pdf_pfad);
+    } else {
+      setStepPdf(false);
     }
   }, [data]);
 
@@ -182,6 +202,62 @@ export default function ProtokollAnsichtPage() {
     setRegenerateFeedback("");
   }
 
+  async function postReject() {
+    setBannerError(null);
+    setBannerSuccess(null);
+    setBusy("reject");
+    try {
+      const res = await fetch(`/api/protokoll/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject" }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBannerError(
+          typeof j.error === "string"
+            ? j.error
+            : "Zurückweisen fehlgeschlagen."
+        );
+        return;
+      }
+      setBannerSuccess("Protokoll wurde abgelehnt und ist wieder ein Entwurf.");
+      await load();
+    } catch {
+      setBannerError("Netzwerkfehler.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function postSubmitReview() {
+    setBannerError(null);
+    setBannerSuccess(null);
+    setBusy("submit");
+    try {
+      const res = await fetch(`/api/protokoll/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "submit_review" }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBannerError(
+          typeof j.error === "string"
+            ? j.error
+            : "Einreichen fehlgeschlagen."
+        );
+        return;
+      }
+      setBannerSuccess("Protokoll wurde erneut zur Prüfung eingereicht.");
+      await load();
+    } catch {
+      setBannerError("Netzwerkfehler.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function postGenerate(sendMail: boolean) {
     setBannerError(null);
     setBannerSuccess(null);
@@ -244,13 +320,30 @@ export default function ProtokollAnsichtPage() {
     );
   }
 
-  const { protokoll, kunde_name, kunde_email, auftrag_beschreibung, fotos } =
-    data;
+  const {
+    protokoll,
+    kunde_name,
+    kunde_email,
+    auftrag_beschreibung,
+    fotos,
+    freigabe_erlaubt: freigabeRaw,
+  } = data;
+  const chef = freigabeRaw === true;
   const pdfHref = protokoll.pdf_pfad ?? undefined;
   const pdfIframeSrc = pdfHref
     ? `${pdfHref}${pdfHref.includes("?") ? "&" : "?"}t=${pdfCacheBust}`
     : null;
   const emailDisplay = kunde_email?.trim() ?? "";
+
+  const pStatus = protokoll.status;
+  const isFreigegeben = pStatus === "freigegeben";
+  const isZurPruefung = pStatus === "zur_pruefung";
+  const isEntwurf = pStatus === "entwurf";
+  const kiReadonly = isFreigegeben;
+  const showChefFreigabeBar = isZurPruefung && chef;
+  const showWorkerWarten = isZurPruefung && !chef;
+  const hideSendInStep2 = showChefFreigabeBar;
+  const showWeiterZuPdf = isZurPruefung && chef;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -264,9 +357,27 @@ export default function ProtokollAnsichtPage() {
 
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Protokoll</h1>
-        <p className="text-slate-600">
-          {formatDate(protokoll.erstellt_am)}
-          {kunde_name ? ` · ${kunde_name}` : null}
+        <p className="mt-1 flex flex-wrap items-center gap-2 text-slate-600">
+          <span>
+            {formatDate(protokoll.erstellt_am)}
+            {kunde_name ? ` · ${kunde_name}` : null}
+          </span>
+          {isFreigegeben ? (
+            <>
+              <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                Freigegeben
+              </span>
+              {protokoll.gesendet_am ? (
+                <span className="text-sm text-slate-500">
+                  Gesendet: {formatDate(protokoll.gesendet_am)}
+                </span>
+              ) : null}
+            </>
+          ) : (
+            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+              {protokollStatusLabel(pStatus)}
+            </span>
+          )}
         </p>
       </div>
 
@@ -285,6 +396,64 @@ export default function ProtokollAnsichtPage() {
         >
           {bannerSuccess}
         </div>
+      ) : null}
+
+      {showWorkerWarten ? (
+        <div
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="status"
+        >
+          Dieses Protokoll wartet auf die Freigabe durch einen
+          berechtigten Nutzer (Chef / Administrator).
+        </div>
+      ) : null}
+
+      {showChefFreigabeBar ? (
+        <Card className="border-primary/30 bg-primary/[0.06]">
+          <h2 className="text-lg font-semibold text-slate-900">Freigabe</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Prüfe den Protokolltext und die PDF-Vorschau (Schritt 2). Wenn alles
+            passt: freigeben und an den Kunden senden.
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button
+              type="button"
+              className="min-h-12 gap-2 text-base shadow-sm"
+              disabled={
+                busy !== null ||
+                !hasKiText ||
+                !emailDisplay
+              }
+              onClick={() => void postGenerate(true)}
+              title={
+                !emailDisplay
+                  ? "Keine E-Mail beim Kunden hinterlegt"
+                  : undefined
+              }
+            >
+              {busy === "mail" ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+              {busy === "mail"
+                ? "Wird gesendet…"
+                : "Freigeben & Senden"}
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              className="min-h-12 text-base"
+              disabled={busy !== null}
+              onClick={() => void postReject()}
+            >
+              {busy === "reject" ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : null}
+              Ablehnen
+            </Button>
+          </div>
+        </Card>
       ) : null}
 
       <Card>
@@ -311,10 +480,12 @@ export default function ProtokollAnsichtPage() {
           Schritt 1 – KI-Protokolltext
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Erzeuge einen Entwurf mit KI, bearbeite ihn und gehe danach zur PDF-Erstellung.
+          {kiReadonly
+            ? "Dieses Protokoll ist freigegeben – der Text kann nicht mehr geändert werden."
+            : "Erzeuge einen Entwurf mit KI, bearbeite ihn und reiche ihn zur Prüfung ein bzw. gehe als Freigeber zur PDF-Erstellung."}
         </p>
 
-        {!hasKiText ? (
+        {!hasKiText && !kiReadonly ? (
           <div className="mt-6">
             <Button
               type="button"
@@ -330,7 +501,7 @@ export default function ProtokollAnsichtPage() {
               {busy === "preview" ? "Text wird erstellt…" : "Text generieren"}
             </Button>
           </div>
-        ) : (
+        ) : hasKiText ? (
           <div className="mt-6 space-y-4">
             <label htmlFor="ki-text" className="sr-only">
               KI-Protokolltext
@@ -339,10 +510,12 @@ export default function ProtokollAnsichtPage() {
               id="ki-text"
               value={kiTextDraft}
               onChange={(e) => setKiTextDraft(e.target.value)}
+              readOnly={kiReadonly}
               rows={16}
-              className="w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-base leading-relaxed text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-base leading-relaxed text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 read-only:bg-slate-50 read-only:text-slate-800"
               placeholder="Protokolltext…"
             />
+            {!kiReadonly ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
@@ -359,17 +532,20 @@ export default function ProtokollAnsichtPage() {
                 <RefreshCw className="h-5 w-5" />
                 Text neu generieren
               </Button>
-              <Button
-                type="button"
-                className="min-h-12 gap-2 text-base"
-                disabled={busy !== null}
-                onClick={() => setStepPdf(true)}
-              >
-                Weiter zu PDF
-              </Button>
+              {showWeiterZuPdf ? (
+                <Button
+                  type="button"
+                  className="min-h-12 gap-2 text-base"
+                  disabled={busy !== null}
+                  onClick={() => setStepPdf(true)}
+                >
+                  Weiter zu PDF
+                </Button>
+              ) : null}
             </div>
+            ) : null}
 
-            {regeneratePanelOpen ? (
+            {!kiReadonly && regeneratePanelOpen ? (
               <div className="rounded-lg border border-slate-200 bg-slate-100/90 px-4 py-4 text-slate-800 shadow-sm">
                 <p className="text-sm font-medium text-slate-700">
                   Was soll geändert werden?
@@ -435,8 +611,31 @@ export default function ProtokollAnsichtPage() {
               </div>
             ) : null}
           </div>
-        )}
+        ) : null}
       </Card>
+
+      {isEntwurf && hasKiText ? (
+        <Card>
+          <p className="text-sm text-slate-600">
+            Wenn der Protokolltext fertig ist, reiche ihn wieder zur Prüfung ein.
+          </p>
+          <Button
+            type="button"
+            className="mt-4 min-h-12 gap-2 text-base"
+            disabled={busy !== null}
+            onClick={() => void postSubmitReview()}
+          >
+            {busy === "submit" ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+            {busy === "submit"
+              ? "Wird eingereicht…"
+              : "Erneut zur Prüfung einreichen"}
+          </Button>
+        </Card>
+      ) : null}
 
       {fotos.length > 0 ? (
         <div>
@@ -468,11 +667,15 @@ export default function ProtokollAnsichtPage() {
             Schritt 2 – PDF
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Erstelle das PDF aus dem aktuellen Text. Versand per E-Mail ist optional.
+            {isFreigegeben
+              ? "Freigegebenes Protokoll – Vorschau und Download."
+              : hideSendInStep2
+                ? "Erstelle die PDF-Vorschau. Der Versand an den Kunden erfolgt über „Freigeben & Senden“ oben."
+                : "Erstelle das PDF aus dem aktuellen Text. Versand per E-Mail ist optional."}
           </p>
 
           <div className="mt-6 space-y-4">
-            {!pdfHref ? (
+            {!pdfHref && !isFreigegeben ? (
               <Button
                 type="button"
                 className="min-h-12 w-full gap-2 text-base sm:w-auto"
@@ -498,73 +701,77 @@ export default function ProtokollAnsichtPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-12 gap-2 text-base"
-                    disabled={busy !== null || !hasKiText}
-                    onClick={() => void postGenerate(false)}
-                  >
-                    {busy === "pdf" ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-5 w-5" />
-                    )}
-                    PDF neu erstellen
-                  </Button>
-                  <Button
-                    type="button"
-                    className="min-h-12 gap-2 text-base"
-                    disabled={
-                      busy !== null || !hasKiText || !emailDisplay
-                    }
-                    onClick={() => void postGenerate(true)}
-                    title={
-                      !emailDisplay
-                        ? "Keine E-Mail beim Kunden hinterlegt"
-                        : undefined
-                    }
-                  >
-                    {busy === "mail" ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <Send className="h-5 w-5" />
-                    )}
-                    {busy === "mail"
-                      ? "Wird gesendet…"
-                      : emailDisplay
-                        ? `PDF senden an ${emailDisplay}`
-                        : "PDF senden (keine E-Mail)"}
-                  </Button>
-                  <a
-                    href={pdfHref}
-                    download
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-50"
-                  >
-                    <FileDown className="h-5 w-5 shrink-0" />
-                    Nur herunterladen
-                  </a>
+                  {!isFreigegeben ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-12 gap-2 text-base"
+                      disabled={busy !== null || !hasKiText}
+                      onClick={() => void postGenerate(false)}
+                    >
+                      {busy === "pdf" ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-5 w-5" />
+                      )}
+                      PDF neu erstellen
+                    </Button>
+                  ) : null}
+                  {!isFreigegeben && !hideSendInStep2 ? (
+                    <Button
+                      type="button"
+                      className="min-h-12 gap-2 text-base"
+                      disabled={
+                        busy !== null || !hasKiText || !emailDisplay
+                      }
+                      onClick={() => void postGenerate(true)}
+                      title={
+                        !emailDisplay
+                          ? "Keine E-Mail beim Kunden hinterlegt"
+                          : undefined
+                      }
+                    >
+                      {busy === "mail" ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Send className="h-5 w-5" />
+                      )}
+                      {busy === "mail"
+                        ? "Wird gesendet…"
+                        : emailDisplay
+                          ? `PDF senden an ${emailDisplay}`
+                          : "PDF senden (keine E-Mail)"}
+                    </Button>
+                  ) : null}
+                  {pdfHref ? (
+                    <a
+                      href={pdfHref}
+                      download
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium text-slate-800 hover:bg-slate-50"
+                    >
+                      <FileDown className="h-5 w-5 shrink-0" />
+                      Nur herunterladen
+                    </a>
+                  ) : null}
                 </div>
-                <p className="text-xs text-slate-500">
-                  „PDF senden“ erstellt das PDF erneut mit dem aktuellen Text und
-                  versendet es. „Nur herunterladen“ löst keinen Versand aus.
-                </p>
+                {!isFreigegeben && !hideSendInStep2 ? (
+                  <p className="text-xs text-slate-500">
+                    „PDF senden“ erstellt das PDF erneut mit dem aktuellen Text
+                    und versendet es. „Nur herunterladen“ löst keinen Versand
+                    aus.
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
-            {!pdfHref && !hasKiText ? (
+            {!pdfHref && !hasKiText && !isFreigegeben ? (
               <p className="text-sm text-primary">
-                Bitte zuerst in Schritt 1 einen Protokolltext erzeugen oder einfügen.
+                Bitte zuerst in Schritt 1 einen Protokolltext erzeugen oder
+                einfügen.
               </p>
             ) : null}
           </div>
         </Card>
-      ) : null}
-
-      {protokoll.gesendet_am ? (
-        <p className="text-center text-xs text-slate-500">
-          Zuletzt gesendet: {formatDate(protokoll.gesendet_am)}
-        </p>
       ) : null}
     </div>
   );
