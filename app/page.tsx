@@ -427,16 +427,21 @@ export default function LandingPage() {
                   automatisch.
                 </span>
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <Link
-                  href="/register"
-                  className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-md shadow-primary/25 transition-colors hover:bg-primary/90 md:min-h-[52px] md:px-10 md:text-lg`}
-                >
-                  Kostenlos starten
-                </Link>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+                <div className="flex flex-col items-stretch sm:items-start">
+                  <Link
+                    href="/register"
+                    className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-md shadow-primary/25 transition-colors hover:bg-primary/90 md:min-h-[52px] md:px-10 md:text-lg`}
+                  >
+                    Kostenlos starten
+                  </Link>
+                  <p className="text-sm text-slate-500 mt-2">
+                    30 Tage kostenlos · ab 29 € /Monat · Monatlich kündbar
+                  </p>
+                </div>
                 <a
                   href="#how-it-works"
-                  className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-6 py-3.5 text-base font-semibold text-slate-700 transition-colors active:bg-slate-200 md:min-h-[52px] md:hover:bg-slate-100"
+                  className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-6 py-3.5 text-base font-semibold text-slate-700 transition-colors active:bg-slate-200 sm:self-start md:min-h-[52px] md:hover:bg-slate-100"
                 >
                   Wie es funktioniert
                   <ChevronDown className="h-5 w-5" aria-hidden />
