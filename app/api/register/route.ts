@@ -47,17 +47,37 @@ interface IdRow extends RowDataPacket {
   id: number;
 }
 
+function logMysqlError(context: string, e: unknown) {
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    console.error(`[register] ${context}`, {
+      message: o.message ?? (e instanceof Error ? e.message : String(e)),
+      code: o.code,
+      errno: o.errno,
+      sqlState: o.sqlState,
+      sqlMessage: o.sqlMessage,
+    });
+  } else {
+    console.error(`[register] ${context}`, e);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     let body: unknown;
     try {
       body = await request.json();
-    } catch {
+    } catch (parseErr) {
+      console.error("[register] JSON-Body konnte nicht gelesen werden:", parseErr);
       return NextResponse.json({ error: "Ungültiger JSON-Body" }, { status: 400 });
     }
 
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
+      console.error(
+        "[register] Validierung fehlgeschlagen:",
+        parsed.error.flatten()
+      );
       const fe = parsed.error.flatten().fieldErrors;
       const first =
         Object.values(fe)
@@ -87,15 +107,15 @@ export async function POST(request: Request) {
     const hash = await bcrypt.hash(password, 12);
 
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO betriebe (name, email, passwort, telefon, branche, adresse, logo_pfad, google_bewertung_link)
-       VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL)`,
-      [
-        name.trim(),
-        emailNorm,
-        hash,
-        telefon?.trim() || null,
-        branche,
-      ]
+      `INSERT INTO betriebe (
+         name, email, passwort, telefon, branche, adresse,
+         logo_pfad, google_bewertung_link,
+         plan, gesperrt, registriert_am, erstellt_am
+       ) VALUES (
+         ?, ?, ?, ?, ?, NULL, NULL, NULL,
+         'trial', 0, NOW(), NOW()
+       )`,
+      [name.trim(), emailNorm, hash, telefon?.trim() || null, branche]
     );
 
     try {
@@ -132,15 +152,21 @@ export async function POST(request: Request) {
       );
     }
     if (code === "ER_BAD_FIELD_ERROR") {
+      logMysqlError("INSERT: unbekannte/fehlende Spalte (ER_BAD_FIELD_ERROR)", e);
+      const sqlMsg =
+        e && typeof e === "object" && "sqlMessage" in e
+          ? String((e as { sqlMessage: string }).sqlMessage)
+          : "";
       return NextResponse.json(
         {
           error:
-            "Datenbank: Spalte „branche“ fehlt – Migration ausführen (migrations/add_betrieb_branche.sql).",
+            "Datenbankschema passt nicht (fehlende oder falsch benannte Spalte). Siehe Server-Log.",
+          detail: sqlMsg || undefined,
         },
         { status: 500 }
       );
     }
-    console.error("[register]", e);
+    logMysqlError("Registrierung fehlgeschlagen (INSERT/DB)", e);
     return NextResponse.json(
       { error: "Registrierung fehlgeschlagen." },
       { status: 500 }

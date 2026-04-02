@@ -23,6 +23,7 @@ export async function middleware(request: NextRequest) {
   const publicPaths = [
     "/login",
     "/register",
+    "/api/register",
     "/preise",
     "/api/stripe",
     "/api/auth",
