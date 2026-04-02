@@ -227,7 +227,7 @@ export default function ProtokollAnsichtPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl p-4">
+      <div className="mx-auto max-w-3xl">
         <p className="text-slate-600">Laden…</p>
       </div>
     );
@@ -235,7 +235,7 @@ export default function ProtokollAnsichtPage() {
 
   if (error || !data) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 p-4">
+      <div className="mx-auto max-w-3xl space-y-4">
         <p className="text-red-600">{error ?? "Unbekannter Fehler"}</p>
         <Link href="/auftraege" className="text-primary hover:text-primary/80 hover:underline">
           Zurück zu Aufträgen
@@ -253,7 +253,7 @@ export default function ProtokollAnsichtPage() {
   const emailDisplay = kunde_email?.trim() ?? "";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 pb-24">
+    <div className="mx-auto max-w-3xl space-y-6">
       <Link
         href="/auftraege"
         className="inline-flex min-h-12 items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"

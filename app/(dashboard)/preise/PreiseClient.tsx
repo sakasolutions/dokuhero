@@ -66,7 +66,7 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="space-y-6">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-sm text-slate-600">Dein aktueller Plan</p>
         <p className="mt-1 text-xl font-bold text-slate-900">{planLabel}</p>
