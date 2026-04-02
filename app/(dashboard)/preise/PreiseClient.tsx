@@ -14,7 +14,7 @@ type Props = {
 export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
   const router = useRouter();
   const [billing, setBilling] = useState<Billing>("monthly");
-  const [busy, setBusy] = useState<null | "starter" | "pro">(null);
+  const [busyPriceId, setBusyPriceId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const planLabel = useMemo(() => {
@@ -26,29 +26,42 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
     return currentPlan || "–";
   }, [currentPlan]);
 
-  async function startCheckout(plan: "starter" | "pro") {
+  const priceStarter =
+    billing === "monthly"
+      ? process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY
+      : process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_YEARLY;
+  const pricePro =
+    billing === "monthly"
+      ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY
+      : process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY;
+
+  async function handleCheckout(priceId: string) {
     setError(null);
-    setBusy(plan);
+    if (!priceId) {
+      setError("Stripe priceId fehlt (NEXT_PUBLIC_STRIPE_PRICE_* in .env.local).");
+      return;
+    }
+    setBusyPriceId(priceId);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, billing }),
+        body: JSON.stringify({ priceId }),
       });
-      const j = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!res.ok) {
-        setError(typeof j.error === "string" ? j.error : "Checkout fehlgeschlagen.");
+        setError(typeof data.error === "string" ? data.error : "Checkout fehlgeschlagen.");
         return;
       }
-      if (!j.url) {
-        setError("Checkout-URL fehlt.");
+      if (data.url) {
+        window.location.href = data.url;
         return;
       }
-      window.location.href = j.url;
+      setError("Checkout-URL fehlt.");
     } catch {
       setError("Netzwerkfehler.");
     } finally {
-      setBusy(null);
+      setBusyPriceId(null);
     }
   }
 
@@ -58,10 +71,17 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
         <p className="text-sm text-slate-600">Dein aktueller Plan</p>
         <p className="mt-1 text-xl font-bold text-slate-900">{planLabel}</p>
         {currentPlan?.toLowerCase() === "trial" && trialDaysLeft != null ? (
-          <p className="mt-2 text-sm text-slate-600">
-            Noch <span className="font-semibold text-slate-900">{trialDaysLeft}</span>{" "}
-            Tage Trial
-          </p>
+          trialDaysLeft <= 0 ? (
+            <p className="mt-2 text-sm font-medium text-red-600" role="status">
+              Dein Trial ist abgelaufen
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">
+              Noch{" "}
+              <span className="font-semibold text-slate-900">{trialDaysLeft}</span>{" "}
+              Tage Trial
+            </p>
+          )
         ) : null}
       </div>
 
@@ -136,10 +156,10 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
           <button
             type="button"
             className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
-            disabled={busy != null}
-            onClick={() => void startCheckout("starter")}
+            disabled={busyPriceId != null}
+            onClick={() => void handleCheckout(priceStarter ?? "")}
           >
-            {busy === "starter" ? "Weiterleiten…" : "30 Tage kostenlos starten"}
+            {busyPriceId === priceStarter ? "Weiterleiten…" : "30 Tage kostenlos starten"}
           </button>
         </div>
 
@@ -172,10 +192,10 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
           <button
             type="button"
             className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
-            disabled={busy != null}
-            onClick={() => void startCheckout("pro")}
+            disabled={busyPriceId != null}
+            onClick={() => void handleCheckout(pricePro ?? "")}
           >
-            {busy === "pro" ? "Weiterleiten…" : "30 Tage kostenlos starten"}
+            {busyPriceId === pricePro ? "Weiterleiten…" : "30 Tage kostenlos starten"}
           </button>
         </div>
       </div>

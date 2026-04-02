@@ -13,15 +13,23 @@ function allowedPriceIds(): string[] {
     process.env.STRIPE_PRICE_STARTER_YEARLY,
     process.env.STRIPE_PRICE_PRO_MONTHLY,
     process.env.STRIPE_PRICE_PRO_YEARLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_YEARLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY,
   ].filter(Boolean) as string[];
-  return ids;
+  return [...new Set(ids)];
 }
 
 function priceIdFor(plan: "starter" | "pro", billing: "monthly" | "yearly"): string | null {
-  if (plan === "starter" && billing === "monthly") return process.env.STRIPE_PRICE_STARTER_MONTHLY ?? null;
-  if (plan === "starter" && billing === "yearly") return process.env.STRIPE_PRICE_STARTER_YEARLY ?? null;
-  if (plan === "pro" && billing === "monthly") return process.env.STRIPE_PRICE_PRO_MONTHLY ?? null;
-  if (plan === "pro" && billing === "yearly") return process.env.STRIPE_PRICE_PRO_YEARLY ?? null;
+  if (plan === "starter" && billing === "monthly")
+    return process.env.STRIPE_PRICE_STARTER_MONTHLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY ?? null;
+  if (plan === "starter" && billing === "yearly")
+    return process.env.STRIPE_PRICE_STARTER_YEARLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_YEARLY ?? null;
+  if (plan === "pro" && billing === "monthly")
+    return process.env.STRIPE_PRICE_PRO_MONTHLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY ?? null;
+  if (plan === "pro" && billing === "yearly")
+    return process.env.STRIPE_PRICE_PRO_YEARLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY ?? null;
   return null;
 }
 
