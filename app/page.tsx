@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   ClipboardList,
+  FileText,
   HardHat,
   Lock,
   Mail,
@@ -170,6 +171,46 @@ function useCountUp(target: number, durationMs: number, enabled: boolean) {
   return value;
 }
 
+const HERO_FOTO_PATHS = [
+  { src: "/images/hero-foto1.jpg", label: "Foto 1" },
+  { src: "/images/hero-foto2.jpg", label: "Foto 2" },
+] as const;
+
+function HeroPhotoThumb({
+  imageSrc,
+  label,
+}: {
+  imageSrc: string;
+  label: string;
+}) {
+  const [usePlaceholder, setUsePlaceholder] = useState(false);
+
+  return (
+    <figure className="flex shrink-0 flex-col items-center gap-1.5">
+      <div className="flex h-16 w-20 items-center justify-center overflow-hidden rounded-lg bg-slate-100 shadow-md shadow-slate-300/45">
+        {!usePlaceholder ? (
+          // eslint-disable-next-line @next/next/no-img-element -- lokale Hero-Assets optional
+          <img
+            src={imageSrc}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={() => setUsePlaceholder(true)}
+          />
+        ) : (
+          <Camera
+            className="h-6 w-6 text-slate-400"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+        )}
+      </div>
+      <figcaption className="text-center text-xs font-medium text-slate-500">
+        {label}
+      </figcaption>
+    </figure>
+  );
+}
+
 function HeroMockCard() {
   return (
     <div
@@ -187,8 +228,9 @@ function HeroMockCard() {
         <span className="font-medium text-slate-800">Max Mustermann</span>
       </p>
       <div className="mt-3 flex gap-2">
-        <div className="h-16 w-20 shrink-0 animate-pulse rounded-lg bg-slate-200" />
-        <div className="h-16 w-20 shrink-0 animate-pulse rounded-lg bg-slate-200" />
+        {HERO_FOTO_PATHS.map(({ src, label }) => (
+          <HeroPhotoThumb key={src} imageSrc={src} label={label} />
+        ))}
       </div>
       <div className="mt-3 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 text-left">
         <Mic className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -268,10 +310,16 @@ export default function LandingPage() {
         <div className="mx-auto flex h-14 min-h-[48px] max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
-            className="text-base font-bold tracking-tight text-white md:text-lg"
+            className="flex items-center gap-2 outline-none ring-offset-2 ring-offset-slate-900 focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={closeMenu}
+            aria-label="DokuHero Startseite"
           >
-            DokuHero
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+              <FileText className="h-5 w-5 text-white" strokeWidth={2} aria-hidden />
+            </div>
+            <span className="font-sans text-xl font-bold text-white">
+              DokuHero
+            </span>
           </Link>
 
           <nav
@@ -370,8 +418,11 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600 md:mt-5 md:text-lg">
-                Foto machen, kurz sprechen — fertig. Professionelles PDF beim
-                Kunden, automatisch.
+                Foto machen, kurz sprechen — fertig.
+                <span className="mt-1 block">
+                  Dein Kunde bekommt ein professionelles Protokoll, ganz
+                  automatisch.
+                </span>
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <Link
