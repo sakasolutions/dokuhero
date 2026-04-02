@@ -126,7 +126,7 @@ export function StatsSection() {
           })}
         </div>
 
-        <figure className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 border-l-4 border-l-blue-500 bg-white py-8 pl-6 pr-6 shadow-sm sm:pl-8 sm:pr-8 md:mt-12 md:py-10">
+        <figure className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm md:mt-12">
           <div
             className="mb-4 flex justify-center gap-0.5 text-yellow-400"
             aria-hidden

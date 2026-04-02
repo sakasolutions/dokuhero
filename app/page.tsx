@@ -542,8 +542,9 @@ export default function LandingPage() {
             </div>
 
             <p className="mx-auto mt-10 max-w-3xl text-center text-base leading-relaxed text-slate-600 md:mt-14 md:text-lg">
-              Egal ob KFZ, Handwerk, Hausmeister, Reinigung oder Gartenbau —
-              wenn du vor Ort arbeitest, ist DokuHero für dich.
+              KFZ, Handwerk, Reinigung, Hausmeister —
+              <br />
+              überall wo Arbeit dokumentiert werden muss.
             </p>
           </div>
         </section>
