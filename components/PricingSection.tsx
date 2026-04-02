@@ -168,7 +168,15 @@ export function PricingSection() {
           role="group"
           aria-label="Abrechnungszeitraum"
         >
-          <div className="flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:min-w-[280px] sm:max-w-md">
+          <div className="relative inline-flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:min-w-[280px] sm:max-w-md">
+            {billing === "monthly" ? (
+              <div
+                className="pointer-events-none absolute -top-3 right-[calc(25%-20px)] -rotate-6 whitespace-nowrap rounded-full bg-green-500 px-2 py-0.5 text-xs font-semibold text-white shadow-sm"
+                aria-hidden
+              >
+                2 Monate gratis 🎉
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() => setBilling("monthly")}
@@ -183,16 +191,13 @@ export function PricingSection() {
             <button
               type="button"
               onClick={() => setBilling("yearly")}
-              className={`inline-flex min-h-[44px] flex-1 flex-wrap items-center justify-center gap-x-1 gap-y-1 rounded-lg px-2 py-1.5 text-sm font-semibold transition sm:px-3 sm:text-base ${
+              className={`min-h-[44px] flex-1 rounded-lg px-3 text-sm font-semibold transition sm:px-4 sm:text-base ${
                 billing === "yearly"
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-600 active:bg-white/50 md:hover:text-slate-900"
               }`}
             >
-              <span>Jährlich</span>
-              <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                2 Monate gratis
-              </span>
+              Jährlich
             </button>
           </div>
         </div>
