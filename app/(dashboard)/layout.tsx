@@ -16,12 +16,18 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <div className="flex min-h-screen flex-1 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+    <div className="flex h-screen overflow-hidden">
+      <aside className="h-screen w-60 flex-shrink-0 overflow-y-auto bg-slate-900">
+        <Sidebar />
+      </aside>
+
+      <div className="flex h-screen flex-1 flex-col overflow-hidden">
         <Navbar />
-        <main className="flex-1 bg-surface p-4 lg:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bg-surface lg:p-6 lg:pb-6">
+          {children}
+        </main>
       </div>
+
       <BottomNav />
     </div>
   );
