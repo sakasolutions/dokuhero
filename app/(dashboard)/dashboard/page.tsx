@@ -90,7 +90,22 @@ export default function DashboardPage() {
     starterLimit != null && starterLimit > 0
       ? (protokolleMonatUsed / starterLimit) * 100
       : 0;
-  const starterLimitWarn = starterLimit != null && starterLimitPct > 80;
+  const protokolleUebrig =
+    starterLimit != null
+      ? Math.max(0, starterLimit - protokolleMonatUsed)
+      : 0;
+  const progressBarFillClass =
+    starterLimitPct > 95
+      ? "bg-red-500"
+      : starterLimitPct >= 80
+        ? "bg-orange-500"
+        : "bg-blue-500";
+  const progressCardBorderClass =
+    starterLimitPct > 95
+      ? "border-red-200/90"
+      : starterLimitPct >= 80
+        ? "border-orange-200/90"
+        : "border-slate-200";
 
   const cards = [
     {
@@ -174,18 +189,23 @@ export default function DashboardPage() {
 
       {starterLimit != null ? (
         <div
-          className={`rounded-xl border bg-white p-4 shadow-sm ${
-            starterLimitWarn ? "border-red-200/90" : "border-slate-200"
-          }`}
+          className={`rounded-xl border bg-white p-4 shadow-sm ${progressCardBorderClass}`}
         >
-          <p className="text-sm font-medium text-slate-700">
-            <span className="tabular-nums text-slate-900">
-              {protokolleMonatUsed}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-slate-700">
+              <span className="tabular-nums text-slate-900">
+                {protokolleMonatUsed}
+              </span>
+              {" / "}
+              <span className="tabular-nums text-slate-900">
+                {starterLimit}
+              </span>{" "}
+              Protokolle diesen Monat
+            </p>
+            <span className="text-sm text-slate-400">
+              {protokolleUebrig} übrig
             </span>
-            {" / "}
-            <span className="tabular-nums text-slate-900">{starterLimit}</span>{" "}
-            Protokolle diesen Monat
-          </p>
+          </div>
           <div
             className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200"
             role="progressbar"
@@ -194,24 +214,15 @@ export default function DashboardPage() {
             aria-valuemax={starterLimit}
           >
             <div
-              className={`h-full rounded-full transition-[width] ${
-                starterLimitWarn ? "bg-red-600" : "bg-primary"
-              }`}
+              className={`h-full rounded-full transition-[width] ${progressBarFillClass}`}
               style={{
                 width: `${Math.min(100, starterLimitPct)}%`,
               }}
             />
           </div>
-          {starterLimitWarn ? (
-            <p className="mt-3 text-sm text-slate-700">
-              Du hast {protokolleMonatUsed} von {starterLimit} Protokollen
-              verbraucht.{" "}
-              <Link
-                href="/preise"
-                className="font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary/90"
-              >
-                Upgrade empfohlen.
-              </Link>
+          {starterLimitPct > 80 ? (
+            <p className="mt-1 text-xs text-orange-500">
+              Fast erreicht — upgrade für unbegrenzte Protokolle
             </p>
           ) : null}
         </div>
