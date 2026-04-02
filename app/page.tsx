@@ -427,25 +427,25 @@ export default function LandingPage() {
                   automatisch.
                 </span>
               </p>
-              <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+              <div className="mt-8 flex w-full flex-col items-center gap-3 md:w-auto md:flex-row md:items-start">
                 <Link
                   href="/register"
-                  className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-md shadow-primary/25 transition-colors hover:bg-primary/90 md:min-h-[52px] md:px-10 md:text-lg`}
+                  className={`${ctaBtnTransform} inline-flex w-full min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-md shadow-primary/25 transition-colors hover:bg-primary/90 md:w-auto md:min-h-[52px] md:px-10 md:text-lg`}
                 >
                   Kostenlos starten
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-6 py-3.5 text-base font-semibold text-slate-700 transition-colors active:bg-slate-200 md:min-h-[52px] md:hover:bg-slate-100"
+                  className="inline-flex w-full min-h-12 items-center justify-center gap-1.5 rounded-xl px-6 py-3.5 text-center text-base font-semibold text-slate-700 transition-colors active:bg-slate-200 md:w-auto md:min-h-[52px] md:hover:bg-slate-100"
                 >
                   Wie es funktioniert
-                  <ChevronDown className="h-5 w-5" aria-hidden />
+                  <ChevronDown className="h-5 w-5 shrink-0" aria-hidden />
                 </a>
               </div>
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-2 text-center text-sm text-slate-500 md:text-left">
                 30 Tage kostenlos · ab 29 € /Monat · Monatlich kündbar
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-2 text-sm text-slate-600 md:mt-10">
+              <div className="mt-8 flex w-full flex-wrap items-center justify-center gap-2 text-sm text-slate-600 md:mt-10 md:justify-start">
                 <div className="flex gap-0.5 text-amber-400" aria-hidden>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
