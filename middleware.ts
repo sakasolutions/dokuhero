@@ -17,6 +17,7 @@ export async function middleware(request: NextRequest) {
     "/preise",
     "/api/stripe",
     "/api/auth",
+    "/api/cron",
     "/passwort-vergessen",
     "/passwort-reset",
     "/bewertung",

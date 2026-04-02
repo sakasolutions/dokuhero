@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Archive, Plus } from "lucide-react";
+import { Archive, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { AuftragMitKunde, AuftragStatus } from "@/types";
 
@@ -57,13 +58,16 @@ export default function AuftraegeListePage() {
   const [auftraege, setAuftraege] = useState<AuftragMitKunde[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<AuftragStatus | "alle">(
     "alle"
   );
   const [archivFilter, setArchivFilter] = useState<ArchivFilter>("aktiv");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    let alive = true;
     (async () => {
       setLoading(true);
       setError(null);
@@ -76,17 +80,56 @@ export default function AuftraegeListePage() {
         const res = await fetch(url);
         if (!res.ok) throw new Error("load");
         const data = (await res.json()) as AuftragMitKunde[];
-        if (!cancelled) setAuftraege(data);
+        if (alive) setAuftraege(data);
       } catch {
-        if (!cancelled) setError("Aufträge konnten nicht geladen werden.");
+        if (alive) setError("Aufträge konnten nicht geladen werden.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
     return () => {
-      cancelled = true;
+      alive = false;
     };
-  }, [freigabeOnly, archivFilter]);
+  }, [freigabeOnly, archivFilter, refreshKey]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [archivFilter]);
+
+  const filtered = useMemo(() => {
+    if (statusFilter === "alle") return auftraege;
+    return auftraege.filter((a) => a.status === statusFilter);
+  }, [auftraege, statusFilter]);
+
+  const filteredIds = useMemo(
+    () => filtered.map((a) => a.id),
+    [filtered]
+  );
+
+  const hasSelection = selectedIds.length > 0;
+  const showBulkChrome = archivFilter === "aktiv";
+
+  const allFilteredSelected =
+    filteredIds.length > 0 &&
+    filteredIds.every((id) => selectedIds.includes(id));
+
+  function toggleSelected(id: number) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function toggleSelectAll() {
+    if (allFilteredSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds([...filteredIds]);
+    }
+  }
+
+  function clearSelection() {
+    setSelectedIds([]);
+  }
 
   async function archiveAuftrag(auftragId: number) {
     const ok = window.confirm(
@@ -104,15 +147,98 @@ export default function AuftraegeListePage() {
     }
     setError(null);
     setAuftraege((prev) => prev.filter((a) => a.id !== auftragId));
+    setSelectedIds((prev) => prev.filter((id) => id !== auftragId));
   }
 
-  const filtered = useMemo(() => {
-    if (statusFilter === "alle") return auftraege;
-    return auftraege.filter((a) => a.status === statusFilter);
-  }, [auftraege, statusFilter]);
+  async function bulkArchivieren() {
+    if (selectedIds.length === 0) return;
+    const n = selectedIds.length;
+    const ok = window.confirm(
+      `${n} Aufträge archivieren? Sie bleiben 10 Jahre gespeichert.`
+    );
+    if (!ok) return;
+    const res = await fetch("/api/auftraege/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ids: selectedIds,
+        action: "archivieren",
+      }),
+    });
+    const j = (await res.json().catch(() => ({}))) as {
+      archiviert?: number;
+      error?: unknown;
+    };
+    if (!res.ok) {
+      setError(
+        typeof j.error === "string"
+          ? j.error
+          : "Mehrfach-Archivieren fehlgeschlagen."
+      );
+      return;
+    }
+    setError(null);
+    const count = typeof j.archiviert === "number" ? j.archiviert : n;
+    setSuccessMsg(
+      count === 1
+        ? "1 Auftrag wurde archiviert."
+        : `${count} Aufträge wurden archiviert.`
+    );
+    setSelectedIds([]);
+    setRefreshKey((k) => k + 1);
+    window.setTimeout(() => setSuccessMsg(null), 4500);
+  }
+
+  const checkboxCellClass = (selected: boolean) =>
+    `w-12 shrink-0 px-2 py-3 align-middle ${
+      selected ? "bg-blue-50/90" : ""
+    }`;
+
+  const checkboxClass = (selected: boolean) =>
+    `h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/30 transition-opacity duration-150 ${
+      hasSelection ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+    }`;
 
   return (
     <div className="space-y-6">
+      {showBulkChrome ? (
+        <div
+          className={`fixed left-0 right-0 top-14 z-30 border-b border-slate-200 bg-white/95 shadow-md backdrop-blur-sm transition-[transform,opacity] duration-200 ease-out lg:left-[240px] ${
+            hasSelection
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-full opacity-0"
+          }`}
+          role="toolbar"
+          aria-hidden={!hasSelection}
+        >
+          <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <p className="text-sm font-medium text-slate-800">
+              <span className="tabular-nums">{selectedIds.length}</span>{" "}
+              ausgewählt
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                className="gap-2"
+                onClick={() => void bulkArchivieren()}
+              >
+                <Archive className="h-4 w-4" />
+                Archivieren
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={clearSelection}
+              >
+                <X className="h-4 w-4" />
+                Abbrechen
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Aufträge</h1>
@@ -145,19 +271,42 @@ export default function AuftraegeListePage() {
         </div>
       ) : null}
 
+      {successMsg ? (
+        <div
+          className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+          role="status"
+        >
+          {successMsg}
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <label className="text-sm font-medium text-slate-700">Ansicht</label>
-          <select
-            value={archivFilter}
-            onChange={(e) =>
-              setArchivFilter(e.target.value as ArchivFilter)
-            }
-            className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-auto"
-          >
-            <option value="aktiv">Aktiv</option>
-            <option value="archiv">Archiv</option>
-          </select>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-slate-700">Ansicht</span>
+          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setArchivFilter("aktiv")}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                archivFilter === "aktiv"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Aktiv
+            </button>
+            <button
+              type="button"
+              onClick={() => setArchivFilter("archiv")}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                archivFilter === "archiv"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Ältere anzeigen
+            </button>
+          </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <label className="text-sm font-medium text-slate-700">Status</label>
@@ -185,7 +334,25 @@ export default function AuftraegeListePage() {
           <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50">
-                <tr>
+                <tr className="group/header">
+                  {showBulkChrome ? (
+                    <th
+                      className={`w-12 px-2 py-3 align-middle transition-opacity ${
+                        hasSelection
+                          ? "opacity-100"
+                          : "opacity-0 group-hover/header:opacity-100"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/30"
+                        checked={allFilteredSelected}
+                        onChange={toggleSelectAll}
+                        disabled={filteredIds.length === 0}
+                        aria-label="Alle sichtbaren Aufträge auswählen"
+                      />
+                    </th>
+                  ) : null}
                   <th className="px-4 py-3 font-medium text-slate-700">
                     Kunde
                   </th>
@@ -204,52 +371,71 @@ export default function AuftraegeListePage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((a) => (
-                  <tr key={a.id} className="border-b border-slate-100">
-                    <td className="px-4 py-3 font-medium text-slate-900">
-                      {a.kunde_name ?? "–"}
-                    </td>
-                    <td className="max-w-xs truncate px-4 py-3 text-slate-600">
-                      {a.beschreibung ?? "–"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={a.status} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                      {formatDate(a.erstellt_am)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end sm:gap-3">
-                        {a.status === "in_bearbeitung" &&
-                        a.protokoll_id != null ? (
+                {filtered.map((a) => {
+                  const selected = selectedIds.includes(a.id);
+                  return (
+                    <tr
+                      key={a.id}
+                      className={`group border-b border-slate-100 ${
+                        selected ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      {showBulkChrome ? (
+                        <td className={checkboxCellClass(selected)}>
+                          <input
+                            type="checkbox"
+                            className={checkboxClass(selected)}
+                            checked={selected}
+                            onChange={() => toggleSelected(a.id)}
+                            aria-label={`Auftrag ${a.id} auswählen`}
+                          />
+                        </td>
+                      ) : null}
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        {a.kunde_name ?? "–"}
+                      </td>
+                      <td className="max-w-xs truncate px-4 py-3 text-slate-600">
+                        {a.beschreibung ?? "–"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={a.status} />
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                        {formatDate(a.erstellt_am)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end sm:gap-3">
+                          {a.status === "in_bearbeitung" &&
+                          a.protokoll_id != null ? (
+                            <Link
+                              href={`/protokoll/${a.protokoll_id}`}
+                              className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+                            >
+                              Protokoll ansehen
+                            </Link>
+                          ) : null}
                           <Link
-                            href={`/protokoll/${a.protokoll_id}`}
+                            href={`/auftraege/${a.id}`}
                             className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                           >
-                            Protokoll ansehen
+                            Bearbeiten
                           </Link>
-                        ) : null}
-                        <Link
-                          href={`/auftraege/${a.id}`}
-                          className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
-                        >
-                          Bearbeiten
-                        </Link>
-                        {archivFilter === "aktiv" ? (
-                          <button
-                            type="button"
-                            onClick={() => void archiveAuftrag(a.id)}
-                            className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
-                            title="Auftrag archivieren"
-                          >
-                            <Archive className="h-4 w-4 shrink-0" />
-                            Archivieren
-                          </button>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {archivFilter === "aktiv" ? (
+                            <button
+                              type="button"
+                              onClick={() => void archiveAuftrag(a.id)}
+                              className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
+                              title="Auftrag archivieren"
+                            >
+                              <Archive className="h-4 w-4 shrink-0" />
+                              Archivieren
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {filtered.length === 0 ? (
@@ -260,52 +446,77 @@ export default function AuftraegeListePage() {
           </div>
 
           <div className="space-y-3 md:hidden">
-            {filtered.map((a) => (
-              <Card key={a.id}>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-semibold text-slate-900">
-                      {a.kunde_name ?? "–"}
-                    </span>
-                    <StatusBadge status={a.status} />
-                  </div>
-                  <p className="text-sm text-slate-600">
-                    {a.beschreibung ?? "–"}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {formatDate(a.erstellt_am)}
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    {a.status === "in_bearbeitung" &&
-                    a.protokoll_id != null ? (
+            {filtered.map((a) => {
+              const selected = selectedIds.includes(a.id);
+              return (
+                <Card
+                  key={a.id}
+                  className={`group relative overflow-hidden transition-colors ${
+                    selected ? "ring-2 ring-primary/50 bg-blue-50/60" : ""
+                  }`}
+                >
+                  {showBulkChrome ? (
+                    <div
+                      className={`absolute left-3 top-3 z-10 ${
+                        hasSelection ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      } transition-opacity`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/30"
+                        checked={selected}
+                        onChange={() => toggleSelected(a.id)}
+                        aria-label={`Auftrag ${a.id} auswählen`}
+                      />
+                    </div>
+                  ) : null}
+                  <div
+                    className={`flex flex-col gap-2 ${showBulkChrome ? "pl-9 pt-1" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-slate-900">
+                        {a.kunde_name ?? "–"}
+                      </span>
+                      <StatusBadge status={a.status} />
+                    </div>
+                    <p className="text-sm text-slate-600">
+                      {a.beschreibung ?? "–"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {formatDate(a.erstellt_am)}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {a.status === "in_bearbeitung" &&
+                      a.protokoll_id != null ? (
+                        <Link
+                          href={`/protokoll/${a.protokoll_id}`}
+                          className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+                        >
+                          Protokoll ansehen
+                        </Link>
+                      ) : null}
                       <Link
-                        href={`/protokoll/${a.protokoll_id}`}
+                        href={`/auftraege/${a.id}`}
                         className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                       >
-                        Protokoll ansehen
+                        Bearbeiten
                       </Link>
-                    ) : null}
-                    <Link
-                      href={`/auftraege/${a.id}`}
-                      className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
-                    >
-                      Bearbeiten
-                    </Link>
-                    {archivFilter === "aktiv" ? (
-                      <button
-                        type="button"
-                        onClick={() => void archiveAuftrag(a.id)}
-                        className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
-                        title="Auftrag archivieren"
-                      >
-                        <Archive className="h-4 w-4 shrink-0" />
-                        Archivieren
-                      </button>
-                    ) : null}
+                      {archivFilter === "aktiv" ? (
+                        <button
+                          type="button"
+                          onClick={() => void archiveAuftrag(a.id)}
+                          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
+                          title="Auftrag archivieren"
+                        >
+                          <Archive className="h-4 w-4 shrink-0" />
+                          Archivieren
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
             {filtered.length === 0 ? (
               <p className="text-center text-slate-500">
                 Keine Aufträge für diesen Filter.
