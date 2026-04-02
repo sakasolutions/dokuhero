@@ -221,18 +221,18 @@ export function PricingSection() {
                 : "translate-y-8 opacity-0"
             }`}
           >
-            <h3 className="shrink-0 text-xl font-bold text-slate-900">
-              Starter
-            </h3>
-            <PriceBlock
-              variant="light"
-              billing={billing}
-              bruttoMain={starterBruttoMain}
-              bruttoCompareStrike={starterBruttoStrike}
-              nettoAmountLabel={starterNettoLabel}
-              yearlyBruttoJahrFooter={starterJahrFooter}
-            />
-            <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Starter</h3>
+              <PriceBlock
+                variant="light"
+                billing={billing}
+                bruttoMain={starterBruttoMain}
+                bruttoCompareStrike={starterBruttoStrike}
+                nettoAmountLabel={starterNettoLabel}
+                yearlyBruttoJahrFooter={starterJahrFooter}
+              />
+            </div>
+            <ul className="flex-1 mt-6 space-y-3 text-sm text-slate-700 md:text-base">
               {starterFeatures.map((line) => (
                 <li key={line} className="flex gap-3">
                   <Check
@@ -244,7 +244,7 @@ export function PricingSection() {
                 </li>
               ))}
             </ul>
-            <div className="mt-auto flex flex-col gap-1 pt-6">
+            <div className="mt-8 flex flex-col gap-1">
               <Link
                 href="/register"
                 data-price-id={pid("starter")}
@@ -260,7 +260,7 @@ export function PricingSection() {
 
           {/* Pro — mobile zuerst */}
           <div
-            className={`relative order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 px-6 py-10 shadow-xl transition-all ease-out sm:px-8 md:order-2 md:z-10 md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
+            className={`order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 px-6 py-10 shadow-xl transition-all ease-out sm:px-8 md:order-2 md:z-10 md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
               pricingInView
                 ? "translate-y-0 opacity-100"
                 : "translate-y-8 opacity-0"
@@ -269,19 +269,23 @@ export function PricingSection() {
               transitionDelay: pricingInView ? "80ms" : "0ms",
             }}
           >
-            <span className="absolute -top-3 right-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
-              Beliebt
-            </span>
-            <h3 className="shrink-0 text-xl font-bold text-white">Pro</h3>
-            <PriceBlock
-              variant="dark"
-              billing={billing}
-              bruttoMain={proBruttoMain}
-              bruttoCompareStrike={proBruttoStrike}
-              nettoAmountLabel={proNettoLabel}
-              yearlyBruttoJahrFooter={proJahrFooter}
-            />
-            <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-200 md:text-base">
+            <div>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-xl font-bold text-white">Pro</h3>
+                <span className="shrink-0 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                  Beliebt
+                </span>
+              </div>
+              <PriceBlock
+                variant="dark"
+                billing={billing}
+                bruttoMain={proBruttoMain}
+                bruttoCompareStrike={proBruttoStrike}
+                nettoAmountLabel={proNettoLabel}
+                yearlyBruttoJahrFooter={proJahrFooter}
+              />
+            </div>
+            <ul className="flex-1 mt-6 space-y-3 text-sm text-slate-200 md:text-base">
               {proFeatures.map((line) => (
                 <li key={line} className="flex gap-3">
                   <Check
@@ -293,7 +297,7 @@ export function PricingSection() {
                 </li>
               ))}
             </ul>
-            <div className="mt-auto flex flex-col gap-1 pt-6">
+            <div className="mt-8 flex flex-col gap-1">
               <Link
                 href="/register"
                 data-price-id={pid("pro")}
@@ -318,21 +322,23 @@ export function PricingSection() {
               transitionDelay: pricingInView ? "160ms" : "0ms",
             }}
           >
-            <span className="w-fit rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-white">
-              Neu
-            </span>
-            <h3 className="mt-2 shrink-0 text-xl font-bold text-slate-900">
-              Business
-            </h3>
-            <PriceBlock
-              variant="light"
-              billing={billing}
-              bruttoMain={businessBruttoMain}
-              bruttoCompareStrike={businessBruttoStrike}
-              nettoAmountLabel={businessNettoLabel}
-              yearlyBruttoJahrFooter={businessJahrFooter}
-            />
-            <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-white">
+                  Neu
+                </span>
+                <h3 className="text-xl font-bold text-slate-900">Business</h3>
+              </div>
+              <PriceBlock
+                variant="light"
+                billing={billing}
+                bruttoMain={businessBruttoMain}
+                bruttoCompareStrike={businessBruttoStrike}
+                nettoAmountLabel={businessNettoLabel}
+                yearlyBruttoJahrFooter={businessJahrFooter}
+              />
+            </div>
+            <ul className="flex-1 mt-6 space-y-3 text-sm text-slate-700 md:text-base">
               {businessFeatures.map((line) => (
                 <li key={line} className="flex gap-3">
                   <Check
@@ -344,7 +350,7 @@ export function PricingSection() {
                 </li>
               ))}
             </ul>
-            <div className="mt-auto flex flex-col gap-1 pt-6">
+            <div className="mt-8 flex flex-col gap-1">
               <Link
                 href="/register"
                 data-price-id={pid("business")}
