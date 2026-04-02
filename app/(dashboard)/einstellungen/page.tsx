@@ -130,6 +130,8 @@ export default function EinstellungenPage() {
   const [aboPlan, setAboPlan] = useState<string | null>(null);
   const [aboBisIso, setAboBisIso] = useState<string | null>(null);
   const [erstelltAmIso, setErstelltAmIso] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalErr, setPortalErr] = useState<string | null>(null);
 
   const {
     register,
@@ -214,6 +216,36 @@ export default function EinstellungenPage() {
           : null;
     return { planText, datumZeile };
   }, [aboPlan, aboBisIso, erstelltAmIso]);
+
+  const planKeyNorm = (aboPlan ?? "").trim().toLowerCase();
+  const showAboPortalBtn =
+    planKeyNorm === "starter" || planKeyNorm === "pro";
+
+  async function openStripePortal() {
+    setPortalErr(null);
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPortalErr(
+          typeof j.error === "string"
+            ? j.error
+            : "Kundenportal konnte nicht geöffnet werden."
+        );
+        return;
+      }
+      if (typeof j.url === "string" && j.url) {
+        window.location.href = j.url;
+        return;
+      }
+      setPortalErr("Keine Weiterleitungs-URL erhalten.");
+    } catch {
+      setPortalErr("Netzwerkfehler.");
+    } finally {
+      setPortalLoading(false);
+    }
+  }
 
   async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -344,6 +376,29 @@ export default function EinstellungenPage() {
           </Link>
         </div>
       </Card>
+
+      {showAboPortalBtn ? (
+        <div className="space-y-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-12 w-full sm:w-auto gap-2"
+            disabled={portalLoading}
+            onClick={() => void openStripePortal()}
+          >
+            {portalLoading ? (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            ) : null}
+            Abo verwalten / Kündigen
+          </Button>
+          {portalErr ? (
+            <p className="text-sm text-red-600">{portalErr}</p>
+          ) : null}
+          <p className="text-xs text-slate-500">
+            Hier kannst du dein Abo kündigen oder deine Zahlungsmethode ändern.
+          </p>
+        </div>
+      ) : null}
 
       {formError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
