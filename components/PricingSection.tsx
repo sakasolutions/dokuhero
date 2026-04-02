@@ -1,10 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Check } from "lucide-react";
-
-const animD = "duration-[400ms] md:duration-700";
+import {
+  fadeUp,
+  fadeUpDelay,
+  staggerContainer,
+  staggerItem,
+  staggerItemPro,
+  viewportOnce,
+} from "@/lib/animations";
 
 const ctaBtnTransform =
   "transition-transform duration-200 md:hover:scale-105 active:scale-95";
@@ -56,24 +63,6 @@ const businessFeatures = [
   "Dedizierter Ansprechpartner",
 ];
 
-function useInView(threshold = 0.1) {
-  const [inView, setInView] = useState(false);
-  const [node, setNode] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setInView(true);
-      },
-      { threshold }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [node, threshold]);
-  const ref = useCallback((el: HTMLElement | null) => setNode(el), []);
-  return [ref, inView] as const;
-}
-
 function PriceBlock({
   billing,
   bruttoMain,
@@ -121,7 +110,6 @@ function PriceBlock({
 
 export function PricingSection() {
   const [billing, setBilling] = useState<Billing>("monthly");
-  const [pricingRef, pricingInView] = useInView(0.1);
 
   const pid = (plan: keyof typeof PRICE_IDS) =>
     billing === "monthly" ? PRICE_IDS[plan].monthly : PRICE_IDS[plan].yearly;
@@ -147,11 +135,16 @@ export function PricingSection() {
   return (
     <section
       id="pricing"
-      ref={pricingRef}
       className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
     >
       <div className="mx-auto max-w-6xl">
-        <header className="mx-auto max-w-2xl text-center">
+        <motion.header
+          className="mx-auto max-w-2xl text-center"
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+        >
           <p className="text-sm font-medium uppercase tracking-widest text-blue-600">
             Preise
           </p>
@@ -161,12 +154,16 @@ export function PricingSection() {
           <p className="mx-auto mt-3 max-w-lg text-sm text-slate-600 md:text-base">
             30 Tage kostenlos testen — keine Kreditkarte nötig.
           </p>
-        </header>
+        </motion.header>
 
-        <div
-          className="mx-auto mt-10 flex w-full max-w-2xl justify-center sm:mt-12"
+        <motion.div
           role="group"
           aria-label="Abrechnungszeitraum"
+          className="mx-auto mt-10 flex w-full max-w-2xl justify-center sm:mt-12"
+          variants={fadeUpDelay(0.08)}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
         >
           <div className="relative inline-flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:min-w-[280px] sm:max-w-md">
             {billing === "monthly" ? (
@@ -200,16 +197,19 @@ export function PricingSection() {
               Jährlich
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 md:mt-12 md:grid md:grid-cols-3 md:items-end md:gap-6 lg:gap-8">
+        <motion.div
+          className="mx-auto mt-10 flex max-w-6xl flex-col gap-6 md:mt-12 md:grid md:grid-cols-3 md:items-end md:gap-6 lg:gap-8"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+        >
           {/* Starter */}
-          <div
-            className={`order-2 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm transition-all ease-out sm:px-8 md:order-1 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
-              pricingInView
-                ? "translate-y-0 opacity-100"
-                : "translate-y-8 opacity-0"
-            }`}
+          <motion.div
+            variants={staggerItem}
+            className="order-2 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm transition-all ease-out sm:px-8 md:order-1 md:hover:-translate-y-1 md:hover:shadow-lg"
           >
             <div>
               <h3 className="text-xl font-bold text-slate-900">Starter</h3>
@@ -245,18 +245,12 @@ export function PricingSection() {
                 Keine Kreditkarte nötig
               </p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Pro — mobile zuerst */}
-          <div
-            className={`order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 px-6 py-12 shadow-xl transition-all ease-out sm:px-8 md:order-2 md:z-10 md:hover:-translate-y-1 md:hover:shadow-2xl ${animD} ${
-              pricingInView
-                ? "translate-y-0 opacity-100"
-                : "translate-y-8 opacity-0"
-            }`}
-            style={{
-              transitionDelay: pricingInView ? "80ms" : "0ms",
-            }}
+          <motion.div
+            variants={staggerItemPro}
+            className="order-1 flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 px-6 py-12 shadow-xl transition-all ease-out sm:px-8 md:order-2 md:z-10 md:hover:-translate-y-1 md:hover:shadow-2xl"
           >
             <div>
               <div className="flex items-start justify-between gap-3">
@@ -297,18 +291,12 @@ export function PricingSection() {
                 Keine Kreditkarte nötig
               </p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Business */}
-          <div
-            className={`order-3 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm transition-all ease-out sm:px-8 md:order-3 md:hover:-translate-y-1 md:hover:shadow-lg ${animD} ${
-              pricingInView
-                ? "translate-y-0 opacity-100"
-                : "translate-y-8 opacity-0"
-            }`}
-            style={{
-              transitionDelay: pricingInView ? "160ms" : "0ms",
-            }}
+          <motion.div
+            variants={staggerItem}
+            className="order-3 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm transition-all ease-out sm:px-8 md:order-3 md:hover:-translate-y-1 md:hover:shadow-lg"
           >
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -349,10 +337,16 @@ export function PricingSection() {
                 Keine Kreditkarte nötig
               </p>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        <p className="mx-auto mt-10 max-w-xl text-center text-sm text-slate-500 md:mt-12">
+        <motion.p
+          className="mx-auto mt-10 max-w-xl text-center text-sm text-slate-500 md:mt-12"
+          variants={fadeUpDelay(0.12)}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+        >
           Ab 800+ Protokollen? Meld dich:{" "}
           <a
             href="mailto:kontakt@dokuhero.de"
@@ -360,7 +354,7 @@ export function PricingSection() {
           >
             kontakt@dokuhero.de
           </a>
-        </p>
+        </motion.p>
       </div>
     </section>
   );

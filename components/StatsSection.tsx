@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { Calendar, CheckCircle, Star, Zap } from "lucide-react";
+import {
+  fadeUp,
+  fadeUpDelay,
+  staggerContainer,
+  staggerItem,
+  viewportOnce,
+} from "@/lib/animations";
 
 function easeOutCubic(t: number) {
   return 1 - (1 - t) ** 3;
@@ -78,7 +86,7 @@ export function StatsSection() {
       ([entry]) => {
         if (entry.isIntersecting) setInView(true);
       },
-      { threshold: 0.15 }
+      { threshold: 0.12, rootMargin: "0px 0px -80px 0px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -97,17 +105,30 @@ export function StatsSection() {
       aria-label="Zahlen und Stimmen"
     >
       <div className="mx-auto max-w-6xl">
-        <span className="mb-8 block text-center text-sm font-medium uppercase tracking-widest text-blue-600 md:mb-10">
+        <motion.span
+          className="mb-8 block text-center text-sm font-medium uppercase tracking-widest text-blue-600 md:mb-10"
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+        >
           Zahlen die sprechen
-        </span>
+        </motion.span>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
+        <motion.div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+        >
           {statsConfig.map((cfg, i) => {
             const Icon = cfg.Icon;
             const display = `${values[i]}${cfg.suffix}`;
             return (
-              <div
+              <motion.div
                 key={cfg.sub}
+                variants={staggerItem}
                 className={`rounded-2xl border border-slate-200 border-t-2 ${cfg.borderTop} bg-white p-8 text-center shadow-sm transition-shadow duration-200 hover:shadow-md`}
               >
                 <div
@@ -121,12 +142,18 @@ export function StatsSection() {
                 <p className="mt-2 text-sm font-medium text-slate-600 md:text-base">
                   {cfg.sub}
                 </p>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
-        <figure className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm md:mt-12">
+        <motion.figure
+          className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm md:mt-12"
+          variants={fadeUpDelay(0.15)}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+        >
           <div
             className="mb-4 flex justify-center gap-0.5 text-yellow-400"
             aria-hidden
@@ -151,7 +178,7 @@ export function StatsSection() {
               <p className="text-sm text-slate-500">Beta-Tester</p>
             </div>
           </figcaption>
-        </figure>
+        </motion.figure>
       </div>
     </section>
   );
