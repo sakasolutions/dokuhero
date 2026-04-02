@@ -144,6 +144,11 @@ export const authOptions: NextAuthOptions = {
               b.registriert_am instanceof Date
                 ? b.registriert_am.toISOString()
                 : (b.registriert_am as unknown as string | null);
+
+            // TEMP DEBUG (Server Logs)
+            console.log("Betrieb DB data:", b);
+            console.log("JWT Token registriert_am:", token.registriert_am);
+            console.log("JWT Token plan:", token.plan);
           }
         } catch {
           // Fallback: Token bleibt wie gehabt (UI funktioniert trotzdem)
