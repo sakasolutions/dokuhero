@@ -68,55 +68,49 @@ function useInView(threshold = 0.1) {
 
 function PriceBlock({
   billing,
-  main,
-  compare,
+  bruttoMain,
+  bruttoCompareStrike,
+  nettoAmountLabel,
+  yearlyBruttoJahrFooter,
   variant,
-  yearlyTotalLine,
 }: {
   billing: Billing;
-  main: string;
-  compare: string | null;
+  bruttoMain: string;
+  bruttoCompareStrike: string | null;
+  nettoAmountLabel: string;
+  yearlyBruttoJahrFooter: string | null;
   variant: "light" | "dark";
-  yearlyTotalLine?: string | null;
 }) {
   const mainCls =
     variant === "dark"
-      ? "text-4xl font-extrabold tracking-tight text-white md:text-5xl"
-      : "text-4xl font-extrabold tracking-tight text-primary md:text-5xl";
+      ? "text-4xl font-bold tracking-tight text-white md:text-5xl"
+      : "text-4xl font-bold tracking-tight text-slate-900 md:text-5xl";
   const unitCls =
     variant === "dark"
-      ? "text-sm font-semibold text-slate-300 md:text-base"
-      : "text-sm font-semibold text-slate-600 md:text-base";
+      ? "text-sm text-slate-300 md:text-base"
+      : "text-sm text-slate-500 md:text-base";
   const compareCls =
     variant === "dark"
       ? "text-lg font-medium text-slate-500 line-through md:text-xl"
       : "text-lg font-medium text-slate-400 line-through md:text-xl";
-  const yearlyNoteCls =
-    variant === "dark" ? "text-slate-400" : "text-slate-500";
+  const subCls =
+    variant === "dark" ? "text-xs text-slate-300" : "text-xs text-slate-400";
 
   return (
     <div className="mt-4 shrink-0">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className={mainCls}>{main}</span>
-        {billing === "yearly" && compare ? (
-          <span className={compareCls}>{compare}</span>
+        <span className={mainCls}>{bruttoMain}</span>
+        {billing === "yearly" && bruttoCompareStrike ? (
+          <span className={compareCls}>{bruttoCompareStrike}</span>
         ) : null}
         <span className={unitCls}>/ Monat</span>
       </div>
-      {billing === "yearly" && yearlyTotalLine ? (
-        <p className={`mt-1 text-xs font-medium ${yearlyNoteCls}`}>
-          {yearlyTotalLine}
-        </p>
-      ) : null}
-      <p
-        className={
-          variant === "dark"
-            ? "mt-2 text-xs text-slate-400"
-            : "mt-2 text-xs text-slate-500"
-        }
-      >
-        zzgl. MwSt.
+      <p className={`mt-1 ${subCls}`}>
+        {nettoAmountLabel} netto zzgl. 19% MwSt.
       </p>
+      {billing === "yearly" && yearlyBruttoJahrFooter ? (
+        <p className={`mt-1 ${subCls}`}>{yearlyBruttoJahrFooter}</p>
+      ) : null}
     </div>
   );
 }
@@ -128,9 +122,35 @@ export function PricingSection() {
   const pid = (plan: keyof typeof PRICE_IDS) =>
     billing === "monthly" ? PRICE_IDS[plan].monthly : PRICE_IDS[plan].yearly;
 
-  const starterMain = billing === "monthly" ? "29,90 €" : "23,00 €";
-  const proMain = billing === "monthly" ? "59,00 €" : "47,00 €";
-  const businessMain = billing === "monthly" ? "149,00 €" : "119,00 €";
+  const starterBruttoMain =
+    billing === "monthly" ? "35,58 €" : "27,37 €";
+  const starterBruttoStrike =
+    billing === "yearly" ? "35,58 €" : null;
+  const starterNettoLabel =
+    billing === "monthly" ? "29,90 €" : "23,00 €";
+  const starterJahrFooter =
+    billing === "yearly"
+      ? "328,44 € brutto / Jahr (276,00 € netto)"
+      : null;
+
+  const proBruttoMain = billing === "monthly" ? "70,21 €" : "55,93 €";
+  const proBruttoStrike = billing === "yearly" ? "70,21 €" : null;
+  const proNettoLabel = billing === "monthly" ? "59,00 €" : "47,00 €";
+  const proJahrFooter =
+    billing === "yearly"
+      ? "671,16 € brutto / Jahr (564,00 € netto)"
+      : null;
+
+  const businessBruttoMain =
+    billing === "monthly" ? "177,31 €" : "141,61 €";
+  const businessBruttoStrike =
+    billing === "yearly" ? "177,31 €" : null;
+  const businessNettoLabel =
+    billing === "monthly" ? "149,00 €" : "119,00 €";
+  const businessJahrFooter =
+    billing === "yearly"
+      ? "1.699,32 € brutto / Jahr (1.428,00 € netto)"
+      : null;
 
   return (
     <section
@@ -200,11 +220,10 @@ export function PricingSection() {
             <PriceBlock
               variant="light"
               billing={billing}
-              main={starterMain}
-              compare={billing === "yearly" ? "29,90 €" : null}
-              yearlyTotalLine={
-                billing === "yearly" ? "276€/Jahr" : null
-              }
+              bruttoMain={starterBruttoMain}
+              bruttoCompareStrike={starterBruttoStrike}
+              nettoAmountLabel={starterNettoLabel}
+              yearlyBruttoJahrFooter={starterJahrFooter}
             />
             <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
               {starterFeatures.map((line) => (
@@ -250,8 +269,10 @@ export function PricingSection() {
             <PriceBlock
               variant="dark"
               billing={billing}
-              main={proMain}
-              compare={billing === "yearly" ? "59,00 €" : null}
+              bruttoMain={proBruttoMain}
+              bruttoCompareStrike={proBruttoStrike}
+              nettoAmountLabel={proNettoLabel}
+              yearlyBruttoJahrFooter={proJahrFooter}
             />
             <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-200 md:text-base">
               {proFeatures.map((line) => (
@@ -273,7 +294,7 @@ export function PricingSection() {
               >
                 30 Tage kostenlos starten
               </Link>
-              <p className="text-center text-xs text-slate-400">
+              <p className="text-center text-xs text-slate-300">
                 Keine Kreditkarte nötig
               </p>
             </div>
@@ -299,8 +320,10 @@ export function PricingSection() {
             <PriceBlock
               variant="light"
               billing={billing}
-              main={businessMain}
-              compare={billing === "yearly" ? "149,00 €" : null}
+              bruttoMain={businessBruttoMain}
+              bruttoCompareStrike={businessBruttoStrike}
+              nettoAmountLabel={businessNettoLabel}
+              yearlyBruttoJahrFooter={businessJahrFooter}
             />
             <ul className="mt-6 flex flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
               {businessFeatures.map((line) => (
