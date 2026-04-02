@@ -19,6 +19,9 @@ const BRANCHEN = [
   "Sonstiges",
 ] as const;
 
+const TABS = ["Betrieb", "Marke", "Abo", "Sicherheit"] as const;
+type TabId = (typeof TABS)[number];
+
 type BetriebApi = {
   id: number;
   name: string;
@@ -116,12 +119,11 @@ function fileToJpegDataUrl(file: File): Promise<string> {
 }
 
 export default function EinstellungenPage() {
+  const [activeTab, setActiveTab] = useState<TabId>("Betrieb");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [emailReadonly, setEmailReadonly] = useState("");
-  /** Für Vorschau-URL: /uploads/logos/{id}.jpg */
   const [betriebId, setBetriebId] = useState<number | null>(null);
-  /** Ob laut API ein Logo existiert (logo_pfad gesetzt). */
   const [hasLogo, setHasLogo] = useState(false);
   const [logoCacheBust, setLogoCacheBust] = useState(0);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -133,13 +135,15 @@ export default function EinstellungenPage() {
   const [erstelltAmIso, setErstelltAmIso] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalErr, setPortalErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const {
     register,
-    handleSubmit,
     reset,
     watch,
-    formState: { errors, isSubmitting },
+    trigger,
+    getValues,
+    formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -288,8 +292,19 @@ export default function EinstellungenPage() {
     }
   }
 
-  async function onSubmit(data: FormValues) {
+  /** PUT /api/einstellungen — gleiche Payload-Logik wie zuvor */
+  async function putEinstellungen(
+    data: FormValues,
+    mode: "stammdaten" | "passwort"
+  ) {
     setFormError(null);
+    if (mode === "passwort") {
+      if (!data.neuesPasswort?.trim()) {
+        setFormError("Bitte gib ein neues Passwort ein.");
+        return;
+      }
+    }
+
     const body: Record<string, unknown> = {
       name: data.name.trim(),
       telefon: data.telefon?.trim() || null,
@@ -297,21 +312,63 @@ export default function EinstellungenPage() {
       adresse: data.adresse?.trim() || null,
       google_bewertung_link: data.google_bewertung_link?.trim() || null,
     };
-    if (data.neuesPasswort?.trim()) {
+    if (mode === "passwort" && data.neuesPasswort?.trim()) {
       body.neuesPasswort = data.neuesPasswort;
       body.neuesPasswortBestaetigung = data.neuesPasswortBestaetigung;
     }
-    const res = await fetch("/api/einstellungen", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setFormError(typeof j.error === "string" ? j.error : "Speichern fehlgeschlagen.");
-      return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/einstellungen", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFormError(
+          typeof j.error === "string" ? j.error : "Speichern fehlgeschlagen."
+        );
+        return;
+      }
+      window.location.reload();
+    } finally {
+      setSaving(false);
     }
-    window.location.reload();
+  }
+
+  async function saveBetriebTab() {
+    const ok = await trigger([
+      "name",
+      "telefon",
+      "branche",
+      "adresse",
+      "google_bewertung_link",
+    ]);
+    if (!ok) return;
+    await putEinstellungen(getValues(), "stammdaten");
+  }
+
+  async function saveMarkeTab() {
+    const ok = await trigger([
+      "name",
+      "telefon",
+      "branche",
+      "adresse",
+      "google_bewertung_link",
+    ]);
+    if (!ok) return;
+    await putEinstellungen(getValues(), "stammdaten");
+  }
+
+  async function saveSicherheitTab() {
+    const ok = await trigger([
+      "name",
+      "neuesPasswort",
+      "neuesPasswortBestaetigung",
+    ]);
+    if (!ok) return;
+    await putEinstellungen(getValues(), "passwort");
   }
 
   if (loading) {
@@ -353,55 +410,24 @@ export default function EinstellungenPage() {
         <p className="text-slate-600">Betriebsdaten und Logo für DokuHero</p>
       </div>
 
-      <Card className="border-primary/20 bg-primary/5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm text-slate-600">
-              Dein Plan:{" "}
-              <span className="font-semibold text-slate-900">
-                {aboAnzeige.planText}
-              </span>
-            </p>
-            {aboAnzeige.datumZeile ? (
-              <p className="text-sm text-slate-600">
-                {aboAnzeige.datumZeile.prefix}{" "}
-                <span className="font-medium text-slate-900">
-                  {aboAnzeige.datumZeile.text}
-                </span>
-              </p>
-            ) : null}
-          </div>
-          <Link
-            href="/preise"
-            className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            Plan upgraden
-          </Link>
+      <div className="-mx-1 mb-8 overflow-x-auto whitespace-nowrap border-b border-slate-200">
+        <div className="flex min-w-0 gap-1 px-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={
+                activeTab === tab
+                  ? "-mb-px border-b-2 border-blue-600 px-4 py-2.5 text-sm font-medium text-blue-600"
+                  : "px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+              }
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-      </Card>
-
-      {showAboPortalBtn ? (
-        <div className="space-y-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-12 w-full sm:w-auto gap-2"
-            disabled={portalLoading}
-            onClick={() => void openStripePortal()}
-          >
-            {portalLoading ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            ) : null}
-            Abo verwalten / Kündigen
-          </Button>
-          {portalErr ? (
-            <p className="text-sm text-red-600">{portalErr}</p>
-          ) : null}
-          <p className="text-xs text-slate-500">
-            Hier kannst du dein Abo kündigen oder deine Zahlungsmethode ändern.
-          </p>
-        </div>
-      ) : null}
+      </div>
 
       {formError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -409,163 +435,266 @@ export default function EinstellungenPage() {
         </p>
       ) : null}
 
-      <Card>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-5"
-          noValidate
-        >
-          <Input
-            label="Betriebsname"
-            {...register("name")}
-            error={errors.name?.message}
-          />
-
-          <Input
-            label="E-Mail"
-            type="email"
-            value={emailReadonly}
-            readOnly
-            className="cursor-not-allowed bg-slate-50 text-slate-600"
-          />
-
-          <Input
-            label="Telefon"
-            type="tel"
-            {...register("telefon")}
-            value={watch("telefon") ?? ""}
-          />
-
-          <div>
-            <label
-              htmlFor="einstellungen-branche"
-              className="mb-1.5 block text-sm font-medium text-slate-700"
-            >
-              Branche
-            </label>
-            <select
-              id="einstellungen-branche"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register("branche")}
-              value={watch("branche") ?? ""}
-            >
-              <option value="">Keine Angabe</option>
-              {BRANCHEN.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <Textarea
-            label="Adresse"
-            rows={3}
-            {...register("adresse")}
-            value={watch("adresse") ?? ""}
-          />
-
-          <div>
+      {activeTab === "Betrieb" ? (
+        <Card>
+          <div className="space-y-5">
             <Input
-              label="Google-Bewertungslink"
-              type="url"
-              placeholder="https://..."
-              {...register("google_bewertung_link")}
-              value={watch("google_bewertung_link") ?? ""}
-              error={errors.google_bewertung_link?.message}
+              label="Betriebsname"
+              {...register("name")}
+              error={errors.name?.message}
             />
-            <p className="mt-1.5 text-xs text-slate-500">
-              Den Link findest du in Google Maps bei deinem Betrieb → Teilen.
-            </p>
-          </div>
 
-          <div className="border-t border-slate-200 pt-5">
-            <p className="text-sm font-medium text-slate-700">Logo</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Wird als JPG gespeichert (max. ca. 800 px Breite). Speicherort auf
-              dem Server:{" "}
-              <code className="rounded bg-slate-100 px-1 text-[11px]">
-                …/uploads/logos/{"{betrieb_id}"}.jpg
-              </code>
-            </p>
-            {logoPreviewSrc ? (
-              <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={logoPreviewSrc}
-                  alt="Logo"
-                  className="max-h-20 max-w-full object-contain"
-                />
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500">Noch kein Logo.</p>
-            )}
-            {logoErr ? (
-              <p className="mt-2 text-sm text-red-600">{logoErr}</p>
-            ) : null}
-            {logoMsg ? (
-              <p className="mt-2 text-sm text-primary">{logoMsg}</p>
-            ) : null}
-            <div className="mt-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">
-                {logoUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                Logo hochladen
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  disabled={logoUploading}
-                  onChange={(ev) => void onLogoFile(ev)}
-                />
+            <div>
+              <Input
+                label="E-Mail"
+                type="email"
+                value={emailReadonly}
+                readOnly
+                disabled
+                className="cursor-not-allowed bg-slate-50 text-slate-600"
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                E-Mail kann nicht geändert werden.
+              </p>
+            </div>
+
+            <Input
+              label="Telefon"
+              type="tel"
+              {...register("telefon")}
+              value={watch("telefon") ?? ""}
+            />
+
+            <div>
+              <label
+                htmlFor="einstellungen-branche"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Branche
               </label>
+              <select
+                id="einstellungen-branche"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                {...register("branche")}
+                value={watch("branche") ?? ""}
+              >
+                <option value="">Keine Angabe</option>
+                {BRANCHEN.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Textarea
+              label="Adresse"
+              rows={3}
+              {...register("adresse")}
+              value={watch("adresse") ?? ""}
+            />
+
+            <Button
+              type="button"
+              className="min-h-12 w-full gap-2 sm:w-auto"
+              disabled={saving}
+              onClick={() => void saveBetriebTab()}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Speichern…
+                </>
+              ) : (
+                "Änderungen speichern"
+              )}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
+      {activeTab === "Marke" ? (
+        <Card>
+          <div className="space-y-5">
+            <div>
+              <p className="text-sm font-medium text-slate-700">Logo</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Wird als JPG gespeichert (max. ca. 800 px Breite). Speicherort
+                auf dem Server:{" "}
+                <code className="rounded bg-slate-100 px-1 text-[11px]">
+                  …/uploads/logos/{"{betrieb_id}"}.jpg
+                </code>
+              </p>
+              {logoPreviewSrc ? (
+                <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={logoPreviewSrc}
+                    alt="Logo"
+                    className="max-h-20 max-w-full object-contain"
+                  />
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">Noch kein Logo.</p>
+              )}
+              {logoErr ? (
+                <p className="mt-2 text-sm text-red-600">{logoErr}</p>
+              ) : null}
+              {logoMsg ? (
+                <p className="mt-2 text-sm text-primary">{logoMsg}</p>
+              ) : null}
+              <div className="mt-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">
+                  {logoUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  Logo hochladen
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={logoUploading}
+                    onChange={(ev) => void onLogoFile(ev)}
+                  />
+                </label>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Dein Logo erscheint auf allen Protokoll-PDFs.
+              </p>
+            </div>
+
+            <div className="border-t border-slate-200 pt-5">
+              <Input
+                label="Google-Bewertungslink"
+                type="url"
+                placeholder="https://..."
+                {...register("google_bewertung_link")}
+                value={watch("google_bewertung_link") ?? ""}
+                error={errors.google_bewertung_link?.message}
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Den Link findest du in Google Maps bei deinem Betrieb → Teilen.
+              </p>
+              <p className="mt-1.5 text-xs text-slate-500">
+                Zufriedene Kunden werden nach dem Einsatz automatisch auf diese
+                Seite weitergeleitet.
+              </p>
+              <Button
+                type="button"
+                className="mt-4 min-h-12 w-full gap-2 sm:w-auto"
+                disabled={saving}
+                onClick={() => void saveMarkeTab()}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Speichern…
+                  </>
+                ) : (
+                  "Änderungen speichern"
+                )}
+              </Button>
             </div>
           </div>
+        </Card>
+      ) : null}
 
-          <div className="border-t border-slate-200 pt-5">
-            <p className="text-sm font-medium text-slate-700">
-              Passwort ändern
-            </p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Optional – nur ausfüllen, wenn du das Passwort ändern möchtest.
-            </p>
-            <div className="mt-3 space-y-4">
-              <Input
-                label="Neues Passwort"
-                type="password"
-                autoComplete="new-password"
-                {...register("neuesPasswort")}
-                error={errors.neuesPasswort?.message}
-              />
-              <Input
-                label="Neues Passwort bestätigen"
-                type="password"
-                autoComplete="new-password"
-                {...register("neuesPasswortBestaetigung")}
-                error={errors.neuesPasswortBestaetigung?.message}
-              />
+      {activeTab === "Abo" ? (
+        <div className="space-y-4">
+          <Card className="border-primary/20 bg-primary/5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-slate-600">
+                  Dein Plan:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {aboAnzeige.planText}
+                  </span>
+                </p>
+                {aboAnzeige.datumZeile ? (
+                  <p className="text-sm text-slate-600">
+                    {aboAnzeige.datumZeile.prefix}{" "}
+                    <span className="font-medium text-slate-900">
+                      {aboAnzeige.datumZeile.text}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
+              <Link
+                href="/preise"
+                className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                Plan upgraden
+              </Link>
             </div>
-          </div>
+          </Card>
 
-          <Button
-            type="submit"
-            className="min-h-12 w-full gap-2 sm:w-auto"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Speichern…
-              </>
-            ) : (
-              "Speichern"
-            )}
-          </Button>
-        </form>
-      </Card>
+          {showAboPortalBtn ? (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-12 w-full gap-2 sm:w-auto"
+                disabled={portalLoading}
+                onClick={() => void openStripePortal()}
+              >
+                {portalLoading ? (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                ) : null}
+                Abo verwalten / Kündigen
+              </Button>
+              {portalErr ? (
+                <p className="text-sm text-red-600">{portalErr}</p>
+              ) : null}
+              <p className="text-xs text-slate-500">
+                Hier kannst du dein Abo kündigen oder deine Zahlungsmethode
+                ändern.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === "Sicherheit" ? (
+        <Card>
+          <div className="space-y-5">
+            <p className="text-xs text-slate-500">
+              Lass die Felder leer, wenn du dein Passwort nicht ändern möchtest
+              — dann nicht auf „Passwort ändern“ klicken.
+            </p>
+            <Input
+              label="Neues Passwort"
+              type="password"
+              autoComplete="new-password"
+              {...register("neuesPasswort")}
+              error={errors.neuesPasswort?.message}
+            />
+            <Input
+              label="Neues Passwort bestätigen"
+              type="password"
+              autoComplete="new-password"
+              {...register("neuesPasswortBestaetigung")}
+              error={errors.neuesPasswortBestaetigung?.message}
+            />
+            <Button
+              type="button"
+              className="min-h-12 w-full gap-2 sm:w-auto"
+              disabled={saving}
+              onClick={() => void saveSicherheitTab()}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Speichern…
+                </>
+              ) : (
+                "Passwort ändern"
+              )}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }
