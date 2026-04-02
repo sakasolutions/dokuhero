@@ -644,52 +644,97 @@ export default function LandingPage() {
         <PricingSection />
 
         {/* CTA */}
-        <section className="bg-slate-900 px-4 py-14 sm:py-16 md:py-20">
+        <section className="bg-gradient-to-br from-blue-600 to-indigo-700 px-4 py-24">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-2xl font-bold text-white md:text-3xl lg:text-4xl">
-              Bereit, Schluss mit Papierkram zu machen?
+            <span className="text-sm font-medium uppercase tracking-widest text-blue-200">
+              Kostenlos starten
+            </span>
+            <h2 className="mt-3 text-4xl font-bold leading-tight text-white md:text-5xl">
+              Schluss mit Papierkram.
+              <br />
+              Starte noch heute.
             </h2>
-            <Link
-              href="/register"
-              className={`${ctaBtnTransform} mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary/90 md:mt-10 md:min-h-[52px] md:px-10 md:text-lg`}
-            >
-              Jetzt 30 Tage kostenlos testen
-            </Link>
+            <p className="mt-4 text-blue-100">
+              30 Tage kostenlos — keine Kreditkarte nötig.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+              <Link
+                href="/register"
+                className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-8 py-4 text-base font-semibold text-blue-700 transition-colors hover:bg-blue-50`}
+              >
+                Jetzt kostenlos starten
+              </Link>
+              <Link
+                href="/login"
+                className={`${ctaBtnTransform} inline-flex min-h-12 items-center justify-center rounded-xl border border-white/40 px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-white/10`}
+              >
+                Anmelden
+              </Link>
+            </div>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-blue-200">
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden />
+                Keine Kreditkarte
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden />
+                Monatlich kündbar
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden />
+                DSGVO-konform
+              </span>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-slate-900 px-4 py-10 text-slate-400 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 sm:flex-row sm:justify-between">
-          <p className="order-2 text-center text-sm sm:order-1 sm:text-left">
-            © 2026 DokuHero
-          </p>
-          <nav className="order-1 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm sm:order-2">
-            <Link
-              href="/datenschutz"
-              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
+      <footer className="bg-slate-900 px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col items-center gap-8 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col items-center text-center md:items-start md:text-left">
+              <Link
+                href="/"
+                className="flex items-center gap-2 outline-none ring-offset-2 ring-offset-slate-900 focus-visible:ring-2 focus-visible:ring-white/40"
+                aria-label="DokuHero Startseite"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                  <FileText className="h-5 w-5 text-white" strokeWidth={2} aria-hidden />
+                </div>
+                <span className="font-sans text-xl font-bold text-white">
+                  DokuHero
+                </span>
+              </Link>
+              <p className="mt-2 max-w-sm text-sm text-slate-400">
+                Professionelle Dokumentation für Handwerksbetriebe.
+              </p>
+            </div>
+            <nav
+              className="flex flex-wrap items-center justify-center gap-8 text-sm text-slate-400 md:justify-end"
+              aria-label="Footer"
             >
-              Datenschutz
-            </Link>
-            <Link
-              href="/impressum"
-              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
-            >
-              Impressum
-            </Link>
-            <Link
-              href="/agb"
-              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
-            >
-              AGB
-            </Link>
-            <a
-              href="mailto:kontakt@dokuhero.de"
-              className="min-h-12 min-w-[48px] inline-flex items-center justify-center font-medium transition active:text-white md:hover:text-white"
-            >
-              Kontakt
-            </a>
-          </nav>
+              <Link
+                href="/datenschutz"
+                className="transition hover:text-white"
+              >
+                Datenschutz
+              </Link>
+              <Link href="/impressum" className="transition hover:text-white">
+                Impressum
+              </Link>
+              <Link href="/agb" className="transition hover:text-white">
+                AGB
+              </Link>
+              <a href="mailto:kontakt@dokuhero.de" className="transition hover:text-white">
+                Kontakt
+              </a>
+            </nav>
+          </div>
+          <div className="mt-8 border-t border-slate-800 pt-6">
+            <p className="text-center text-xs text-slate-500">
+              © 2026 DokuHero. Alle Rechte vorbehalten.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -171,10 +171,10 @@ export function PricingSection() {
           <div className="relative inline-flex min-h-[48px] w-full rounded-xl border border-slate-200 bg-slate-100 p-1 sm:min-w-[280px] sm:max-w-md">
             {billing === "monthly" ? (
               <div
-                className="pointer-events-none absolute -top-3 right-[calc(25%-20px)] -rotate-6 whitespace-nowrap rounded-full bg-green-500 px-2 py-0.5 text-xs font-semibold text-white shadow-sm"
+                className="pointer-events-none absolute -top-3 left-[75%] z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-green-500 px-2.5 py-0.5 text-xs font-semibold text-white"
                 aria-hidden
               >
-                2 Monate gratis 🎉
+                2 Monate gratis
               </div>
             ) : null}
             <button
