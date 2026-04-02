@@ -14,6 +14,7 @@ interface BetriebRow extends RowDataPacket {
   name: string;
   email: string;
   telefon: string | null;
+  branche: string | null;
   adresse: string | null;
   logo_pfad: string | null;
   google_bewertung_link: string | null;
@@ -26,9 +27,10 @@ interface BetriebRow extends RowDataPacket {
 const putSchema = z
   .object({
     name: z.string().min(1, "Betriebsname ist erforderlich"),
-    telefon: z.string().optional(),
-    adresse: z.string().optional(),
-    google_bewertung_link: z.string().optional(),
+    telefon: z.string().nullable().optional(),
+    branche: z.string().nullable().optional(),
+    adresse: z.string().nullable().optional(),
+    google_bewertung_link: z.string().nullable().optional(),
     neuesPasswort: z.string().optional(),
     neuesPasswortBestaetigung: z.string().optional(),
   })
@@ -64,7 +66,7 @@ export async function GET() {
 
     const pool = getPool();
     const [rows] = await pool.execute<BetriebRow[]>(
-      `SELECT id, name, email, telefon, adresse, logo_pfad, google_bewertung_link,
+      `SELECT id, name, email, telefon, branche, adresse, logo_pfad, google_bewertung_link,
               plan, abo_bis, stripe_customer_id, erstellt_am
        FROM betriebe WHERE id = ? LIMIT 1`,
       [session.user.betrieb_id]
@@ -81,6 +83,7 @@ export async function GET() {
         name: row.name,
         email: row.email,
         telefon: row.telefon,
+        branche: row.branche,
         adresse: row.adresse,
         logo_pfad: row.logo_pfad,
         google_bewertung_link: row.google_bewertung_link,
@@ -134,6 +137,7 @@ export async function PUT(request: Request) {
 
     const d = parsed.data;
     const telefon = nullIfEmpty(d.telefon ?? undefined);
+    const branche = nullIfEmpty(d.branche ?? undefined);
     const adresse = nullIfEmpty(d.adresse ?? undefined);
     const google_bewertung_link = nullIfEmpty(
       d.google_bewertung_link ?? undefined
@@ -145,11 +149,12 @@ export async function PUT(request: Request) {
     if (pw) {
       const hash = await bcrypt.hash(pw, 12);
       await pool.execute(
-        `UPDATE betriebe SET name = ?, telefon = ?, adresse = ?, google_bewertung_link = ?, passwort = ?
+        `UPDATE betriebe SET name = ?, telefon = ?, branche = ?, adresse = ?, google_bewertung_link = ?, passwort = ?
          WHERE id = ?`,
         [
           d.name.trim(),
           telefon,
+          branche,
           adresse,
           google_bewertung_link,
           hash,
@@ -158,11 +163,12 @@ export async function PUT(request: Request) {
       );
     } else {
       await pool.execute(
-        `UPDATE betriebe SET name = ?, telefon = ?, adresse = ?, google_bewertung_link = ?
+        `UPDATE betriebe SET name = ?, telefon = ?, branche = ?, adresse = ?, google_bewertung_link = ?
          WHERE id = ?`,
         [
           d.name.trim(),
           telefon,
+          branche,
           adresse,
           google_bewertung_link,
           session.user.betrieb_id,

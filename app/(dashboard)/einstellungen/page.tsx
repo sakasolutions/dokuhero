@@ -11,11 +11,20 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card } from "@/components/ui/Card";
 
+const BRANCHEN = [
+  "KFZ-Werkstatt",
+  "Hausmeisterdienst",
+  "Handwerker",
+  "Reinigung",
+  "Sonstiges",
+] as const;
+
 type BetriebApi = {
   id: number;
   name: string;
   email: string;
   telefon: string | null;
+  branche: string | null;
   adresse: string | null;
   logo_pfad: string | null;
   google_bewertung_link: string | null;
@@ -50,9 +59,10 @@ function formatDeDatum(iso: string | null): string | null {
 const formSchema = z
   .object({
     name: z.string().min(1, "Betriebsname ist erforderlich"),
-    telefon: z.string().optional(),
-    adresse: z.string().optional(),
-    google_bewertung_link: z.string().optional(),
+    telefon: z.string().nullable().optional(),
+    branche: z.string().nullable().optional(),
+    adresse: z.string().nullable().optional(),
+    google_bewertung_link: z.string().nullable().optional(),
     neuesPasswort: z.string().optional(),
     neuesPasswortBestaetigung: z.string().optional(),
   })
@@ -125,12 +135,14 @@ export default function EinstellungenPage() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       telefon: "",
+      branche: "",
       adresse: "",
       google_bewertung_link: "",
       neuesPasswort: "",
@@ -158,6 +170,7 @@ export default function EinstellungenPage() {
     reset({
       name: b.name,
       telefon: b.telefon ?? "",
+      branche: b.branche ?? "",
       adresse: b.adresse ?? "",
       google_bewertung_link: b.google_bewertung_link ?? "",
       neuesPasswort: "",
@@ -245,6 +258,7 @@ export default function EinstellungenPage() {
     const body: Record<string, unknown> = {
       name: data.name.trim(),
       telefon: data.telefon?.trim() || null,
+      branche: data.branche?.trim() || null,
       adresse: data.adresse?.trim() || null,
       google_bewertung_link: data.google_bewertung_link?.trim() || null,
     };
@@ -357,9 +371,41 @@ export default function EinstellungenPage() {
             className="cursor-not-allowed bg-slate-50 text-slate-600"
           />
 
-          <Input label="Telefon" type="tel" {...register("telefon")} />
+          <Input
+            label="Telefon"
+            type="tel"
+            {...register("telefon")}
+            value={watch("telefon") ?? ""}
+          />
 
-          <Textarea label="Adresse" rows={3} {...register("adresse")} />
+          <div>
+            <label
+              htmlFor="einstellungen-branche"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Branche
+            </label>
+            <select
+              id="einstellungen-branche"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              {...register("branche")}
+              value={watch("branche") ?? ""}
+            >
+              <option value="">Keine Angabe</option>
+              {BRANCHEN.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Textarea
+            label="Adresse"
+            rows={3}
+            {...register("adresse")}
+            value={watch("adresse") ?? ""}
+          />
 
           <div>
             <Input
@@ -367,6 +413,7 @@ export default function EinstellungenPage() {
               type="url"
               placeholder="https://..."
               {...register("google_bewertung_link")}
+              value={watch("google_bewertung_link") ?? ""}
               error={errors.google_bewertung_link?.message}
             />
             <p className="mt-1.5 text-xs text-slate-500">
