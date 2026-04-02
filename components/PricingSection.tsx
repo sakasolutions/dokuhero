@@ -79,14 +79,15 @@ function PriceBlock({
   bruttoMain,
   bruttoCompareStrike,
   nettoAmountLabel,
-  yearlyBruttoJahrFooter,
+  yearlyBruttoTotalDisplay,
   variant,
 }: {
   billing: Billing;
   bruttoMain: string;
   bruttoCompareStrike: string | null;
   nettoAmountLabel: string;
-  yearlyBruttoJahrFooter: string | null;
+  /** Bruttobetrag für „= X / Jahr“ (nur bei billing === yearly) */
+  yearlyBruttoTotalDisplay: string | null;
   variant: "light" | "dark";
 }) {
   const mainCls =
@@ -101,8 +102,12 @@ function PriceBlock({
     variant === "dark"
       ? "text-lg font-medium text-slate-500 line-through md:text-xl"
       : "text-lg font-medium text-slate-400 line-through md:text-xl";
-  const subCls =
+  const nettoSmallCls =
     variant === "dark" ? "text-xs text-slate-300" : "text-xs text-slate-400";
+  const yearHighlightCls =
+    variant === "dark"
+      ? "mt-1 text-base font-semibold text-slate-200"
+      : "mt-1 text-base font-semibold text-slate-700";
 
   return (
     <div className="mt-4 shrink-0">
@@ -113,12 +118,12 @@ function PriceBlock({
         ) : null}
         <span className={unitCls}>/ Monat</span>
       </div>
-      <p className={`mt-1 ${subCls}`}>
+      {billing === "yearly" && yearlyBruttoTotalDisplay ? (
+        <p className={yearHighlightCls}>= {yearlyBruttoTotalDisplay} / Jahr</p>
+      ) : null}
+      <p className={`mt-1 ${nettoSmallCls}`}>
         {nettoAmountLabel} netto zzgl. 19% MwSt.
       </p>
-      {billing === "yearly" && yearlyBruttoJahrFooter ? (
-        <p className={`mt-1 ${subCls}`}>{yearlyBruttoJahrFooter}</p>
-      ) : null}
     </div>
   );
 }
@@ -135,30 +140,23 @@ export function PricingSection() {
   const starterBruttoStrike =
     billing === "yearly" ? "30,00 €" : null;
   const starterNettoLabel =
-    billing === "monthly" ? "25,21 €" : "21,01 €";
-  const starterJahrFooter =
-    billing === "yearly"
-      ? "300,00 € brutto / Jahr (252,10 € netto)"
-      : null;
+    billing === "monthly" ? "25,21 €" : "252,10 €";
+  const starterYearBruttoTotal =
+    billing === "yearly" ? "300,00 €" : null;
 
   const proBruttoMain = billing === "monthly" ? "70,00 €" : "58,00 €";
   const proBruttoStrike = billing === "yearly" ? "70,00 €" : null;
-  const proNettoLabel = billing === "monthly" ? "58,82 €" : "49,02 €";
-  const proJahrFooter =
-    billing === "yearly"
-      ? "700,00 € brutto / Jahr (588,24 € netto)"
-      : null;
+  const proNettoLabel = billing === "monthly" ? "58,82 €" : "588,24 €";
+  const proYearBruttoTotal = billing === "yearly" ? "700,00 €" : null;
 
   const businessBruttoMain =
     billing === "monthly" ? "175,00 €" : "146,00 €";
   const businessBruttoStrike =
     billing === "yearly" ? "175,00 €" : null;
   const businessNettoLabel =
-    billing === "monthly" ? "147,06 €" : "122,55 €";
-  const businessJahrFooter =
-    billing === "yearly"
-      ? "1.750,00 € brutto / Jahr (1.470,59 € netto)"
-      : null;
+    billing === "monthly" ? "147,06 €" : "1.470,59 €";
+  const businessYearBruttoTotal =
+    billing === "yearly" ? "1.750,00 €" : null;
 
   return (
     <section
@@ -230,7 +228,7 @@ export function PricingSection() {
                 bruttoMain={starterBruttoMain}
                 bruttoCompareStrike={starterBruttoStrike}
                 nettoAmountLabel={starterNettoLabel}
-                yearlyBruttoJahrFooter={starterJahrFooter}
+                yearlyBruttoTotalDisplay={starterYearBruttoTotal}
               />
             </div>
             <ul className="flex-1 mt-6 space-y-3 text-sm text-slate-700 md:text-base">
@@ -283,7 +281,7 @@ export function PricingSection() {
                 bruttoMain={proBruttoMain}
                 bruttoCompareStrike={proBruttoStrike}
                 nettoAmountLabel={proNettoLabel}
-                yearlyBruttoJahrFooter={proJahrFooter}
+                yearlyBruttoTotalDisplay={proYearBruttoTotal}
               />
             </div>
             <ul className="flex-1 mt-6 space-y-3 text-sm text-slate-200 md:text-base">
@@ -336,7 +334,7 @@ export function PricingSection() {
                 bruttoMain={businessBruttoMain}
                 bruttoCompareStrike={businessBruttoStrike}
                 nettoAmountLabel={businessNettoLabel}
-                yearlyBruttoJahrFooter={businessJahrFooter}
+                yearlyBruttoTotalDisplay={businessYearBruttoTotal}
               />
             </div>
             <ul className="flex-1 mt-6 space-y-3 text-sm text-slate-700 md:text-base">
