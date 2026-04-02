@@ -1,22 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 
-const BRANCHEN = [
-  "KFZ-Werkstatt",
-  "Hausmeisterdienst",
-  "Handwerker",
-  "Reinigung",
-  "Sonstiges",
-] as const;
+const inputClass =
+  "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500";
+
+const btnPrimary =
+  "w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60";
 
 const registerSchema = z
   .object({
@@ -24,14 +20,6 @@ const registerSchema = z
     email: z.string().email("Ungültige E-Mail"),
     password: z.string().min(8, "Mindestens 8 Zeichen"),
     passwordConfirm: z.string(),
-    telefon: z.string().optional(),
-    branche: z
-      .string()
-      .refine(
-        (v): v is (typeof BRANCHEN)[number] =>
-          (BRANCHEN as readonly string[]).includes(v),
-        { message: "Bitte eine Branche wählen." }
-      ),
     acceptAgb: z.boolean(),
   })
   .refine((data) => data.password === data.passwordConfirm, {
@@ -44,18 +32,6 @@ const registerSchema = z
     path: ["acceptAgb"],
   });
 
-function passwordStrengthScore(pw: string): number {
-  if (!pw) return 0;
-  let s = 0;
-  if (pw.length >= 8) s += 1;
-  if (/[a-z]/.test(pw)) s += 1;
-  if (/[A-Z]/.test(pw)) s += 1;
-  if (/[0-9]/.test(pw) || /[^a-zA-Z0-9]/.test(pw)) s += 1;
-  return Math.min(4, s);
-}
-
-const strengthLabels = ["", "Schwach", "Okay", "Gut", "Stark"];
-
 export default function RegisterPage() {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
@@ -64,7 +40,6 @@ export default function RegisterPage() {
     register,
     control,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -73,14 +48,9 @@ export default function RegisterPage() {
       email: "",
       password: "",
       passwordConfirm: "",
-      telefon: "",
       acceptAgb: false,
-      branche: "",
     },
   });
-
-  const pwd = watch("password") ?? "";
-  const strength = useMemo(() => passwordStrengthScore(pwd), [pwd]);
 
   async function onSubmit(data: z.infer<typeof registerSchema>) {
     setFormError(null);
@@ -92,8 +62,6 @@ export default function RegisterPage() {
         email: data.email,
         password: data.password,
         passwordConfirm: data.passwordConfirm,
-        telefon: data.telefon?.trim() || null,
-        branche: data.branche,
         acceptAgb: data.acceptAgb,
       }),
     });
@@ -119,123 +87,111 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-dark">DokuHero</h1>
-        <p className="mt-2 text-sm text-slate-600">Neuen Betrieb registrieren</p>
-      </div>
-      <Card>
+    <AuthSplitLayout
+      desktopAuthLink={{
+        href: "/login",
+        preface: "Bereits ein Konto?",
+        label: "Anmelden",
+      }}
+    >
+      <div className="w-full">
+        <h1 className="text-2xl font-bold text-slate-900">Konto erstellen</h1>
+        <p className="mt-1 text-slate-500">
+          30 Tage kostenlos — keine Kreditkarte.
+        </p>
+
         <form
-          onSubmit={handleSubmit((values) =>
-            void onSubmit(values as z.infer<typeof registerSchema>)
-          )}
-          className="space-y-4"
+          onSubmit={handleSubmit((values) => void onSubmit(values))}
+          className="mt-8 space-y-4"
           noValidate
         >
           {formError ? (
             <p
-              className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
               role="alert"
             >
               {formError}
             </p>
           ) : null}
 
-          <Input
-            label="Betriebsname *"
-            autoComplete="organization"
-            required
-            error={errors.name?.message}
-            {...register("name")}
-          />
-          <Input
-            label="E-Mail *"
-            type="email"
-            autoComplete="email"
-            required
-            error={errors.email?.message}
-            {...register("email")}
-          />
-
           <div>
-            <Input
-              label="Passwort *"
-              type="password"
-              autoComplete="new-password"
-              required
-              error={errors.password?.message}
-              {...register("password")}
+            <label
+              htmlFor="reg-name"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Betriebsname *
+            </label>
+            <input
+              id="reg-name"
+              type="text"
+              autoComplete="organization"
+              className={inputClass}
+              {...register("name")}
             />
-            {pwd.length > 0 ? (
-              <div className="mt-2">
-                <div className="mb-1 flex justify-between text-xs text-slate-500">
-                  <span>Passwort-Stärke</span>
-                  <span className="font-medium text-slate-700">
-                    {strengthLabels[strength]}
-                  </span>
-                </div>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className={`h-1.5 flex-1 rounded-full transition-colors ${
-                        i <= strength
-                          ? strength <= 1
-                            ? "bg-red-400"
-                            : strength === 2
-                              ? "bg-primary/45"
-                              : strength === 3
-                                ? "bg-primary/75"
-                                : "bg-primary"
-                          : "bg-slate-200"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+            {errors.name?.message ? (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
             ) : null}
           </div>
 
-          <Input
-            label="Passwort wiederholen *"
-            type="password"
-            autoComplete="new-password"
-            required
-            error={errors.passwordConfirm?.message}
-            {...register("passwordConfirm")}
-          />
-
-          <Input
-            label="Telefon"
-            type="tel"
-            autoComplete="tel"
-            error={errors.telefon?.message}
-            {...register("telefon")}
-          />
+          <div>
+            <label
+              htmlFor="reg-email"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              E-Mail *
+            </label>
+            <input
+              id="reg-email"
+              type="email"
+              autoComplete="email"
+              className={inputClass}
+              placeholder="name@betrieb.de"
+              {...register("email")}
+            />
+            {errors.email?.message ? (
+              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            ) : null}
+          </div>
 
           <div>
             <label
-              htmlFor="branche"
+              htmlFor="reg-password"
               className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              Branche *
+              Passwort *
             </label>
-            <select
-              id="branche"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              {...register("branche")}
+            <input
+              id="reg-password"
+              type="password"
+              autoComplete="new-password"
+              className={inputClass}
+              {...register("password")}
+            />
+            {errors.password?.message ? (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.password.message}
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <label
+              htmlFor="reg-password-confirm"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              <option value="" disabled>
-                Bitte wählen…
-              </option>
-              {BRANCHEN.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-            {errors.branche?.message ? (
-              <p className="mt-1 text-sm text-red-600">{errors.branche.message}</p>
+              Passwort wiederholen *
+            </label>
+            <input
+              id="reg-password-confirm"
+              type="password"
+              autoComplete="new-password"
+              className={inputClass}
+              {...register("passwordConfirm")}
+            />
+            {errors.passwordConfirm?.message ? (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.passwordConfirm.message}
+              </p>
             ) : null}
           </div>
 
@@ -247,7 +203,7 @@ export default function RegisterPage() {
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700">
                   <input
                     type="checkbox"
-                    className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-primary focus:ring-primary"
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     checked={field.value}
                     onChange={(e) => field.onChange(e.target.checked)}
                     onBlur={field.onBlur}
@@ -257,7 +213,7 @@ export default function RegisterPage() {
                     Ich habe die{" "}
                     <Link
                       href="/agb"
-                      className="font-medium text-primary hover:text-primary/80 hover:underline"
+                      className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -266,7 +222,7 @@ export default function RegisterPage() {
                     und{" "}
                     <Link
                       href="/datenschutz"
-                      className="font-medium text-primary hover:text-primary/80 hover:underline"
+                      className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -284,20 +240,21 @@ export default function RegisterPage() {
             ) : null}
           </div>
 
-          <Button type="submit" className="w-full min-h-11" disabled={isSubmitting}>
-            {isSubmitting ? "Wird registriert…" : "Konto erstellen"}
-          </Button>
+          <button type="submit" disabled={isSubmitting} className={btnPrimary}>
+            {isSubmitting ? "Wird erstellt…" : "Konto erstellen"}
+          </button>
         </form>
-        <p className="mt-6 text-center text-sm text-slate-600">
+
+        <p className="mt-8 text-center text-sm text-slate-500 lg:hidden">
           Bereits registriert?{" "}
           <Link
             href="/login"
-            className="font-medium text-primary hover:text-primary/80 hover:underline"
+            className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
           >
-            Zum Login
+            Anmelden
           </Link>
         </p>
-      </Card>
-    </div>
+      </div>
+    </AuthSplitLayout>
   );
 }

@@ -1,16 +1,16 @@
-import { Suspense } from "react";
+import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { LoginForm } from "./LoginForm";
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="w-full max-w-md text-center text-sm text-slate-600">
-          Laden…
-        </div>
-      }
+    <AuthSplitLayout
+      desktopAuthLink={{
+        href: "/register",
+        preface: "Noch kein Konto?",
+        label: "Registrieren",
+      }}
     >
       <LoginForm />
-    </Suspense>
+    </AuthSplitLayout>
   );
 }

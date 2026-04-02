@@ -24,13 +24,7 @@ const registerSchema = z
     password: z.string().min(8, "Mindestens 8 Zeichen"),
     passwordConfirm: z.string(),
     telefon: z.string().optional().nullable(),
-    branche: z
-      .string()
-      .refine(
-        (v): v is (typeof BRANCHEN)[number] =>
-          (BRANCHEN as readonly string[]).includes(v),
-        { message: "Bitte eine Branche wählen." }
-      ),
+    branche: z.enum(BRANCHEN).optional(),
     acceptAgb: z.boolean(),
   })
   .refine((data) => data.password === data.passwordConfirm, {
@@ -89,7 +83,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, email, password, telefon, branche } = parsed.data;
+    const { name, email, password, telefon, branche: brancheRaw } =
+      parsed.data;
+    const branche = brancheRaw ?? "Sonstiges";
     const emailNorm = email.trim().toLowerCase();
     const pool = getPool();
 
