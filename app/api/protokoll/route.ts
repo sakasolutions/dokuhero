@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const STARTER_PROTOKOLL_MONATS_LIMIT = 50;
+const STARTER_PROTOKOLL_MONATS_LIMIT =
+  process.env.NODE_ENV === "development" ? 6 : 50;
 
 const postSchema = z.object({
   auftrag_id: z.coerce.number().int().positive(),
