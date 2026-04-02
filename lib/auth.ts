@@ -143,7 +143,7 @@ export const authOptions: NextAuthOptions = {
             token.registriert_am =
               b.registriert_am instanceof Date
                 ? b.registriert_am.toISOString()
-                : null;
+                : (b.registriert_am as unknown as string | null);
           }
         } catch {
           // Fallback: Token bleibt wie gehabt (UI funktioniert trotzdem)

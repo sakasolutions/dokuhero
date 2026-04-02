@@ -1,108 +1,70 @@
-import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { withAuth } from "next-auth/middleware";
-import { isAdminEmail } from "@/lib/admin";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default withAuth(
-  async function middleware(request) {
-    const path = request.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-    const publicPaths = [
-      "/login",
-      "/register",
-      "/preise",
-      "/api/stripe",
-      "/passwort-vergessen",
-      "/passwort-reset",
-      "/bewertung",
-      "/gesperrt",
-    ];
-    const isPublicPath = publicPaths.some((p) => path.startsWith(p));
+  const pathname = request.nextUrl.pathname;
 
-    const secret = process.env.NEXTAUTH_SECRET;
-    const token = secret ? await getToken({ req: request, secret }) : null;
+  // Public paths - immer erlaubt
+  const publicPaths = [
+    "/login",
+    "/register",
+    "/preise",
+    "/api/stripe",
+    "/api/auth",
+    "/passwort-vergessen",
+    "/passwort-reset",
+    "/bewertung",
+    "/gesperrt",
+    "/_next",
+    "/favicon",
+    "/uploads",
+  ];
 
-    // Admin bleibt wie bisher (aber ohne Redirect-Schleifen)
-    if (path === "/admin" || path.startsWith("/admin/")) {
-      if (!isAdminEmail(token?.email as string | undefined)) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
-      }
-      return NextResponse.next();
-    }
+  const isPublicPath = publicPaths.some((p) => pathname.startsWith(p));
+  if (isPublicPath) return NextResponse.next();
 
-    // Admins nicht plan-gaten
-    const email = token?.email as string | undefined;
-    if (isAdminEmail(email)) {
-      return NextResponse.next();
-    }
-
-    // Gesperrt hat Priorität
-    if (Number(token?.gesperrt) === 1) {
-      if (path.startsWith("/gesperrt")) return NextResponse.next();
-      return NextResponse.redirect(new URL("/gesperrt", request.url));
-    }
-
-    // Trial Check / Abo abgelaufen
-    if (token) {
-      const plan = (token as unknown as { plan?: unknown }).plan;
-      const planStr = typeof plan === "string" ? plan : "";
-
-      const registriertRaw = (token as unknown as { registriert_am?: unknown })
-        .registriert_am;
-      const registriertAm =
-        typeof registriertRaw === "string" ? new Date(registriertRaw) : null;
-      const trialEnde =
-        registriertAm && !Number.isNaN(registriertAm.getTime())
-          ? new Date(registriertAm.getTime() + 30 * 24 * 60 * 60 * 1000)
-          : null;
-      const jetzt = new Date();
-
-      const trialAbgelaufen =
-        planStr === "trial" && trialEnde != null && jetzt > trialEnde;
-      const abonnementAbgelaufen = planStr === "expired";
-
-      if (!isPublicPath && (trialAbgelaufen || abonnementAbgelaufen)) {
-        return NextResponse.redirect(new URL("/preise", request.url));
-      }
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ req, token }) => {
-        const path = req.nextUrl.pathname;
-        const publicPaths = [
-          "/login",
-          "/register",
-          "/preise",
-          "/api/stripe",
-          "/passwort-vergessen",
-          "/passwort-reset",
-          "/bewertung",
-          "/gesperrt",
-        ];
-        if (publicPaths.some((p) => path.startsWith(p))) return true;
-        return !!token;
-      },
-    },
+  // Nicht eingeloggt
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
-);
+
+  // Admin darf immer rein
+  if (token.email === process.env.ADMIN_EMAIL) {
+    return NextResponse.next();
+  }
+
+  // Gesperrt check
+  if (token.gesperrt === 1) {
+    return NextResponse.redirect(new URL("/gesperrt", request.url));
+  }
+
+  // Trial/Plan check
+  const plan = (token.plan as string) || "trial";
+  const registriertAm = token.registriert_am
+    ? new Date(token.registriert_am as string)
+    : new Date();
+
+  const trialEnde = new Date(
+    registriertAm.getTime() + 30 * 24 * 60 * 60 * 1000
+  );
+  const jetzt = new Date();
+
+  const trialAbgelaufen = plan === "trial" && jetzt > trialEnde;
+  const expired = plan === "expired";
+
+  if (trialAbgelaufen || expired) {
+    return NextResponse.redirect(new URL("/preise", request.url));
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/kunden/:path*",
-    "/auftraege",
-    "/auftraege/:path*",
-    "/protokoll",
-    "/protokoll/:path*",
-    "/einstellungen",
-    "/einstellungen/:path*",
-    "/preise",
-    "/preise/:path*",
-    "/admin",
-    "/admin/:path*",
-    "/gesperrt",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
