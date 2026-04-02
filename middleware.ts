@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
     "/gesperrt",
     "/_next",
     "/favicon",
+    "/images",
     "/uploads",
   ];
 
