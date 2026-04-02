@@ -122,7 +122,12 @@ export default function KundenListePage() {
                 {filtered.map((k) => (
                   <tr key={k.id} className="border-b border-slate-100">
                     <td className="px-4 py-3 font-medium text-slate-900">
-                      {k.name}
+                      <Link
+                        href={`/kunden/${k.id}`}
+                        className="text-primary hover:text-primary/80 hover:underline"
+                      >
+                        {k.name}
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {k.fahrzeug ?? "–"}
@@ -136,7 +141,7 @@ export default function KundenListePage() {
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <Link
-                          href={`/kunden/${k.id}`}
+                          href={`/kunden/${k.id}/bearbeiten`}
                           title="Bearbeiten"
                           className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-800 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
                         >
@@ -170,12 +175,15 @@ export default function KundenListePage() {
               <Card key={k.id}>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-semibold text-slate-900">
+                    <Link
+                      href={`/kunden/${k.id}`}
+                      className="font-semibold text-slate-900 hover:text-primary hover:underline"
+                    >
                       {k.name}
-                    </span>
+                    </Link>
                     <div className="flex gap-1">
                       <Link
-                        href={`/kunden/${k.id}`}
+                        href={`/kunden/${k.id}/bearbeiten`}
                         className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-800 hover:bg-slate-50"
                       >
                         <Pencil className="h-4 w-4" />

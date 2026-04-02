@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +21,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function AuftragNeuPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preKundeId = searchParams.get("kunde_id")?.trim() ?? "";
   const [kunden, setKunden] = useState<Kunde[]>([]);
   const [loadingKunden, setLoadingKunden] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
@@ -28,9 +30,14 @@ export default function AuftragNeuPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      kunde_id: preKundeId,
+      beschreibung: "",
+    },
   });
 
   useEffect(() => {
@@ -51,6 +58,13 @@ export default function AuftragNeuPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!preKundeId || kunden.length === 0) return;
+    if (kunden.some((k) => String(k.id) === preKundeId)) {
+      setValue("kunde_id", preKundeId);
+    }
+  }, [preKundeId, kunden, setValue]);
 
   async function onSubmit(data: FormValues) {
     setFormError(null);

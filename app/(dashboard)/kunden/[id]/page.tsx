@@ -2,45 +2,76 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
+import { useParams } from "next/navigation";
+import { ArrowLeft, FileText, Pencil, Plus } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 
-const schema = z.object({
-  name: z.string().min(1, "Name ist erforderlich"),
-  email: z.union([z.string().email("Ungültige E-Mail"), z.literal("")]),
-  telefon: z.string().optional(),
-  adresse: z.string().optional(),
-  fahrzeug: z.string().optional(),
-  kennzeichen: z.string().optional(),
-  notizen: z.string().optional(),
-});
+type KundeDetail = {
+  id: number;
+  name: string;
+  email: string | null;
+  telefon: string | null;
+  adresse: string | null;
+  fahrzeug: string | null;
+  kennzeichen: string | null;
+  notizen: string | null;
+  erstellt_am: string;
+};
 
-type FormValues = z.infer<typeof schema>;
+type AuftragHistorie = {
+  id: number;
+  beschreibung: string | null;
+  status: string;
+  erstellt_am: string;
+  abgeschlossen_am: string | null;
+  protokoll_id: number | null;
+  pdf_pfad: string | null;
+  ki_text: string | null;
+  gesendet_am: string | null;
+  foto_anzahl: number;
+};
 
-export default function KundeBearbeitenPage() {
-  const router = useRouter();
+function statusBadgeClass(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "offen") return "bg-amber-100 text-amber-800";
+  if (s === "in_bearbeitung") return "bg-blue-100 text-blue-800";
+  if (s === "abgeschlossen") return "bg-green-100 text-green-800";
+  return "bg-slate-100 text-slate-800";
+}
+
+function statusLabel(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "offen") return "Offen";
+  if (s === "in_bearbeitung") return "In Bearbeitung";
+  if (s === "abgeschlossen") return "Abgeschlossen";
+  return status;
+}
+
+function formatDatum(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("de-DE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function kiPreview(text: string | null, max = 100): string | null {
+  if (!text?.trim()) return null;
+  const t = text.replace(/\s+/g, " ").trim();
+  return t.length <= max ? t : `${t.slice(0, max)}…`;
+}
+
+export default function KundeDetailPage() {
   const params = useParams();
   const id = String(params.id);
 
   const [loading, setLoading] = useState(true);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-  });
+  const [error, setError] = useState<string | null>(null);
+  const [kunde, setKunde] = useState<KundeDetail | null>(null);
+  const [auftraege, setAuftraege] = useState<AuftragHistorie[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,23 +79,18 @@ export default function KundeBearbeitenPage() {
       try {
         const res = await fetch(`/api/kunden/${id}`);
         if (!res.ok) {
-          if (!cancelled) setFormError("Kunde nicht gefunden.");
+          if (!cancelled) setError("Kunde nicht gefunden.");
           return;
         }
-        const k = await res.json();
-        if (!cancelled) {
-          reset({
-            name: k.name ?? "",
-            email: k.email ?? "",
-            telefon: k.telefon ?? "",
-            adresse: k.adresse ?? "",
-            fahrzeug: k.fahrzeug ?? "",
-            kennzeichen: k.kennzeichen ?? "",
-            notizen: k.notizen ?? "",
-          });
-        }
+        const data = (await res.json()) as {
+          kunde: KundeDetail;
+          auftraege: AuftragHistorie[];
+        };
+        if (cancelled) return;
+        setKunde(data.kunde);
+        setAuftraege(Array.isArray(data.auftraege) ? data.auftraege : []);
       } catch {
-        if (!cancelled) setFormError("Laden fehlgeschlagen.");
+        if (!cancelled) setError("Laden fehlgeschlagen.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -72,68 +98,37 @@ export default function KundeBearbeitenPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, reset]);
-
-  async function onSubmit(data: FormValues) {
-    setFormError(null);
-    const res = await fetch(`/api/kunden/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: data.name,
-        email: data.email || "",
-        telefon: data.telefon || null,
-        adresse: data.adresse || null,
-        fahrzeug: data.fahrzeug || null,
-        kennzeichen: data.kennzeichen || null,
-        notizen: data.notizen || null,
-      }),
-    });
-
-    if (!res.ok) {
-      setFormError("Speichern fehlgeschlagen.");
-      return;
-    }
-
-    router.push("/kunden");
-    router.refresh();
-  }
-
-  async function handleDelete() {
-    if (
-      !window.confirm(
-        "Diesen Kunden endgültig löschen? Dies kann fehlschlagen, wenn noch Aufträge existieren."
-      )
-    ) {
-      return;
-    }
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/kunden/${id}`, { method: "DELETE" });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setFormError(
-          typeof json.error === "string" ? json.error : "Löschen fehlgeschlagen."
-        );
-        return;
-      }
-      router.push("/kunden");
-      router.refresh();
-    } finally {
-      setDeleting(false);
-    }
-  }
+  }, [id]);
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-2xl">
         <p className="text-slate-600">Laden…</p>
       </div>
     );
   }
 
+  if (error || !kunde) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4">
+        <p className="text-red-600">{error ?? "Kunde nicht gefunden."}</p>
+        <Link
+          href="/kunden"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Zurück zur Kundenliste
+        </Link>
+      </div>
+    );
+  }
+
+  const telHref = kunde.telefon?.trim()
+    ? `tel:${kunde.telefon.replace(/\s/g, "")}`
+    : null;
+  const mailHref = kunde.email?.trim() ? `mailto:${kunde.email.trim()}` : null;
+
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-8">
       <Link
         href="/kunden"
         className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
@@ -142,73 +137,159 @@ export default function KundeBearbeitenPage() {
         Zurück zur Liste
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Kunde bearbeiten</h1>
-      </div>
-
-      <Card>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {formError ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {formError}
-            </p>
-          ) : null}
-          <Input
-            label="Name *"
-            error={errors.name?.message}
-            {...register("name")}
-          />
-          <Input
-            label="E-Mail"
-            type="email"
-            error={errors.email?.message}
-            {...register("email")}
-          />
-          <Input
-            label="Telefon"
-            type="tel"
-            error={errors.telefon?.message}
-            {...register("telefon")}
-          />
-          <Input
-            label="Adresse"
-            error={errors.adresse?.message}
-            {...register("adresse")}
-          />
-          <Input
-            label="Fahrzeug"
-            error={errors.fahrzeug?.message}
-            {...register("fahrzeug")}
-          />
-          <Input
-            label="Kennzeichen"
-            error={errors.kennzeichen?.message}
-            {...register("kennzeichen")}
-          />
-          <Textarea label="Notizen" error={errors.notizen?.message} {...register("notizen")} />
-          <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <Button
-              type="button"
-              variant="danger"
-              disabled={deleting}
-              onClick={handleDelete}
-            >
-              {deleting ? "Wird gelöscht…" : "Kunde löschen"}
-            </Button>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/kunden"
-                className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50 sm:w-auto"
-              >
-                Abbrechen
-              </Link>
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-                {isSubmitting ? "Speichern…" : "Speichern"}
-              </Button>
+      <header className="space-y-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {kunde.name}
+            </h1>
+            {(kunde.fahrzeug?.trim() || kunde.kennzeichen?.trim()) && (
+              <p className="text-slate-600">
+                {[kunde.fahrzeug?.trim(), kunde.kennzeichen?.trim()]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+            <div className="flex flex-col gap-1.5 text-sm sm:flex-row sm:flex-wrap sm:gap-x-4">
+              {telHref ? (
+                <a
+                  href={telHref}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {kunde.telefon}
+                </a>
+              ) : (
+                <span className="text-slate-400">Kein Telefon</span>
+              )}
+              {mailHref ? (
+                <a
+                  href={mailHref}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {kunde.email}
+                </a>
+              ) : (
+                <span className="text-slate-400">Keine E-Mail</span>
+              )}
             </div>
           </div>
-        </form>
-      </Card>
+          <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+            <Link
+              href={`/kunden/${id}/bearbeiten`}
+              className="inline-flex w-full min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-50 sm:w-auto"
+            >
+              <Pencil className="h-4 w-4" />
+              Bearbeiten
+            </Link>
+            <Link
+              href={`/auftraege/neu?kunde_id=${kunde.id}`}
+              className="inline-flex w-full min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 sm:w-auto"
+            >
+              <Plus className="h-4 w-4" />
+              Neuer Auftrag
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <section>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">
+          Auftragshistorie
+        </h2>
+        {auftraege.length === 0 ? (
+          <Card className="border-dashed border-slate-200 bg-slate-50/50">
+            <p className="text-sm text-slate-600">
+              Noch keine Aufträge für diesen Kunden.
+            </p>
+            <Link
+              href={`/auftraege/neu?kunde_id=${kunde.id}`}
+              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Ersten Auftrag anlegen
+            </Link>
+          </Card>
+        ) : (
+          <ul className="space-y-4">
+            {auftraege.map((a) => {
+              const hasProtokoll =
+                a.protokoll_id != null && Number.isFinite(a.protokoll_id);
+              const pdfUrl = hasProtokoll
+                ? `/uploads/pdfs/${a.protokoll_id}.pdf`
+                : null;
+              const preview = hasProtokoll ? kiPreview(a.ki_text) : null;
+
+              return (
+                <li key={`${a.id}-${a.protokoll_id ?? "np"}`}>
+                  <Card className="border-slate-200">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 space-y-1">
+                        <p className="text-sm font-medium text-slate-500">
+                          {formatDatum(a.erstellt_am)}
+                        </p>
+                        <p className="text-slate-800">
+                          {a.beschreibung?.trim() || "—"}
+                        </p>
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadgeClass(a.status)}`}
+                        >
+                          {statusLabel(a.status)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {hasProtokoll ? (
+                      <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                        <div className="flex flex-wrap gap-2">
+                          <Link
+                            href={`/protokoll/${a.protokoll_id}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                          >
+                            <FileText className="h-4 w-4 text-primary" />
+                            Protokoll ansehen
+                          </Link>
+                          <a
+                            href={pdfUrl!}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                          >
+                            PDF herunterladen
+                          </a>
+                        </div>
+                        {preview ? (
+                          <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                            <span className="font-medium text-slate-700">
+                              KI-Text:{" "}
+                            </span>
+                            {preview}
+                          </p>
+                        ) : null}
+                        {a.foto_anzahl > 0 ? (
+                          <p className="text-xs text-slate-500">
+                            {a.foto_anzahl}{" "}
+                            {a.foto_anzahl === 1 ? "Foto" : "Fotos"}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="mt-4 border-t border-slate-100 pt-4">
+                        <Link
+                          href={`/protokoll/neu?auftrag_id=${a.id}`}
+                          className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                        >
+                          Protokoll erstellen
+                        </Link>
+                      </div>
+                    )}
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

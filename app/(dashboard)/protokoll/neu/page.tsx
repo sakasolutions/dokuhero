@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -21,6 +21,8 @@ type LimitPayload = {
 
 export default function ProtokollNeuPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preAuftragIdRaw = searchParams.get("auftrag_id");
   const [step, setStep] = useState(1);
   const [auftraege, setAuftraege] = useState<AuftragMitKunde[]>([]);
   const [loadingAuftraege, setLoadingAuftraege] = useState(true);
@@ -89,6 +91,15 @@ export default function ProtokollNeuPage() {
       cancelled = true;
     };
   }, [limitPhase, limitBlocked]);
+
+  useEffect(() => {
+    if (!preAuftragIdRaw || auftraege.length === 0) return;
+    const n = Number(preAuftragIdRaw);
+    if (!Number.isFinite(n)) return;
+    if (auftraege.some((a) => a.id === n)) {
+      setAuftragId(n);
+    }
+  }, [preAuftragIdRaw, auftraege]);
 
   function canGoStep2() {
     return auftragId != null;
