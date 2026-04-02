@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { getBetriebPlanFromDb } from "@/lib/betrieb-plan";
-import { STARTER_PROTOKOLL_MONATS_LIMIT } from "@/lib/protokoll-limit";
+import { fetchBetriebProtokollMonatsCap } from "@/lib/protokoll-limit";
 import type { RowDataPacket } from "mysql2";
 
 export const dynamic = "force-dynamic";
@@ -25,26 +24,27 @@ export async function GET() {
 
     const betriebId = session.user.betrieb_id;
     const pool = getPool();
-    const plan = await getBetriebPlanFromDb(pool, betriebId);
 
     const [rows] = await pool.execute<RowDataPacket[]>(COUNT_SQL, [betriebId]);
     const rawC = (rows[0] as { c?: unknown })?.c;
     const count =
       typeof rawC === "bigint" ? Number(rawC) : Number(rawC ?? 0);
 
-    if (plan !== "starter") {
+    const cap = await fetchBetriebProtokollMonatsCap(pool, betriebId);
+    if (cap.unlimited) {
       return NextResponse.json({
         limitReached: false,
         count,
         limit: 0,
+        unlimited: true,
       });
     }
 
-    const limit = STARTER_PROTOKOLL_MONATS_LIMIT;
     return NextResponse.json({
-      limitReached: count >= limit,
+      limitReached: count >= cap.limit,
       count,
-      limit,
+      limit: cap.limit,
+      unlimited: false,
     });
   } catch (e) {
     console.error("GET /api/protokoll/limit:", e);

@@ -4,10 +4,9 @@ export const dynamic = "force-dynamic";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { getBetriebPlanFromDb } from "@/lib/betrieb-plan";
 import type { Pool } from "mysql2/promise";
 import type { RowDataPacket } from "mysql2";
-import { STARTER_PROTOKOLL_MONATS_LIMIT } from "@/lib/protokoll-limit";
+import { fetchBetriebProtokollMonatsCap } from "@/lib/protokoll-limit";
 
 interface CountRow extends RowDataPacket {
   c: number;
@@ -41,9 +40,8 @@ export async function GET() {
 
     const betriebId = session.user.betrieb_id;
     const pool = getPool();
-    const plan = await getBetriebPlanFromDb(pool, betriebId);
-    const protokoll_limit =
-      plan === "starter" ? STARTER_PROTOKOLL_MONATS_LIMIT : null;
+    const cap = await fetchBetriebProtokollMonatsCap(pool, betriebId);
+    const protokoll_limit = cap.unlimited ? null : cap.limit;
 
     const kundenGesamt = await countSafe(
       pool,

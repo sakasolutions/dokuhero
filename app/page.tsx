@@ -81,20 +81,28 @@ const kennstDuDasLoesungen = [
 ] as const;
 
 const starterPricingFeatures = [
-  "Bis 50 Protokolle/Monat",
+  "1 Nutzer",
+  "50 Protokolle/Monat",
   "KI-Protokolltext",
   "PDF-Generierung",
   "Automatischer Mail-Versand",
   "Bewertungs-Automatik",
-  "1 Benutzer",
 ];
 
 const proPricingFeatures = [
+  "Bis 5 Nutzer",
   "Unbegrenzte Protokolle",
   "Alles aus Starter",
   "Priority Support",
   "Early Access zu neuen Features",
-  "Team-Zugang (coming soon)",
+];
+
+const businessPricingFeatures = [
+  "Bis 15 Nutzer",
+  "Unbegrenzte Protokolle",
+  "Alles aus Pro",
+  "Persönlicher Onboarding-Call",
+  "Dedizierter Support",
 ];
 
 const landingFeatures = [
@@ -715,7 +723,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:mt-12 md:grid-cols-2 md:gap-8 md:items-stretch">
+            <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 md:mt-12 md:grid-cols-3 md:gap-6 md:items-stretch lg:gap-8">
               <div
                 className={`flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 pb-10 shadow-sm transition-all ease-out sm:p-8 sm:pb-12 md:hover:-translate-y-1 md:hover:shadow-xl active:shadow-lg ${animD} ${
                   pricingInView
@@ -813,9 +821,65 @@ export default function LandingPage() {
                   30 Tage kostenlos starten
                 </Link>
               </div>
+
+              <div
+                className={`flex min-h-0 flex-col rounded-2xl border-2 border-primary bg-white p-6 pb-10 shadow-sm transition-all ease-out sm:p-8 sm:pb-12 md:hover:-translate-y-1 md:hover:shadow-xl active:shadow-lg ${animD} ${
+                  pricingInView
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "translate-y-8 scale-95 opacity-0"
+                }`}
+                style={{
+                  transitionDelay: pricingInView ? "240ms" : "0ms",
+                }}
+              >
+                <h3 className="shrink-0 text-xl font-bold text-slate-900">
+                  Business
+                </h3>
+                <div className="mt-4 flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
+                    {billing === "monthly" ? "149€" : "119€"}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-500 md:text-base">
+                    /Monat netto
+                  </span>
+                </div>
+                {billing === "yearly" ? (
+                  <p className="mt-1 shrink-0 text-sm font-medium text-slate-600 md:text-base">
+                    1.428€/Jahr
+                  </p>
+                ) : null}
+                <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-700 md:text-base">
+                  {businessPricingFeatures.map((line) => (
+                    <li key={line} className="flex gap-3">
+                      <Check
+                        className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                        strokeWidth={2.5}
+                        aria-hidden
+                      />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/register"
+                  className={`${ctaBtnTransform} mt-6 inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90 sm:text-base`}
+                >
+                  30 Tage kostenlos starten
+                </Link>
+              </div>
             </div>
 
-            <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-slate-600 md:mt-12 md:text-base">
+            <p className="mx-auto mt-8 max-w-xl text-center text-sm text-slate-600 md:mt-10">
+              Ab 15+ Mitarbeitern?{" "}
+              <a
+                href="mailto:kontakt@dokuhero.de"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Kontakt aufnehmen →
+              </a>
+            </p>
+
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-slate-600 md:mt-8 md:text-base">
               Monatlich kündbar · Keine versteckten Kosten
             </p>
           </div>

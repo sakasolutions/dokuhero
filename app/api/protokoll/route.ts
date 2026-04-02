@@ -2,13 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { getBetriebPlanFromDb } from "@/lib/betrieb-plan";
 import { ensureFotosUploadDir } from "@/lib/protokoll-upload";
 import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
-import { STARTER_PROTOKOLL_MONATS_LIMIT } from "@/lib/protokoll-limit";
+import { fetchBetriebProtokollMonatsCap } from "@/lib/protokoll-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -68,8 +67,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const plan = await getBetriebPlanFromDb(pool, session.user.betrieb_id);
-    if (plan === "starter") {
+    const cap = await fetchBetriebProtokollMonatsCap(pool, session.user.betrieb_id);
+    if (!cap.unlimited) {
       const [cntRows] = await pool.execute<RowDataPacket[]>(
         `SELECT COUNT(*) AS c
          FROM protokolle p
@@ -83,10 +82,10 @@ export async function POST(request: Request) {
       const rawC = (cntRows[0] as { c?: unknown })?.c;
       const monatsCount =
         typeof rawC === "bigint" ? Number(rawC) : Number(rawC ?? 0);
-      if (monatsCount >= STARTER_PROTOKOLL_MONATS_LIMIT) {
+      if (monatsCount >= cap.limit) {
         return NextResponse.json(
           {
-            error: "Protokoll-Limit erreicht. Bitte auf Pro upgraden.",
+            error: "Protokoll-Limit erreicht. Bitte Plan upgraden.",
             limitReached: true,
           },
           { status: 403 }

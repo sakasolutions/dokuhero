@@ -11,11 +11,28 @@ function getPriceIdFromSubscription(sub: Stripe.Subscription): string | null {
   return typeof id === "string" ? id : null;
 }
 
-function planFromPriceId(priceId: string): "starter" | "pro" {
+function planFromPriceId(priceId: string): "starter" | "pro" | "business" {
+  const businessMonthly = process.env.STRIPE_PRICE_BUSINESS_MONTHLY;
+  const businessYearly = process.env.STRIPE_PRICE_BUSINESS_YEARLY;
+  if (
+    priceId === businessMonthly ||
+    priceId === businessYearly
+  ) {
+    return "business";
+  }
   const proMonthly = process.env.STRIPE_PRICE_PRO_MONTHLY;
   const proYearly = process.env.STRIPE_PRICE_PRO_YEARLY;
   if (priceId === proMonthly || priceId === proYearly) return "pro";
   return "starter";
+}
+
+function limitsForPlan(plan: "starter" | "pro" | "business"): {
+  max_protokolle: number;
+  max_benutzer: number;
+} {
+  if (plan === "business") return { max_protokolle: 9999, max_benutzer: 15 };
+  if (plan === "pro") return { max_protokolle: 9999, max_benutzer: 5 };
+  return { max_protokolle: 50, max_benutzer: 1 };
 }
 
 export async function POST(request: Request) {
@@ -74,14 +91,18 @@ export async function POST(request: Request) {
       }
 
       const plan = planFromPriceId(priceId);
+      const { max_protokolle, max_benutzer } = limitsForPlan(plan);
       const currentPeriodEnd = Number((subscription as any).current_period_end);
-      const aboBis = new Date((Number.isFinite(currentPeriodEnd) ? currentPeriodEnd : Date.now() / 1000) * 1000);
+      const aboBis = new Date(
+        (Number.isFinite(currentPeriodEnd) ? currentPeriodEnd : Date.now() / 1000) *
+          1000
+      );
 
       await pool.execute(
         `UPDATE betriebe
-         SET plan = ?, abo_bis = ?, stripe_customer_id = ?
+         SET plan = ?, max_protokolle = ?, max_benutzer = ?, abo_bis = ?, stripe_customer_id = ?
          WHERE id = ?`,
-        [plan, aboBis, customerId, betriebId]
+        [plan, max_protokolle, max_benutzer, aboBis, customerId, betriebId]
       );
     }
 

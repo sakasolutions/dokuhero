@@ -35,7 +35,7 @@ export async function GET(request: Request) {
   const [rows] = await pool.execute<BetriebRow[]>(
     `SELECT id, email
      FROM betriebe
-     WHERE plan IN ('starter', 'pro')
+     WHERE plan IN ('starter', 'pro', 'business')
        AND abo_bis IS NOT NULL
        AND abo_bis < NOW()
        AND email IS NOT NULL

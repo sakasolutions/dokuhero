@@ -90,7 +90,7 @@ export interface DashboardStats {
   protokolleDieseWoche: number;
   /** Protokolle im laufenden Kalendermonat (Betrieb) */
   protokolle_monat: number;
-  /** 50 bei Starter, sonst null (unbegrenzt) */
+  /** Monatslimit (z. B. 50); null = unbegrenzt (Pro/Business/Trial o. ä.) */
   protokoll_limit: number | null;
   /** Protokolle mit Status „zur Prüfung“ (Betrieb) */
   protokolle_zur_pruefung: number;

@@ -13,15 +13,22 @@ function allowedPriceIds(): string[] {
     process.env.STRIPE_PRICE_STARTER_YEARLY,
     process.env.STRIPE_PRICE_PRO_MONTHLY,
     process.env.STRIPE_PRICE_PRO_YEARLY,
+    process.env.STRIPE_PRICE_BUSINESS_MONTHLY,
+    process.env.STRIPE_PRICE_BUSINESS_YEARLY,
     process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY,
     process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_YEARLY,
     process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY,
     process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_MONTHLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_YEARLY,
   ].filter(Boolean) as string[];
   return [...new Set(ids)];
 }
 
-function priceIdFor(plan: "starter" | "pro", billing: "monthly" | "yearly"): string | null {
+function priceIdFor(
+  plan: "starter" | "pro" | "business",
+  billing: "monthly" | "yearly"
+): string | null {
   if (plan === "starter" && billing === "monthly")
     return process.env.STRIPE_PRICE_STARTER_MONTHLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER_MONTHLY ?? null;
   if (plan === "starter" && billing === "yearly")
@@ -30,6 +37,10 @@ function priceIdFor(plan: "starter" | "pro", billing: "monthly" | "yearly"): str
     return process.env.STRIPE_PRICE_PRO_MONTHLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY ?? null;
   if (plan === "pro" && billing === "yearly")
     return process.env.STRIPE_PRICE_PRO_YEARLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY ?? null;
+  if (plan === "business" && billing === "monthly")
+    return process.env.STRIPE_PRICE_BUSINESS_MONTHLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_MONTHLY ?? null;
+  if (plan === "business" && billing === "yearly")
+    return process.env.STRIPE_PRICE_BUSINESS_YEARLY ?? process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_YEARLY ?? null;
   return null;
 }
 
@@ -52,7 +63,10 @@ export async function POST(req: Request) {
   if (!priceId) {
     const planRaw = (body as any).plan;
     const billingRaw = (body as any).billing;
-    const plan = planRaw === "starter" || planRaw === "pro" ? planRaw : null;
+    const plan =
+      planRaw === "starter" || planRaw === "pro" || planRaw === "business"
+        ? planRaw
+        : null;
     const billing =
       billingRaw === "monthly" || billingRaw === "yearly" ? billingRaw : null;
     if (plan && billing) {

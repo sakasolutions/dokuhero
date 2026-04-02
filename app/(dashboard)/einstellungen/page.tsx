@@ -39,6 +39,7 @@ function planLabelFromApi(plan: string | null): string {
   const p = (plan ?? "").trim().toLowerCase();
   if (p === "starter") return "Starter";
   if (p === "pro") return "Pro";
+  if (p === "business") return "Business";
   if (p === "trial") return "Trial";
   if (p === "expired") return "Abgelaufen";
   if (!p) return "Trial";
@@ -219,7 +220,9 @@ export default function EinstellungenPage() {
 
   const planKeyNorm = (aboPlan ?? "").trim().toLowerCase();
   const showAboPortalBtn =
-    planKeyNorm === "starter" || planKeyNorm === "pro";
+    planKeyNorm === "starter" ||
+    planKeyNorm === "pro" ||
+    planKeyNorm === "business";
 
   async function openStripePortal() {
     setPortalErr(null);

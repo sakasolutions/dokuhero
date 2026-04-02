@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Billing = "monthly" | "yearly";
 
@@ -20,6 +21,7 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
   const planLabel = useMemo(() => {
     const p = currentPlan?.trim()?.toLowerCase();
     if (p === "pro") return "Pro";
+    if (p === "business") return "Business";
     if (p === "starter") return "Starter";
     if (p === "trial") return "Trial";
     if (p === "expired") return "Abgelaufen";
@@ -34,6 +36,10 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
     billing === "monthly"
       ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY
       : process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY;
+  const priceBusiness =
+    billing === "monthly"
+      ? process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_MONTHLY
+      : process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_YEARLY;
 
   async function handleCheckout(priceId: string) {
     setError(null);
@@ -128,7 +134,7 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-stretch">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-stretch">
         <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 pb-10 shadow-sm sm:p-8 sm:pb-12">
           <h3 className="text-xl font-bold text-slate-900">Starter</h3>
           <p className="mt-4 text-4xl font-extrabold tracking-tight text-primary">
@@ -140,12 +146,12 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
           </p>
           <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-700">
             {[
-              "Bis 50 Protokolle/Monat",
+              "1 Nutzer",
+              "50 Protokolle/Monat",
               "KI-Protokolltext",
               "PDF-Generierung",
               "Automatischer Mail-Versand",
               "Bewertungs-Automatik",
-              "1 Benutzer",
             ].map((line) => (
               <li key={line} className="flex gap-3">
                 <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" strokeWidth={2.5} />
@@ -177,11 +183,11 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
           </p>
           <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-200">
             {[
+              "Bis 5 Nutzer",
               "Unbegrenzte Protokolle",
               "Alles aus Starter",
               "Priority Support",
               "Early Access zu neuen Features",
-              "Team-Zugang (coming soon)",
             ].map((line) => (
               <li key={line} className="flex gap-3">
                 <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" strokeWidth={2.5} />
@@ -198,7 +204,47 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
             {busyPriceId === pricePro ? "Weiterleiten…" : "30 Tage kostenlos starten"}
           </button>
         </div>
+
+        <div className="flex h-full flex-col rounded-2xl border-2 border-primary bg-white p-6 pb-10 shadow-sm sm:p-8 sm:pb-12">
+          <h3 className="text-xl font-bold text-slate-900">Business</h3>
+          <p className="mt-4 text-4xl font-extrabold tracking-tight text-primary">
+            149€
+            <span className="ml-2 text-sm font-semibold text-slate-500">/Monat netto</span>
+          </p>
+          <ul className="mt-6 flex min-h-0 flex-1 flex-col gap-3 text-sm text-slate-700">
+            {[
+              "Bis 15 Nutzer",
+              "Unbegrenzte Protokolle",
+              "Alles aus Pro",
+              "Persönlicher Onboarding-Call",
+              "Dedizierter Support",
+            ].map((line) => (
+              <li key={line} className="flex gap-3">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" strokeWidth={2.5} />
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60"
+            disabled={busyPriceId != null}
+            onClick={() => void handleCheckout(priceBusiness ?? "")}
+          >
+            {busyPriceId === priceBusiness ? "Weiterleiten…" : "30 Tage kostenlos starten"}
+          </button>
+        </div>
       </div>
+
+      <p className="text-center text-sm text-slate-600">
+        Ab 15+ Mitarbeitern?{" "}
+        <Link
+          href="mailto:kontakt@dokuhero.de"
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
+          Kontakt aufnehmen →
+        </Link>
+      </p>
 
       <p className="text-center text-sm text-slate-600">
         Monatlich kündbar · Keine versteckten Kosten
