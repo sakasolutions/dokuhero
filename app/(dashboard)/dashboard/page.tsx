@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import {
-  AlertTriangle,
   ClipboardList,
   FileText,
+  TriangleAlert,
   Users,
   Wrench,
 } from "lucide-react";
@@ -163,28 +163,36 @@ export default function DashboardPage() {
       ) : null}
 
       {(stats?.protokolle_zur_pruefung ?? 0) > 0 ? (
-        <Link
-          href="/auftraege?freigabe=1"
-          className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition hover:border-amber-300 hover:bg-amber-50/90"
+        <div
+          className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4"
+          role="status"
         >
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-lg"
-            aria-hidden
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="shrink-0 rounded-lg bg-amber-100 p-2">
+              <TriangleAlert
+                className="h-5 w-5 text-amber-600"
+                strokeWidth={2}
+                aria-hidden
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-amber-900">
+                {(stats?.protokolle_zur_pruefung ?? 0) === 1
+                  ? "1 Protokoll wartet auf deine Freigabe"
+                  : `${stats?.protokolle_zur_pruefung} Protokolle warten auf deine Freigabe`}
+              </p>
+              <p className="mt-0.5 text-xs text-amber-700">
+                Bitte prüfe und gib sie frei.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/auftraege?freigabe=1"
+            className="ml-4 shrink-0 text-sm font-medium whitespace-nowrap text-amber-700 hover:text-amber-900"
           >
-            ⚠️
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700" />
-              {stats?.protokolle_zur_pruefung} Protokoll
-              {(stats?.protokolle_zur_pruefung ?? 0) === 1 ? "" : "e"} warten
-              auf deine Freigabe
-            </span>
-            <span className="mt-1 block text-sm text-amber-800/90">
-              Zur Auftragsliste – nur Einträge mit Protokoll „zur Prüfung“.
-            </span>
-          </span>
-        </Link>
+            Jetzt prüfen →
+          </Link>
+        </div>
       ) : null}
 
       {starterLimit != null ? (
