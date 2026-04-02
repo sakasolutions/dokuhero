@@ -133,6 +133,25 @@ export async function sendNegativesFeedbackAnBetriebMail(
   if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
 }
 
+/** Info-Mail an Betrieb: Abo abgelaufen. */
+export async function sendAboAbgelaufenMail(to: string): Promise<void> {
+  const { resend, from } = getResendClient();
+  const subject = "Dein DokuHero Abo ist abgelaufen";
+  const url = "https://dokuhero.de/preise";
+
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8" /></head>
+<body style="font-family: system-ui, sans-serif; line-height: 1.6; color: #334155;">
+  <p>Dein Abo ist abgelaufen.</p>
+  <p>Bitte erneuere es unter <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>, um weiter DokuHero zu nutzen.</p>
+</body>
+</html>`;
+
+  const { error } = await resend.emails.send({ from, to, subject, html });
+  if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
+}
+
 function getLoginBaseUrl(): string {
   const u =
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
