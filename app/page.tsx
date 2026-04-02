@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { StatsSection } from "@/components/StatsSection";
 import {
   Archive,
   Camera,
@@ -162,31 +163,6 @@ function useInView(threshold = 0.1) {
   return [ref, inView] as const;
 }
 
-function useCountUp(target: number, durationMs: number, enabled: boolean) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!enabled) {
-      setValue(0);
-      return;
-    }
-    let raf = 0;
-    let cancelled = false;
-    const start = performance.now();
-    const step = (now: number) => {
-      if (cancelled) return;
-      const t = Math.min((now - start) / durationMs, 1);
-      setValue(Math.round(target * t));
-      if (t < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-    };
-  }, [target, durationMs, enabled]);
-  return value;
-}
-
 /** Pfade relativ zur Site-Root: Dateien liegen in public/images/ (ohne „public“ im URL-Pfad). */
 const HERO_FOTO_PATHS = [
   { src: "/images/hero-foto1.png", label: "Foto 1" },
@@ -288,12 +264,7 @@ export default function LandingPage() {
 
   const [howRef, howInView] = useInView(0.12);
   const [featuresRef, featuresInView] = useInView(0.08);
-  const [trustRef, trustInView] = useInView(0.15);
   const [pricingRef, pricingInView] = useInView(0.1);
-
-  const n60 = useCountUp(60, 900, trustInView);
-  const n100 = useCountUp(100, 900, trustInView);
-  const n30 = useCountUp(30, 900, trustInView);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setHeroOn(true));
@@ -686,51 +657,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Social proof */}
-        <section
-          id="trust"
-          ref={trustRef}
-          className="scroll-mt-20 border-y border-slate-100 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
-        >
-          <div className="mx-auto max-w-6xl">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
-              {[
-                {
-                  display: `${n60} Sek`,
-                  sub: "pro Protokoll",
-                },
-                {
-                  display: `${n100}%`,
-                  sub: "Digital",
-                },
-                {
-                  display: `${n30} Tage`,
-                  sub: "kostenlos",
-                },
-              ].map(({ display, sub }) => (
-                <div
-                  key={sub}
-                  className="rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm"
-                >
-                  <p className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
-                    {display}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-slate-600 md:text-base">
-                    {sub}
-                  </p>
-                </div>
-              ))}
-            </div>
-            <figure className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm md:mt-12 md:px-10 md:py-10">
-              <blockquote className="text-lg font-medium leading-relaxed text-slate-800 md:text-xl">
-                &ldquo;Endlich kein Papierkram mehr nach der Arbeit.&rdquo;
-              </blockquote>
-              <figcaption className="mt-4 text-sm text-slate-500 md:text-base">
-                — KFZ-Werkstatt, München (Beta-Tester)
-              </figcaption>
-            </figure>
-          </div>
-        </section>
+        <StatsSection />
 
         {/* Pricing */}
         <section
