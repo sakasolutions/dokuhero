@@ -260,38 +260,44 @@ export default function DashboardPage() {
         <h2 className="mb-3 text-sm font-semibold text-slate-500">
           Bewertungen
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Card padding={false} className="p-4">
-            <p className="text-sm text-slate-700">
-              <span className="mr-1.5" aria-hidden>
-                👍
+        <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="mb-1 flex items-center gap-2">
+              <div
+                className="h-2 w-2 shrink-0 rounded-full bg-green-500"
+                aria-hidden
+              />
+              <span className="text-sm font-medium text-slate-600">
+                Zufrieden
               </span>
-              <span className="font-semibold tabular-nums text-green-600">
-                {stats?.bewertungen_positiv ?? "–"}
-              </span>{" "}
-              zufrieden
+            </div>
+            <p className="text-3xl font-bold tabular-nums text-slate-900">
+              {stats?.bewertungen_positiv ?? "–"}
             </p>
-          </Card>
-          <Card padding={false} className="p-4">
-            <p className="text-sm text-slate-700">
-              <span className="mr-1.5" aria-hidden>
-                👎
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="mb-1 flex items-center gap-2">
+              <div
+                className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
+                aria-hidden
+              />
+              <span className="text-sm font-medium text-slate-600">
+                Feedback
               </span>
-              <span className="font-semibold tabular-nums text-red-600">
-                {stats?.bewertungen_negativ ?? "–"}
-              </span>{" "}
-              Feedback
+            </div>
+            <p className="text-3xl font-bold tabular-nums text-slate-900">
+              {stats?.bewertungen_negativ ?? "–"}
             </p>
-          </Card>
+          </div>
         </div>
         {stats?.letztes_feedback ? (
           <div
-            className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-dark"
+            className="mt-4 rounded-xl border border-slate-200 bg-white p-4"
             role="status"
           >
-            <p className="font-medium text-dark">Letztes Feedback</p>
-            <p className="mt-1 whitespace-pre-wrap text-dark/90">
-              {stats.letztes_feedback}
+            <p className="mb-1 text-xs text-slate-400">Letztes Feedback</p>
+            <p className="whitespace-pre-wrap text-sm italic text-slate-700">
+              &ldquo;{stats.letztes_feedback}&rdquo;
             </p>
           </div>
         ) : null}
