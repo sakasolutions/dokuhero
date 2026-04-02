@@ -20,9 +20,14 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState("Hallo");
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Guten Morgen");
-    else if (hour < 18) setGreeting("Guten Tag");
+    const hour = new Date().toLocaleString("de-DE", {
+      timeZone: "Europe/Berlin",
+      hour: "numeric",
+      hour12: false,
+    });
+    const h = parseInt(hour, 10);
+    if (h < 12) setGreeting("Guten Morgen");
+    else if (h < 18) setGreeting("Guten Tag");
     else setGreeting("Guten Abend");
   }, []);
 
