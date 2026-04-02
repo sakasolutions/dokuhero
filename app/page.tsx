@@ -21,21 +21,24 @@ import {
   X,
 } from "lucide-react";
 
-const trustComplianceItems = [
+const trustSecurityItems = [
   {
     icon: Shield,
+    iconClass: "text-green-400",
     title: "DSGVO-konform",
-    text: "Server in der EU, AVV mit allen Dienstleistern",
+    text: "Server in der EU, AVV mit allen\nDienstleistern abgeschlossen",
   },
   {
     icon: Archive,
+    iconClass: "text-blue-400",
     title: "10 Jahre Aufbewahrung",
-    text: "Rechtssicher nach § 147 AO",
+    text: "Rechtssicher nach § 147 AO —\nnie wieder Protokolle verlieren",
   },
   {
     icon: Lock,
+    iconClass: "text-green-400",
     title: "SSL-verschlüsselt",
-    text: "Alle Daten sicher übertragen",
+    text: "Alle Daten werden verschlüsselt\nübertragen und gespeichert",
   },
 ] as const;
 
@@ -123,7 +126,6 @@ const landingFeatures = [
     eyebrow: "Kein Streit bei Reklamationen",
     title: "Digitale Abnahme",
     text: "Kunde bestätigt das Protokoll digital —\nrechtssicher gespeichert.",
-    badge: { label: "Coming Soon", variant: "amber" as const },
   },
   {
     icon: Shield,
@@ -133,6 +135,11 @@ const landingFeatures = [
     badge: { label: "GoBD-konform", variant: "green" as const },
   },
 ] as const;
+
+const featureBadgeToneClass: Record<"amber" | "green", string> = {
+  amber: "bg-amber-100 text-amber-700",
+  green: "bg-green-100 text-green-700",
+};
 
 /** Dauer für Scroll-Einblendungen: mobil kürzer */
 const animD = "duration-[400ms] md:duration-700";
@@ -621,11 +628,7 @@ export default function LandingPage() {
                   >
                     {badge ? (
                       <span
-                        className={`absolute right-4 top-4 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          badge.variant === "amber"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
+                        className={`absolute right-4 top-4 rounded-full px-2 py-0.5 text-xs font-semibold ${featureBadgeToneClass[badge.variant]}`}
                       >
                         {badge.label}
                       </span>
@@ -651,26 +654,30 @@ export default function LandingPage() {
 
         {/* Trust: DSGVO, Aufbewahrung, SSL */}
         <section
-          className="scroll-mt-20 border-y border-slate-200/80 bg-slate-100 px-4 py-12 sm:py-14 md:py-16"
+          className="scroll-mt-20 bg-slate-900 px-4 py-12 sm:py-14 md:py-16"
           aria-label="Sicherheit und Compliance"
         >
           <div className="mx-auto max-w-6xl">
-            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-6 md:gap-8">
-              {trustComplianceItems.map(({ icon: Icon, title, text }) => (
+            <p className="mb-10 text-center text-sm text-slate-400 md:mb-12">
+              Sicherheit &amp; Datenschutz — kein Kompromiss
+            </p>
+            <ul className="flex flex-col md:flex-row md:items-stretch">
+              {trustSecurityItems.map(({ icon: Icon, iconClass, title, text }, i) => (
                 <li
                   key={title}
-                  className="flex flex-col items-center rounded-xl border border-slate-200/90 bg-white/60 px-5 py-6 text-center shadow-sm shadow-slate-200/40 backdrop-blur-[2px] sm:px-6"
+                  className={`flex flex-col items-center border-slate-700 px-4 py-8 text-center md:flex-1 md:px-6 md:py-4 ${
+                    i < trustSecurityItems.length - 1
+                      ? "border-b md:border-b-0 md:border-r"
+                      : ""
+                  }`}
                 >
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                  <Icon
+                    className={`h-10 w-10 shrink-0 ${iconClass}`}
+                    strokeWidth={2}
                     aria-hidden
-                  >
-                    <Icon className="h-5 w-5" strokeWidth={2} />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">
-                    {title}
-                  </p>
-                  <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-600 sm:text-sm">
+                  />
+                  <p className="mt-4 font-bold text-white md:mt-5">{title}</p>
+                  <p className="mt-2 max-w-xs whitespace-pre-line text-sm leading-relaxed text-slate-400 md:max-w-none">
                     {text}
                   </p>
                 </li>
