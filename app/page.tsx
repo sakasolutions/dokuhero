@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Archive,
@@ -46,19 +46,19 @@ const steps = [
     n: 1,
     icon: Camera,
     title: "Fotos + Sprache",
-    text: "Vor Ort aufnehmen, fertig.",
+    text: "Einfach vor Ort fotografieren und kurz einsprechen\nwas gemacht wurde — fertig.",
   },
   {
     n: 2,
     icon: Sparkles,
     title: "KI schreibt",
-    text: "Sauberer Protokolltext.",
+    text: "Unsere KI wandelt deine Stichpunkte in einen\nprofessionellen Protokolltext um.",
   },
   {
     n: 3,
     icon: Send,
     title: "PDF raus",
-    text: "Direkt beim Kunden.",
+    text: "Das fertige PDF geht automatisch per Mail\ndirekt an deinen Kunden.",
   },
 ];
 
@@ -471,34 +471,47 @@ export default function LandingPage() {
         <section
           id="how-it-works"
           ref={howRef}
-          className="scroll-mt-20 bg-white px-4 py-14 sm:py-16 md:py-20"
+          className="scroll-mt-20 bg-slate-50 px-4 py-14 sm:py-16 md:py-20"
         >
           <div className="mx-auto max-w-6xl">
             <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl lg:text-4xl">
               So funktioniert&apos;s
             </h2>
-            <ol className="mx-auto mt-10 flex max-w-4xl flex-col gap-8 md:mt-14 md:flex-row md:gap-6 lg:gap-8">
+            <ol className="mx-auto mt-10 flex max-w-5xl list-none flex-col gap-8 p-0 md:mt-14 md:flex-row md:items-center md:gap-0 md:px-2 lg:px-4">
               {steps.map(({ n, icon: Icon, title, text }, i) => (
-                <li
-                  key={n}
-                  className={`relative flex flex-1 flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-6 text-center transition-all ease-out md:pt-8 ${animD} ${
-                    howInView
-                      ? "translate-y-0 opacity-100"
-                      : "translate-y-12 opacity-0"
-                  }`}
-                  style={{
-                    transitionDelay: howInView ? `${i * 200}ms` : "0ms",
-                  }}
-                >
-                  <div className="absolute -top-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-sm">
-                    {n}
-                  </div>
-                  <div className="mx-auto mt-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-6 w-6" strokeWidth={2} />
-                  </div>
-                  <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{text}</p>
-                </li>
+                <Fragment key={n}>
+                  <li
+                    className={`relative flex flex-1 flex-col rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-md md:pt-8 ${animD} ${
+                      howInView
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-12 opacity-0"
+                    }`}
+                    style={{
+                      transitionDelay: howInView ? `${i * 200}ms` : "0ms",
+                    }}
+                  >
+                    <div className="absolute -top-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-sm">
+                      {n}
+                    </div>
+                    <div className="mx-auto mt-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <Icon className="h-8 w-8" strokeWidth={2} />
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold text-slate-900">
+                      {title}
+                    </h3>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                      {text}
+                    </p>
+                  </li>
+                  {i < steps.length - 1 ? (
+                    <li
+                      className="hidden h-px w-full shrink-0 list-none p-0 md:flex md:h-auto md:w-10 md:min-w-[2.5rem] md:max-w-[3rem] md:items-center md:justify-center lg:w-14"
+                      aria-hidden
+                    >
+                      <div className="h-0 w-full border-t border-dashed border-primary/30" />
+                    </li>
+                  ) : null}
+                </Fragment>
               ))}
             </ol>
           </div>
