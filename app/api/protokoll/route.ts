@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     const uploadDir = await ensureFotosUploadDir();
     const ts = Date.now();
     let notizText = notiz?.trim() || null;
-    const materialienText = materialien?.trim() || null;
+    let materialienText = materialien?.trim() || null;
 
     if (notizText) {
       console.log("🔵 Notiz VOR Formatierung:", notizText);
@@ -111,6 +111,14 @@ export async function POST(request: Request) {
         console.log("🟢 Notiz NACH Formatierung:", notizText);
       } catch (e) {
         console.error("🔴 formatiereNotiz Fehler:", e);
+      }
+    }
+
+    if (materialienText) {
+      try {
+        materialienText = await formatiereNotiz(materialienText);
+      } catch {
+        /* Original beibehalten */
       }
     }
 

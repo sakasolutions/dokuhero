@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { AlignLeft, ArrowLeft, Loader2, Plus } from "lucide-react";
 import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
 import { Card } from "@/components/ui/Card";
 import type {
@@ -45,10 +45,11 @@ function formatProtokollDatum(iso: string) {
   }
 }
 
-function notizPreview(text: string | null | undefined): string {
-  const t = (text ?? "").trim().replace(/\s+/g, " ");
-  if (!t) return "–";
-  return t.length > 100 ? `${t.slice(0, 100)}…` : t;
+function notizFirstLine(text: string | null | undefined): string | null {
+  const t = text?.trim();
+  if (!t) return null;
+  const line = t.split(/\r?\n/)[0]?.trim();
+  return line || null;
 }
 
 function AuftragStatusPill({ status }: { status: string }) {
@@ -294,7 +295,9 @@ export default function AuftragUebersichtPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {protokolle.map((p, index) => (
+            {protokolle.map((p, index) => {
+              const notizLine = notizFirstLine(p.notiz);
+              return (
               <Card
                 key={p.id}
                 className="border-stone-200/90 p-4 shadow-sm transition hover:border-stone-300"
@@ -310,9 +313,12 @@ export default function AuftragUebersichtPage() {
                   </div>
                   <ProtokollStatusBadge status={p.status} />
                 </div>
-                <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-stone-500">
-                  {notizPreview(p.notiz)}
-                </p>
+                {notizLine ? (
+                  <p className="mt-1 flex min-w-0 items-center gap-1.5 truncate text-sm italic text-slate-400">
+                    <AlignLeft className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="min-w-0 truncate">{notizLine}</span>
+                  </p>
+                ) : null}
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     href={`/protokoll/${p.id}`}
@@ -332,7 +338,8 @@ export default function AuftragUebersichtPage() {
                   ) : null}
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
