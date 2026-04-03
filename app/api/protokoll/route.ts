@@ -61,9 +61,12 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
-    if (auf.status !== "offen") {
+    if (!["offen", "in_bearbeitung"].includes(auf.status)) {
       return NextResponse.json(
-        { error: "Nur Aufträge mit Status „offen“ können protokolliert werden." },
+        {
+          error:
+            "Nur Aufträge mit Status „offen“ oder „in Bearbeitung“ können protokolliert werden.",
+        },
         { status: 400 }
       );
     }
@@ -133,10 +136,12 @@ export async function POST(request: Request) {
         );
       }
 
-      await conn.execute(
-        `UPDATE auftraege SET status = 'in_bearbeitung' WHERE id = ? AND betrieb_id = ?`,
-        [auftrag_id, session.user.betrieb_id]
-      );
+      if (auf.status === "offen") {
+        await conn.execute(
+          `UPDATE auftraege SET status = 'in_bearbeitung' WHERE id = ? AND betrieb_id = ?`,
+          [auftrag_id, session.user.betrieb_id]
+        );
+      }
 
       await conn.commit();
 
