@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Archive, Plus, X } from "lucide-react";
 import { protokollStatusLabel } from "@/lib/protokoll-status-label";
 import { Button } from "@/components/ui/Button";
@@ -78,6 +79,7 @@ type ArchivFilter = "aktiv" | "archiv";
 
 export default function AuftraegeListePage() {
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const freigabeOnly = searchParams.get("freigabe") === "1";
 
   const [auftraege, setAuftraege] = useState<AuftragMitKunde[]>([]);
@@ -242,14 +244,16 @@ export default function AuftraegeListePage() {
               ausgewählt
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                className="gap-2"
-                onClick={() => void bulkArchivieren()}
-              >
-                <Archive className="h-4 w-4" />
-                Archivieren
-              </Button>
+              {session?.user?.rolle === "inhaber" ? (
+                <Button
+                  type="button"
+                  className="gap-2"
+                  onClick={() => void bulkArchivieren()}
+                >
+                  <Archive className="h-4 w-4" />
+                  Archivieren
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"
@@ -445,7 +449,8 @@ export default function AuftraegeListePage() {
                           >
                             Bearbeiten
                           </Link>
-                          {archivFilter === "aktiv" ? (
+                          {archivFilter === "aktiv" &&
+                          session?.user?.rolle === "inhaber" ? (
                             <button
                               type="button"
                               onClick={() => void archiveAuftrag(a.id)}
@@ -528,7 +533,8 @@ export default function AuftraegeListePage() {
                       >
                         Bearbeiten
                       </Link>
-                      {archivFilter === "aktiv" ? (
+                      {archivFilter === "aktiv" &&
+                      session?.user?.rolle === "inhaber" ? (
                         <button
                           type="button"
                           onClick={() => void archiveAuftrag(a.id)}
