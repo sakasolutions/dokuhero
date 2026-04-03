@@ -29,6 +29,7 @@ export default function ProtokollNeuPage() {
   const [auftragId, setAuftragId] = useState<number | null>(null);
   const [fotos, setFotos] = useState<string[]>([]);
   const [notiz, setNotiz] = useState("");
+  const [materialien, setMaterialien] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,6 +137,7 @@ export default function ProtokollNeuPage() {
         body: JSON.stringify({
           auftrag_id: auftragId,
           notiz: notiz.trim() || null,
+          materialien: materialien.trim() || null,
           fotos,
         }),
       });
@@ -350,6 +352,37 @@ export default function ProtokollNeuPage() {
                 }
               />
             </div>
+
+            <div className="space-y-2 border-t border-slate-200 pt-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Materialien / Positionen
+              </p>
+              <p className="text-sm text-slate-500">
+                z.B. &apos;2 Ölfilter, 5L Motoröl&apos; — optional
+              </p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="min-w-0 flex-1">
+                  <Textarea
+                    id="protokoll-materialien"
+                    aria-label="Materialien / Positionen"
+                    placeholder="z.B. 2 Ölfilter, 5L Motoröl, 1 Dichtung"
+                    value={materialien}
+                    onChange={(e) => setMaterialien(e.target.value)}
+                    rows={3}
+                    className="min-h-[4.5rem] text-base"
+                  />
+                </div>
+                <SprachEingabe
+                  onTranscript={(t) => {
+                    setMaterialien((prev) => {
+                      const p = prev.trim();
+                      return p === "" ? t : `${p}, ${t}`;
+                    });
+                  }}
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"

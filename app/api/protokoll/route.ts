@@ -16,6 +16,7 @@ export const maxDuration = 120;
 const postSchema = z.object({
   auftrag_id: z.coerce.number().int().positive(),
   notiz: z.string().max(20000).optional().nullable(),
+  materialien: z.string().max(5000).nullable().optional(),
   fotos: z.array(z.string()).max(10),
 });
 
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { auftrag_id, notiz, fotos } = parsed.data;
+    const { auftrag_id, notiz, materialien, fotos } = parsed.data;
     const pool = getPool();
 
     const [aufRows] = await pool.execute<RowDataPacket[]>(
@@ -97,15 +98,16 @@ export async function POST(request: Request) {
     const uploadDir = await ensureFotosUploadDir();
     const ts = Date.now();
     const notizText = notiz?.trim() || null;
+    const materialienText = materialien?.trim() || null;
 
     const conn = await pool.getConnection();
     await conn.beginTransaction();
 
     try {
       const [pRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO protokolle (auftrag_id, notiz, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert)
-         VALUES (?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0)`,
-        [auftrag_id, notizText]
+        `INSERT INTO protokolle (auftrag_id, notiz, materialien, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert)
+         VALUES (?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0)`,
+        [auftrag_id, notizText, materialienText]
       );
       const protokollId = pRes.insertId;
 

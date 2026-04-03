@@ -11,6 +11,7 @@ export const maxDuration = 60;
 
 interface Row extends RowDataPacket {
   notiz: string | null;
+  materialien: string | null;
   betrieb_name: string;
   prot_archiviert: number;
   auftrag_archiviert: number;
@@ -66,7 +67,7 @@ export async function POST(request: Request, context: RouteContext) {
     const pool = getPool();
 
     const [rows] = await pool.execute<Row[]>(
-      `SELECT p.notiz, b.name AS betrieb_name,
+      `SELECT p.notiz, p.materialien, b.name AS betrieb_name,
               p.archiviert AS prot_archiviert, a.archiviert AS auftrag_archiviert
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
@@ -102,7 +103,11 @@ export async function POST(request: Request, context: RouteContext) {
       kiText = await refineProtokollText(previousText, feedback);
     } else {
       const notizText = row.notiz ?? "";
-      kiText = await generateProtokollText(notizText, row.betrieb_name);
+      kiText = await generateProtokollText(
+        notizText,
+        row.betrieb_name,
+        row.materialien
+      );
     }
 
     await pool.execute(`UPDATE protokolle SET ki_text = ? WHERE id = ?`, [

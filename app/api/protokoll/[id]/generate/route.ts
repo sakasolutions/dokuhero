@@ -25,6 +25,7 @@ interface LoadRow extends RowDataPacket {
   prot_archiviert: number;
   auftrag_archiviert: number;
   beschreibung: string | null;
+  materialien: string | null;
   kunde_name: string | null;
   kunde_email: string | null;
   betrieb_name: string;
@@ -80,6 +81,7 @@ export async function POST(request: Request, context: RouteContext) {
               p.archiviert AS prot_archiviert,
               a.archiviert AS auftrag_archiviert,
               a.beschreibung,
+              p.materialien,
               k.name AS kunde_name, k.email AS kunde_email,
               b.name AS betrieb_name,
               b.logo_pfad AS betrieb_logo_pfad
@@ -134,6 +136,7 @@ export async function POST(request: Request, context: RouteContext) {
       auftragsnummer: String(row.auftrag_id),
       beschreibung: row.beschreibung ?? "",
       kiText,
+      materialien: row.materialien?.trim() ? row.materialien : null,
       fotoPfade,
       betriebLogoPfad: row.betrieb_logo_pfad,
     });

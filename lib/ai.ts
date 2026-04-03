@@ -7,7 +7,8 @@ const SYSTEM_PROMPT =
 
 export async function generateProtokollText(
   notiz: string,
-  _betriebName: string
+  _betriebName: string,
+  materialien?: string | null
 ): Promise<string> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) {
@@ -16,6 +17,11 @@ export async function generateProtokollText(
 
   const client = new OpenAI({ apiKey: key });
   const stichpunkte = notiz.trim() || "(keine Stichpunkte)";
+  const mat = materialien?.trim();
+  const userContent =
+    mat != null && mat !== ""
+      ? `Stichpunkte des Monteurs: ${stichpunkte}\n\nVerwendete Materialien: ${mat}`
+      : `Stichpunkte des Monteurs: ${stichpunkte}`;
 
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -23,7 +29,7 @@ export async function generateProtokollText(
       { role: "system", content: SYSTEM_PROMPT },
       {
         role: "user",
-        content: `Stichpunkte des Monteurs: ${stichpunkte}`,
+        content: userContent,
       },
     ],
     max_tokens: 800,

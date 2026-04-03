@@ -18,6 +18,8 @@ export type ProtokollData = {
   auftragsnummer: string;
   beschreibung: string;
   kiText: string;
+  /** Optional: verwendete Materialien / Positionen */
+  materialien?: string | null;
   /** file://-URLs oder Web-Pfade wie /uploads/fotos/… (relativ zu public/) */
   fotoPfade: string[];
   /**
@@ -150,6 +152,14 @@ function buildHtml(
     <h2>Durchgeführte Arbeiten</h2>
     <p class="arbeiten">${esc(data.kiText)}</p>
   </div>
+  ${
+    data.materialien?.trim()
+      ? `<div class="block">
+    <h2>Materialien / Positionen</h2>
+    <p>${esc(data.materialien.trim())}</p>
+  </div>`
+      : ""
+  }
   ${
     fotoDataUris.length
       ? `<div class="block"><h2>Fotos</h2><div class="foto-grid">${fotoCells}</div></div>`
