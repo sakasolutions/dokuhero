@@ -260,6 +260,14 @@ export default function ProtokollePage() {
                         PDF
                       </a>
                     ) : null}
+                    {p.status === "entwurf" ? (
+                      <Link
+                        href={`/protokoll/${p.id}`}
+                        className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      >
+                        Ansehen
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               </Card>
