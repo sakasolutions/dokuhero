@@ -83,18 +83,18 @@ function LoginFormInner() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label htmlFor="login-email" className={labelClass}>
-            E-Mail
+            E-Mail oder Username
           </label>
           <input
             id="login-email"
             name="email"
-            type="email"
+            type="text"
             autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
-            placeholder="name@betrieb.de"
+            placeholder="email@beispiel.de oder username"
           />
         </div>
         <div>
