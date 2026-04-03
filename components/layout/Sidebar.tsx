@@ -10,13 +10,6 @@ import {
   Users,
 } from "lucide-react";
 
-const links = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/protokoll/neu", label: "Protokoll", icon: Camera },
-  { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
-  { href: "/kunden", label: "Kunden", icon: Users },
-];
-
 export interface SidebarProps {
   rolle: string;
 }
@@ -25,6 +18,17 @@ export function Sidebar({ rolle }: SidebarProps) {
   const pathname = usePathname();
   const isInhaber = rolle === "inhaber";
 
+  const links = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    {
+      href: isInhaber ? "/protokolle" : "/protokoll/neu",
+      label: isInhaber ? "Protokolle" : "Protokoll",
+      icon: Camera,
+    },
+    { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
+    { href: "/kunden", label: "Kunden", icon: Users },
+  ];
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex h-14 shrink-0 items-center border-b border-white/10 px-4">
@@ -32,7 +36,14 @@ export function Sidebar({ rolle }: SidebarProps) {
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {links.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
+          const isProtokollNav =
+            href === "/protokolle" || href === "/protokoll/neu";
+          const active = isProtokollNav
+            ? isInhaber
+              ? pathname === "/protokolle" || pathname.startsWith("/protokolle")
+              : pathname.startsWith("/protokoll") &&
+                !pathname.startsWith("/protokolle")
+            : pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}

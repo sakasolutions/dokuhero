@@ -16,13 +16,6 @@ import {
   X,
 } from "lucide-react";
 
-const links = [
-  { href: "/dashboard", label: "Start", icon: LayoutDashboard },
-  { href: "/protokoll/neu", label: "Protokoll", icon: Camera },
-  { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
-  { href: "/kunden", label: "Kunden", icon: Users },
-];
-
 export interface BottomNavProps {
   rolle: string;
 }
@@ -44,6 +37,17 @@ export function BottomNav({ rolle }: BottomNavProps) {
   const [sheetEntered, setSheetEntered] = useState(false);
   const [betriebName, setBetriebName] = useState("");
   const [plan, setPlan] = useState<string | null>(null);
+
+  const links = [
+    { href: "/dashboard", label: "Start", icon: LayoutDashboard },
+    {
+      href: isInhaber ? "/protokolle" : "/protokoll/neu",
+      label: isInhaber ? "Protokolle" : "Protokoll",
+      icon: Camera,
+    },
+    { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
+    { href: "/kunden", label: "Kunden", icon: Users },
+  ];
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +103,15 @@ export function BottomNav({ rolle }: BottomNavProps) {
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-dark px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden">
         <div className="mx-auto flex max-w-lg justify-around">
           {links.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
+            const isProtokollNav =
+              href === "/protokolle" || href === "/protokoll/neu";
+            const active = isProtokollNav
+              ? isInhaber
+                ? pathname === "/protokolle" ||
+                  pathname.startsWith("/protokolle")
+                : pathname.startsWith("/protokoll") &&
+                  !pathname.startsWith("/protokolle")
+              : pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
                 key={href}
