@@ -137,9 +137,7 @@ export default function ProtokollePage() {
           </span>
         </div>
         <p className="text-slate-600">
-          {isMitarbeiter
-            ? "Deine Protokolle, neueste zuerst"
-            : "Alle Protokolle deines Betriebs"}
+          Alle Protokolle deines Betriebs
         </p>
       </div>
 

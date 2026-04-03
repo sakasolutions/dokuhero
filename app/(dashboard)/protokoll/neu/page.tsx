@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
@@ -28,6 +28,7 @@ export default function ProtokollNeuPage() {
   const preKundeIdRaw = searchParams.get("kunde_id");
   const isInhaber = session?.user?.rolle === "inhaber";
 
+  const [protokollGestartet, setProtokollGestartet] = useState(false);
   const [step, setStep] = useState(1);
   const [kunden, setKunden] = useState<KundeOption[]>([]);
   const [loadingKunden, setLoadingKunden] = useState(true);
@@ -100,6 +101,10 @@ export default function ProtokollNeuPage() {
       cancelled = true;
     };
   }, [limitPhase, limitBlocked]);
+
+  useEffect(() => {
+    if (preKundeIdRaw) setProtokollGestartet(true);
+  }, [preKundeIdRaw]);
 
   useEffect(() => {
     if (!preKundeIdRaw || kunden.length === 0) return;
@@ -251,6 +256,40 @@ export default function ProtokollNeuPage() {
             </Button>
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  if (!protokollGestartet) {
+    return (
+      <div className="mx-auto min-h-[70vh] max-w-lg pb-6">
+        <div className="mb-4 flex items-center gap-3">
+          <Link
+            href={zurueckHref}
+            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-primary hover:bg-surface"
+            aria-label="Zurück"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Link>
+          <h1 className="text-xl font-bold text-slate-900">Protokoll</h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => setProtokollGestartet(true)}
+          className="flex min-h-[min(60vh,28rem)] w-full flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-slate-200 bg-white p-8 text-center shadow-sm transition hover:border-primary/50 hover:bg-slate-50/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          <Plus
+            className="h-16 w-16 text-primary sm:h-20 sm:w-20"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <span className="text-xl font-bold text-slate-900">
+            Neues Protokoll
+          </span>
+          <span className="text-sm text-slate-500">
+            Tippe hier um zu starten
+          </span>
+        </button>
       </div>
     );
   }

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import {
   ClipboardList,
@@ -13,11 +16,20 @@ import {
 import type { DashboardStats } from "@/types";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [betriebName, setBetriebName] = useState("Betrieb");
   const [paymentOk, setPaymentOk] = useState(false);
   const [greeting, setGreeting] = useState("Hallo");
+
+  useEffect(() => {
+    if (sessionStatus === "loading") return;
+    if (session?.user?.rolle === "mitarbeiter") {
+      router.replace("/protokoll/neu");
+    }
+  }, [sessionStatus, session?.user?.rolle, router]);
 
   useEffect(() => {
     const hour = new Date().toLocaleString("de-DE", {
@@ -106,6 +118,32 @@ export default function DashboardPage() {
       : starterLimitPct >= 80
         ? "border-orange-200/90"
         : "border-slate-200";
+
+  if (sessionStatus === "loading") {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-slate-600">
+        <Loader2
+          className="h-10 w-10 animate-spin text-primary"
+          strokeWidth={2}
+          aria-hidden
+        />
+        <p className="text-sm font-medium">Laden…</p>
+      </div>
+    );
+  }
+
+  if (session?.user?.rolle === "mitarbeiter") {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-slate-600">
+        <Loader2
+          className="h-10 w-10 animate-spin text-primary"
+          strokeWidth={2}
+          aria-hidden
+        />
+        <p className="text-sm font-medium">Weiterleitung…</p>
+      </div>
+    );
+  }
 
   const cards = [
     {
