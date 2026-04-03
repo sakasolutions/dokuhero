@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import {
@@ -13,6 +14,8 @@ import {
 import type { DashboardStats } from "@/types";
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
+  console.log("SESSION DEBUG:", JSON.stringify(session?.user, null, 2));
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [betriebName, setBetriebName] = useState("Betrieb");
