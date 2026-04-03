@@ -37,7 +37,7 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail" | "submit" | "archiv";
+type Busy = null | "preview" | "pdf" | "mail" | "submit" | "reject" | "archiv";
 
 const REGENERATE_PRESETS: { label: string; text: string }[] = [
   { label: "Kürzer", text: "Bitte kürzer fassen" },
@@ -249,6 +249,34 @@ export default function ProtokollAnsichtPage() {
     }
   }
 
+  async function postReject() {
+    setBannerError(null);
+    setBannerSuccess(null);
+    setBusy("reject");
+    try {
+      const res = await fetch(`/api/protokoll/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject" }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBannerError(
+          typeof j.error === "string"
+            ? j.error
+            : "Zurückschicken fehlgeschlagen."
+        );
+        return;
+      }
+      setBannerSuccess("Protokoll wurde zur Überarbeitung zurückgeschickt.");
+      await load();
+    } catch {
+      setBannerError("Netzwerkfehler.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function postGenerate(sendMail: boolean) {
     setBannerError(null);
     setBannerSuccess(null);
@@ -332,8 +360,9 @@ export default function ProtokollAnsichtPage() {
   const isZurPruefung = pStatus === "zur_pruefung";
   const isEntwurf = pStatus === "entwurf";
   const kiReadonly = isFreigegeben || isArchiviert;
+  const showChefFreigabeCard = isZurPruefung && chef && !isArchiviert;
   const showChefFreigabeBar =
-    isZurPruefung && chef && !isArchiviert && !!protokoll.pdf_pfad;
+    showChefFreigabeCard && !!protokoll.pdf_pfad;
   const showWorkerWarten = isZurPruefung && !chef && !isArchiviert;
   const showProtokollArchivieren =
     isFreigegeben && !isArchiviert;
@@ -732,37 +761,56 @@ export default function ProtokollAnsichtPage() {
         </Card>
       ) : null}
 
-      {showChefFreigabeBar ? (
+      {showChefFreigabeCard ? (
         <Card className="border-primary/30 bg-primary/[0.06]">
           <h2 className="text-lg font-semibold text-slate-900">Freigabe</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Wenn Text und PDF-Vorschau passen, kannst du das Protokoll
-            freigeben und an den Kunden senden.
+            {showChefFreigabeBar
+              ? "Wenn Text und PDF-Vorschau passen, kannst du das Protokoll freigeben und an den Kunden senden."
+              : "Sobald eine PDF-Vorschau in Schritt 2 existiert, kannst du freigeben und versenden — oder das Protokoll zur Überarbeitung zurückschicken."}
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            {showChefFreigabeBar ? (
+              <Button
+                type="button"
+                className="min-h-12 gap-2 text-base shadow-sm"
+                disabled={
+                  busy !== null ||
+                  !hasKiText ||
+                  !emailDisplay
+                }
+                onClick={() => void postGenerate(true)}
+                title={
+                  !emailDisplay
+                    ? "Keine E-Mail beim Kunden hinterlegt"
+                    : undefined
+                }
+              >
+                {busy === "mail" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
+                {busy === "mail"
+                  ? "Wird gesendet…"
+                  : "Freigeben & Senden"}
+              </Button>
+            ) : null}
             <Button
               type="button"
-              className="min-h-12 gap-2 text-base shadow-sm"
-              disabled={
-                busy !== null ||
-                !hasKiText ||
-                !emailDisplay
-              }
-              onClick={() => void postGenerate(true)}
-              title={
-                !emailDisplay
-                  ? "Keine E-Mail beim Kunden hinterlegt"
-                  : undefined
-              }
+              variant="outline"
+              className="min-h-12 gap-2 border-slate-300 text-base text-slate-800"
+              disabled={busy !== null}
+              onClick={() => void postReject()}
             >
-              {busy === "mail" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+              {busy === "reject" ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Wird zurückgeschickt…
+                </>
               ) : (
-                <Send className="h-5 w-5" />
+                "Zurückschicken"
               )}
-              {busy === "mail"
-                ? "Wird gesendet…"
-                : "Freigeben & Senden"}
             </Button>
           </div>
         </Card>
