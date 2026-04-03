@@ -372,7 +372,8 @@ export default function ProtokollAnsichtPage() {
   const isZurPruefung = pStatus === "zur_pruefung";
   const isEntwurf = pStatus === "entwurf";
   const kiReadonly = isFreigegeben || isArchiviert;
-  const showChefFreigabeBar = isZurPruefung && chef && !isArchiviert;
+  const showChefFreigabeBar =
+    isZurPruefung && chef && !isArchiviert && !!protokoll.pdf_pfad;
   const showWorkerWarten = isZurPruefung && !chef && !isArchiviert;
   const showProtokollArchivieren =
     isFreigegeben && !isArchiviert;
@@ -452,19 +453,19 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
-      <Card>
-        <div className="space-y-4">
+      <Card className="overflow-visible">
+        <div className="space-y-4 overflow-visible">
           <div>
             <h2 className="text-sm font-semibold text-slate-500">
               Auftragsbeschreibung
             </h2>
-            <p className="mt-1 text-slate-800">
+            <p className="mt-1 break-words text-slate-800">
               {auftrag_beschreibung ?? "–"}
             </p>
           </div>
           <div>
             <h2 className="text-sm font-semibold text-slate-500">Notiz</h2>
-            <p className="mt-1 whitespace-pre-wrap text-slate-800">
+            <p className="mt-1 whitespace-pre-wrap break-words text-slate-800">
               {protokoll.notiz?.trim() ? protokoll.notiz : "–"}
             </p>
           </div>
@@ -472,22 +473,22 @@ export default function ProtokollAnsichtPage() {
       </Card>
 
       {fotos.length > 0 ? (
-        <div>
+        <div className="overflow-visible">
           <h2 className="mb-2 text-sm font-semibold text-slate-500">Fotos</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 overflow-visible sm:grid-cols-3">
             {fotos.map((f) => (
               <a
                 key={f.id}
                 href={f.datei_pfad}
                 target="_blank"
                 rel="noreferrer"
-                className="aspect-square overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200"
+                className="aspect-square rounded-lg bg-slate-100 ring-1 ring-slate-200"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={f.datei_pfad}
                   alt={f.dateiname}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full rounded-lg object-cover"
                 />
               </a>
             ))}
@@ -776,8 +777,7 @@ export default function ProtokollAnsichtPage() {
           <h2 className="text-lg font-semibold text-slate-900">Freigabe</h2>
           <p className="mt-1 text-sm text-slate-600">
             Wenn Text und PDF-Vorschau passen, kannst du das Protokoll
-            freigeben und an den Kunden senden – oder ablehnen, damit der
-            Entwurf überarbeitet wird.
+            freigeben und an den Kunden senden.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Button
@@ -803,18 +803,6 @@ export default function ProtokollAnsichtPage() {
               {busy === "mail"
                 ? "Wird gesendet…"
                 : "Freigeben & Senden"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-12 gap-2 border-red-300 text-base text-red-700 hover:border-red-400 hover:bg-red-50 focus-visible:ring-red-400"
-              disabled={busy !== null}
-              onClick={() => void postReject()}
-            >
-              {busy === "reject" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : null}
-              Ablehnen
             </Button>
           </div>
         </Card>
