@@ -17,8 +17,13 @@ const links = [
   { href: "/kunden", label: "Kunden", icon: Users },
 ];
 
-export function Sidebar() {
+export interface SidebarProps {
+  rolle: string;
+}
+
+export function Sidebar({ rolle }: SidebarProps) {
   const pathname = usePathname();
+  const isInhaber = rolle === "inhaber";
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
@@ -44,20 +49,22 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="shrink-0 border-t border-white/10 p-3">
-        <Link
-          href="/einstellungen"
-          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-            pathname === "/einstellungen" ||
-            pathname.startsWith("/einstellungen/")
-              ? "bg-primary text-white"
-              : "text-white/75 hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          <Settings className="h-5 w-5 shrink-0" />
-          Einstellungen
-        </Link>
-      </div>
+      {isInhaber ? (
+        <div className="shrink-0 border-t border-white/10 p-3">
+          <Link
+            href="/einstellungen"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              pathname === "/einstellungen" ||
+              pathname.startsWith("/einstellungen/")
+                ? "bg-primary text-white"
+                : "text-white/75 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Settings className="h-5 w-5 shrink-0" />
+            Einstellungen
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -23,6 +23,10 @@ const links = [
   { href: "/kunden", label: "Kunden", icon: Users },
 ];
 
+export interface BottomNavProps {
+  rolle: string;
+}
+
 function planBadgeLabel(plan: string | null): string {
   const p = (plan ?? "").trim().toLowerCase();
   if (p === "pro") return "Pro";
@@ -33,8 +37,9 @@ function planBadgeLabel(plan: string | null): string {
   return plan!.trim();
 }
 
-export function BottomNav() {
+export function BottomNav({ rolle }: BottomNavProps) {
   const pathname = usePathname();
+  const isInhaber = rolle === "inhaber";
   const [isOpen, setIsOpen] = useState(false);
   const [sheetEntered, setSheetEntered] = useState(false);
   const [betriebName, setBetriebName] = useState("");
@@ -163,15 +168,17 @@ export function BottomNav() {
             </div>
 
             <div className="px-2 py-2">
-              <Link
-                href="/einstellungen"
-                onClick={closeSheet}
-                className="flex items-center gap-3 rounded-xl px-3 py-3.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
-              >
-                <Settings className="h-5 w-5 shrink-0 text-slate-500" />
-                Einstellungen
-              </Link>
-              {showPreiseUpgrade ? (
+              {isInhaber ? (
+                <Link
+                  href="/einstellungen"
+                  onClick={closeSheet}
+                  className="flex items-center gap-3 rounded-xl px-3 py-3.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                >
+                  <Settings className="h-5 w-5 shrink-0 text-slate-500" />
+                  Einstellungen
+                </Link>
+              ) : null}
+              {isInhaber && showPreiseUpgrade ? (
                 <Link
                   href="/preise"
                   onClick={closeSheet}

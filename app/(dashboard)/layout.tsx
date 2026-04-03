@@ -32,7 +32,7 @@ export default async function DashboardLayout({
           zIndex: 40,
         }}
       >
-        <Sidebar />
+        <Sidebar rolle={session.user.rolle ?? "mitarbeiter"} />
       </aside>
 
       <div
@@ -50,7 +50,7 @@ export default async function DashboardLayout({
         </main>
       </div>
 
-      <BottomNav />
+      <BottomNav rolle={session.user.rolle ?? "mitarbeiter"} />
     </div>
   );
 }

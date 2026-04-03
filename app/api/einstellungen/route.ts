@@ -121,6 +121,9 @@ export async function PUT(request: Request) {
     if (!session?.user?.betrieb_id) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
     }
+    if (session.user.rolle !== "inhaber") {
+      return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+    }
 
     let json: unknown;
     try {
