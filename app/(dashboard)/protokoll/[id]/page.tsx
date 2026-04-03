@@ -36,7 +36,7 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail" | "reject" | "submit" | "archiv";
+type Busy = null | "preview" | "pdf" | "mail" | "submit" | "archiv";
 
 function protokollStatusLabel(s: ProtokollStatus | string): string {
   switch (s) {
@@ -204,34 +204,6 @@ export default function ProtokollAnsichtPage() {
     setRegenerateFeedback("");
   }
 
-  async function postReject() {
-    setBannerError(null);
-    setBannerSuccess(null);
-    setBusy("reject");
-    try {
-      const res = await fetch(`/api/protokoll/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reject" }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setBannerError(
-          typeof j.error === "string"
-            ? j.error
-            : "Zurückweisen fehlgeschlagen."
-        );
-        return;
-      }
-      setBannerSuccess("Protokoll wurde abgelehnt und ist wieder ein Entwurf.");
-      await load();
-    } catch {
-      setBannerError("Netzwerkfehler.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function postArchivieren() {
     setBannerError(null);
     setBannerSuccess(null);
@@ -334,7 +306,7 @@ export default function ProtokollAnsichtPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl overflow-visible pb-24">
         <p className="text-slate-600">Laden…</p>
       </div>
     );
@@ -342,7 +314,7 @@ export default function ProtokollAnsichtPage() {
 
   if (error || !data) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div className="mx-auto max-w-3xl space-y-4 overflow-visible pb-24">
         <p className="text-red-600">{error ?? "Unbekannter Fehler"}</p>
         <Link href="/auftraege" className="text-primary hover:text-primary/80 hover:underline">
           Zurück zu Aufträgen
@@ -381,7 +353,7 @@ export default function ProtokollAnsichtPage() {
   const showWeiterZuPdf = isZurPruefung && chef;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 overflow-visible pb-24">
       <Link
         href="/auftraege"
         className="inline-flex min-h-12 items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
