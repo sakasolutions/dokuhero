@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Camera,
-  ClipboardList,
   LayoutDashboard,
   Settings,
   Users,
@@ -25,7 +24,6 @@ export function Sidebar({ rolle }: SidebarProps) {
       label: isInhaber ? "Protokolle" : "Protokoll",
       icon: Camera,
     },
-    { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
     { href: "/kunden", label: "Kunden", icon: Users },
   ];
 

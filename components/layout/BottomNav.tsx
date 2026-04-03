@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Camera,
-  ClipboardList,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -45,7 +44,6 @@ export function BottomNav({ rolle }: BottomNavProps) {
       label: isInhaber ? "Protokolle" : "Protokoll",
       icon: Camera,
     },
-    { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
     { href: "/kunden", label: "Kunden", icon: Users },
   ];
 
