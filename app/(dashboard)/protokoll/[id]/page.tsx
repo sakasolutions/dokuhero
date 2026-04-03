@@ -637,7 +637,7 @@ export default function ProtokollAnsichtPage() {
       {isEntwurf && hasKiText && !isArchiviert ? (
         <Card>
           <p className="text-sm text-slate-600">
-            Wenn der Protokolltext fertig ist, reiche ihn wieder zur Prüfung ein.
+            Protokolltext geprüft und fertig? Dann zur Freigabe einreichen.
           </p>
           <Button
             type="button"
@@ -652,7 +652,7 @@ export default function ProtokollAnsichtPage() {
             )}
             {busy === "submit"
               ? "Wird eingereicht…"
-              : "Erneut zur Prüfung einreichen"}
+              : "Zur Freigabe einreichen"}
           </Button>
         </Card>
       ) : null}

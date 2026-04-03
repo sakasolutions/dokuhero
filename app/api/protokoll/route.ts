@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     try {
       const [pRes] = await conn.execute<ResultSetHeader>(
         `INSERT INTO protokolle (auftrag_id, notiz, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert)
-         VALUES (?, ?, NULL, NULL, NULL, NOW(), 'zur_pruefung', 0)`,
+         VALUES (?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0)`,
         [auftrag_id, notizText]
       );
       const protokollId = pRes.insertId;
