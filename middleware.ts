@@ -51,6 +51,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Mitarbeiter dürfen NICHT auf Admin-Bereich
+  if (
+    (token as any).rolle === "mitarbeiter" &&
+    pathname.startsWith("/admin")
+  ) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // Gesperrt check
   if (token.gesperrt === 1) {
     return NextResponse.redirect(new URL("/gesperrt", request.url));

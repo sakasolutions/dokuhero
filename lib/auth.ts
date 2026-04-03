@@ -4,18 +4,6 @@ import bcrypt from "bcryptjs";
 import { getPool } from "@/lib/db";
 import type { RowDataPacket } from "mysql2";
 
-interface BetriebRow extends RowDataPacket {
-  id: number;
-  name: string;
-  email: string;
-  passwort: string;
-  gesperrt?: number | null;
-  plan?: string | null;
-  abo_bis?: Date | null;
-  stripe_customer_id?: string | null;
-  erstellt_am?: Date | null;
-}
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -25,46 +13,71 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Passwort", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+        if (!credentials?.email || !credentials?.password) return null;
 
         const pool = getPool();
-        const [rows] = await pool.execute<BetriebRow[]>(
-          "SELECT * FROM betriebe WHERE email = ? LIMIT 1",
-          [credentials.email.trim().toLowerCase()]
-        );
 
-        const betrieb = rows[0];
-        if (!betrieb) {
-          return null;
+        // Prüfe ob Email oder Username
+        const isEmail = credentials.email.includes("@");
+
+        let benutzer = null;
+
+        if (isEmail) {
+          // Inhaber Login: Email in benutzer Tabelle
+          const [rows] = await pool.execute<RowDataPacket[]>(
+            `SELECT b.id as benutzer_id, b.name, b.email, b.username,
+              b.passwort, b.rolle, b.aktiv, b.betrieb_id,
+              bt.plan, bt.abo_bis, bt.gesperrt, bt.erstellt_am,
+              bt.registriert_am
+       FROM benutzer b
+       JOIN betriebe bt ON bt.id = b.betrieb_id
+       WHERE b.email = ? AND b.rolle = 'inhaber'
+       LIMIT 1`,
+            [credentials.email.trim().toLowerCase()]
+          );
+          benutzer = (rows as RowDataPacket[])[0];
+        } else {
+          // Werker Login: Username in benutzer Tabelle
+          // Format: "username@betrieb_id" z.B. "max@3"
+          // ODER einfach username wenn betrieb_id in separatem Feld
+          // Erstmal: username direkt suchen
+          const [rows] = await pool.execute<RowDataPacket[]>(
+            `SELECT b.id as benutzer_id, b.name, b.email, b.username,
+              b.passwort, b.rolle, b.aktiv, b.betrieb_id,
+              bt.plan, bt.abo_bis, bt.gesperrt, bt.erstellt_am,
+              bt.registriert_am
+       FROM benutzer b
+       JOIN betriebe bt ON bt.id = b.betrieb_id
+       WHERE b.username = ? AND b.rolle = 'mitarbeiter'
+       LIMIT 1`,
+            [credentials.email.trim().toLowerCase()]
+          );
+          benutzer = (rows as RowDataPacket[])[0];
         }
 
-        const ok = await bcrypt.compare(
-          credentials.password,
-          betrieb.passwort
-        );
-        if (!ok) {
-          return null;
-        }
+        if (!benutzer) return null;
 
-        if (Number(betrieb.gesperrt) === 1) {
-          throw new Error("GESPERRT");
-        }
+        const ok = await bcrypt.compare(credentials.password, benutzer.passwort);
+        if (!ok) return null;
+
+        if (Number(benutzer.aktiv) !== 1) throw new Error("GESPERRT");
+        if (Number(benutzer.gesperrt) === 1) throw new Error("GESPERRT");
 
         return {
-          id: String(betrieb.id),
-          email: betrieb.email,
-          name: betrieb.name,
-          betrieb_id: betrieb.id,
-          gesperrt: Number(betrieb.gesperrt) === 1 ? 1 : 0,
-          plan: typeof betrieb.plan === "string" ? betrieb.plan : "trial",
-          abo_bis:
-            betrieb.abo_bis instanceof Date ? betrieb.abo_bis.toISOString() : null,
-          erstellt_am:
-            betrieb.erstellt_am instanceof Date
-              ? betrieb.erstellt_am.toISOString()
-              : null,
+          id: String(benutzer.benutzer_id),
+          email: benutzer.email ?? "",
+          name: benutzer.name,
+          betrieb_id: benutzer.betrieb_id,
+          benutzer_id: benutzer.benutzer_id,
+          rolle: benutzer.rolle,
+          gesperrt: Number(benutzer.gesperrt) === 1 ? 1 : 0,
+          plan: typeof benutzer.plan === "string" ? benutzer.plan : "trial",
+          abo_bis: benutzer.abo_bis instanceof Date
+            ? benutzer.abo_bis.toISOString()
+            : null,
+          erstellt_am: benutzer.erstellt_am instanceof Date
+            ? benutzer.erstellt_am.toISOString()
+            : null,
         };
       },
     }),
@@ -80,6 +93,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user && "betrieb_id" in user) {
         token.betrieb_id = user.betrieb_id;
+        token.benutzer_id = (user as any).benutzer_id;
+        token.rolle = (user as any).rolle;
         token.name = user.name ?? "";
         token.email = user.email ?? "";
         token.gesperrt = user.gesperrt ?? 0;
@@ -165,6 +180,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.betrieb_id = token.betrieb_id;
+        session.user.benutzer_id = (token as any).benutzer_id;
+        session.user.rolle = (token as any).rolle;
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.gesperrt = token.gesperrt ?? 0;
