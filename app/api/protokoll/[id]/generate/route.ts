@@ -20,6 +20,7 @@ const bodySchema = z.object({
   kiText: z.string(),
   sendMail: z.boolean().optional().default(false),
   unterschrift: z.string().nullable().optional(),
+  monteurUnterschrift: z.string().nullable().optional(),
   kundeEmail: z.preprocess(
     (v) => {
       if (v == null || v === "") return undefined;
@@ -86,12 +87,28 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const { kiText, sendMail, unterschrift, kundeEmail, notifyBetriebIntern } =
-      parsed.data;
+    const {
+      kiText,
+      sendMail,
+      unterschrift,
+      monteurUnterschrift,
+      kundeEmail,
+      notifyBetriebIntern,
+    } = parsed.data;
     const unterschriftVal =
       typeof unterschrift === "string" ? unterschrift.trim() : null;
     const hasUnterschrift =
       unterschriftVal != null && unterschriftVal.startsWith("data:image");
+    const monteurUnterschriftVal =
+      typeof monteurUnterschrift === "string"
+        ? monteurUnterschrift.trim()
+        : null;
+    const hasMonteurUnterschrift =
+      monteurUnterschriftVal != null &&
+      monteurUnterschriftVal.startsWith("data:image");
+    const needsBeideUnterschriften =
+      notifyBetriebIntern ||
+      (sendMail && typeof monteurUnterschrift === "string");
     const pool = getPool();
 
     const [rows] = await pool.execute<LoadRow[]>(
@@ -135,12 +152,23 @@ export async function POST(request: Request, context: RouteContext) {
       isMitarbeiter &&
       (row.protokoll_status === "entwurf" ||
         row.protokoll_status === "zur_pruefung") &&
-      (!sendMail || hasUnterschrift);
+      (!sendMail || hasUnterschrift) &&
+      (!needsBeideUnterschriften || hasMonteurUnterschrift);
 
     if (!mayFreigeben && !mitarbeiterDarfPdf) {
       return NextResponse.json(
         { error: "Keine Berechtigung für PDF-Erstellung oder Freigabe-Versand." },
         { status: 403 }
+      );
+    }
+
+    if (needsBeideUnterschriften && (!hasUnterschrift || !hasMonteurUnterschrift)) {
+      return NextResponse.json(
+        {
+          error:
+            "Für diesen Vorgang sind die Unterschriften von Kunde und Monteur erforderlich.",
+        },
+        { status: 400 }
       );
     }
 
@@ -178,6 +206,9 @@ export async function POST(request: Request, context: RouteContext) {
       fotoPfade,
       betriebLogoPfad: row.betrieb_logo_pfad,
       unterschriftDataUri: hasUnterschrift ? unterschriftVal : null,
+      monteurUnterschriftDataUri: hasMonteurUnterschrift
+        ? monteurUnterschriftVal
+        : null,
       monteurName: session.user.name ?? null,
       betriebTelefon: row.betrieb_telefon ?? null,
       betriebAdresse: row.betrieb_adresse ?? null,
@@ -250,7 +281,12 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    if (!sendMail && hasUnterschrift && notifyBetriebIntern) {
+    if (
+      !sendMail &&
+      hasUnterschrift &&
+      hasMonteurUnterschrift &&
+      notifyBetriebIntern
+    ) {
       const betriebMail = row.betrieb_email?.trim();
       if (betriebMail) {
         try {

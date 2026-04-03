@@ -28,6 +28,8 @@ export type ProtokollData = {
   betriebLogoPfad?: string | null;
   /** data:image/png;base64,… — Unterschrift Kunde */
   unterschriftDataUri?: string | null;
+  /** data:image/png;base64,… — Unterschrift Monteur */
+  monteurUnterschriftDataUri?: string | null;
   monteurName?: string | null;
   betriebTelefon?: string | null;
   betriebAdresse?: string | null;
@@ -185,9 +187,13 @@ function buildHtml(
     data.monteurName?.trim() ? data.monteurName.trim() : "–"
   );
 
-  const kundeSigImg = data.unterschriftDataUri?.trim()
+  const kundeSigBlock = data.unterschriftDataUri?.trim()
     ? `<img class="sig-kunde-img" src=${JSON.stringify(data.unterschriftDataUri.trim())} alt="Unterschrift Kunde" />`
-    : `<div class="sig-kunde-placeholder"></div>`;
+    : `<div class="sig-line-empty" aria-hidden="true"></div>`;
+
+  const monteurSigBlock = data.monteurUnterschriftDataUri?.trim()
+    ? `<img class="sig-monteur-img" src=${JSON.stringify(data.monteurUnterschriftDataUri.trim())} alt="Unterschrift Monteur" />`
+    : `<div class="sig-line-empty" aria-hidden="true"></div>`;
 
   const erstelltMeta = formatErstelltMeta(
     data.betriebName,
@@ -370,11 +376,17 @@ function buildHtml(
       object-position: left top;
       display: block;
     }
-    .sig-kunde-placeholder {
-      min-height: 120px;
-      border: 1px dashed #cbd5e1;
-      border-radius: 6px;
-      background: #f8fafc;
+    .sig-line-empty {
+      min-height: 72px;
+      border-bottom: 1px solid #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .sig-monteur-img {
+      width: 100%;
+      max-height: 120px;
+      object-fit: contain;
+      object-position: left top;
+      display: block;
     }
     .hline {
       border: none;
@@ -391,12 +403,6 @@ function buildHtml(
       font-weight: 600;
       color: #0f172a;
       margin-top: 2px;
-    }
-    .monteur-empty {
-      min-height: 120px;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      background: #fff;
     }
     .sig-monteur-block {
       margin-top: 0;
@@ -485,7 +491,7 @@ function buildHtml(
     <div class="sig-two-col">
       <div class="sig-col">
         <div class="sig-col-title">Unterschrift Kunde</div>
-        ${kundeSigImg}
+        ${kundeSigBlock}
         <hr class="hline" />
         <div class="sig-field-label">Name in Druckbuchstaben:</div>
         <div class="sig-field-value">${esc(data.kundeName)}</div>
@@ -494,10 +500,11 @@ function buildHtml(
       </div>
       <div class="sig-col sig-monteur-block">
         <div class="sig-col-title">Monteur</div>
-        <div class="monteur-empty"></div>
+        ${monteurSigBlock}
         <hr class="hline" />
         <div class="sig-monteur-name">${monteurNameEsc}</div>
         <div class="sig-monteur-betrieb">${esc(data.betriebName)}</div>
+        <div class="sig-field-label">Datum:</div>
         <div class="sig-monteur-datum">${esc(data.datum)}</div>
       </div>
     </div>

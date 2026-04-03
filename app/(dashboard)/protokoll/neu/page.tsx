@@ -55,9 +55,22 @@ export default function ProtokollNeuPage() {
   const [pdfBust, setPdfBust] = useState(0);
   const [step5Error, setStep5Error] = useState<string | null>(null);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hasInkRef = useRef(false);
-  const [hasSignature, setHasSignature] = useState(false);
+  const [unterschriftPhase, setUnterschriftPhase] = useState<"kunde" | "monteur">(
+    "kunde"
+  );
+  const [kundeUnterschriftDataUri, setKundeUnterschriftDataUri] = useState<
+    string | null
+  >(null);
+  const [monteurUnterschriftDataUri, setMonteurUnterschriftDataUri] = useState<
+    string | null
+  >(null);
+
+  const kundeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const monteurCanvasRef = useRef<HTMLCanvasElement>(null);
+  const kundeHasInkRef = useRef(false);
+  const monteurHasInkRef = useRef(false);
+  const [kundeCanvasHasInk, setKundeCanvasHasInk] = useState(false);
+  const [monteurCanvasHasInk, setMonteurCanvasHasInk] = useState(false);
   const drawingRef = useRef(false);
 
   const [generateBusy, setGenerateBusy] = useState(false);
@@ -319,12 +332,17 @@ export default function ProtokollNeuPage() {
     prevStepRef.current = step;
     if (step !== 5 || protokollId == null) return;
     if (was !== 4) return;
+    setUnterschriftPhase("kunde");
+    setKundeUnterschriftDataUri(null);
+    setMonteurUnterschriftDataUri(null);
     void loadPdfForStep5(kiText);
   }, [step, protokollId, kiText, loadPdfForStep5]);
 
-  function initUnterschriftCanvas() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  function initSignatureCanvas(
+    canvas: HTMLCanvasElement,
+    hasInkRef: { current: boolean },
+    setInkState: (v: boolean) => void
+  ) {
     const rect = canvas.getBoundingClientRect();
     const w = Math.max(1, Math.floor(rect.width));
     const h = Math.max(1, Math.floor(rect.height));
@@ -342,19 +360,48 @@ export default function ProtokollNeuPage() {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     hasInkRef.current = false;
-    setHasSignature(false);
+    setInkState(false);
+  }
+
+  function initActiveCanvas() {
+    if (unterschriftPhase === "kunde") {
+      const c = kundeCanvasRef.current;
+      if (c) initSignatureCanvas(c, kundeHasInkRef, setKundeCanvasHasInk);
+    } else {
+      const c = monteurCanvasRef.current;
+      if (c) initSignatureCanvas(c, monteurHasInkRef, setMonteurCanvasHasInk);
+    }
   }
 
   useEffect(() => {
     if (step !== 5 || pdfLoading || abschlussModus != null) return;
-    const t = window.setTimeout(() => initUnterschriftCanvas(), 0);
+    if (monteurUnterschriftDataUri != null) return;
+    const t = window.setTimeout(() => initActiveCanvas(), 0);
     return () => window.clearTimeout(t);
-  }, [step, pdfLoading, pdfUrl, pdfBust, abschlussModus]);
+  }, [
+    step,
+    pdfLoading,
+    pdfUrl,
+    pdfBust,
+    abschlussModus,
+    unterschriftPhase,
+    monteurUnterschriftDataUri,
+  ]);
 
   useEffect(() => {
     if (step !== 5 || pdfLoading || abschlussModus != null) return;
-    const canvas = canvasRef.current;
+    if (monteurUnterschriftDataUri != null) return;
+
+    const canvas =
+      unterschriftPhase === "kunde"
+        ? kundeCanvasRef.current
+        : monteurCanvasRef.current;
     if (!canvas) return;
+
+    const hasInkRef =
+      unterschriftPhase === "kunde" ? kundeHasInkRef : monteurHasInkRef;
+    const setInkState =
+      unterschriftPhase === "kunde" ? setKundeCanvasHasInk : setMonteurCanvasHasInk;
 
     const pos = (e: PointerEvent) => {
       const r = canvas.getBoundingClientRect();
@@ -381,7 +428,7 @@ export default function ProtokollNeuPage() {
       ctx.lineTo(x, y);
       ctx.stroke();
       hasInkRef.current = true;
-      setHasSignature(true);
+      setInkState(true);
     };
 
     const onUp = (e: PointerEvent) => {
@@ -417,20 +464,51 @@ export default function ProtokollNeuPage() {
       canvas.removeEventListener("touchstart", onTouchStart);
       canvas.removeEventListener("touchmove", onTouchMove);
     };
-  }, [step, pdfLoading, pdfUrl, pdfBust, abschlussModus]);
+  }, [
+    step,
+    pdfLoading,
+    pdfUrl,
+    pdfBust,
+    abschlussModus,
+    unterschriftPhase,
+    monteurUnterschriftDataUri,
+  ]);
 
-  function clearCanvas() {
-    initUnterschriftCanvas();
+  function clearActiveCanvas() {
+    initActiveCanvas();
   }
 
-  function getSignatureDataUri(): string | null {
-    const c = canvasRef.current;
-    if (!c || !hasInkRef.current) return null;
+  function getKundeSignatureDataUri(): string | null {
+    const c = kundeCanvasRef.current;
+    if (!c || !kundeHasInkRef.current) return null;
     try {
       return c.toDataURL("image/png");
     } catch {
       return null;
     }
+  }
+
+  function getMonteurSignatureDataUri(): string | null {
+    const c = monteurCanvasRef.current;
+    if (!c || !monteurHasInkRef.current) return null;
+    try {
+      return c.toDataURL("image/png");
+    } catch {
+      return null;
+    }
+  }
+
+  function handleKundeUnterschriftWeiter() {
+    const uri = getKundeSignatureDataUri();
+    if (!uri) return;
+    setKundeUnterschriftDataUri(uri);
+    setUnterschriftPhase("monteur");
+  }
+
+  function handleMonteurUnterschriftBestaetigen() {
+    const uri = getMonteurSignatureDataUri();
+    if (!uri) return;
+    setMonteurUnterschriftDataUri(uri);
   }
 
   function effectiveKundenEmail(): string {
@@ -441,7 +519,8 @@ export default function ProtokollNeuPage() {
 
   async function postGenerate(
     sendMail: boolean,
-    unterschrift: string | null,
+    kundeUri: string | null,
+    monteurUri: string | null,
     opts: { kundeEmail?: string; notifyBetriebIntern?: boolean } = {}
   ) {
     if (generateBusy || protokollId == null) return null;
@@ -451,7 +530,8 @@ export default function ProtokollNeuPage() {
       const body: Record<string, unknown> = {
         kiText,
         sendMail,
-        unterschrift,
+        unterschrift: kundeUri,
+        monteurUnterschrift: monteurUri,
       };
       if (opts.kundeEmail?.trim()) {
         body.kundeEmail = opts.kundeEmail.trim();
@@ -490,15 +570,16 @@ export default function ProtokollNeuPage() {
   }
 
   async function handleEmailSend() {
-    const sig = getSignatureDataUri();
-    if (!sig) return;
+    const ku = kundeUnterschriftDataUri;
+    const mu = monteurUnterschriftDataUri;
+    if (!ku || !mu) return;
     const to = effectiveKundenEmail();
     if (!to) {
       setError("Bitte eine gültige E-Mail-Adresse des Kunden angeben.");
       return;
     }
     try {
-      const j = await postGenerate(true, sig, { kundeEmail: to });
+      const j = await postGenerate(true, ku, mu, { kundeEmail: to });
       if (!j) return;
       if (j.mailError) {
         setError(String(j.mailError));
@@ -519,10 +600,11 @@ export default function ProtokollNeuPage() {
   }
 
   async function handleIntern() {
-    const sig = getSignatureDataUri();
-    if (!sig) return;
+    const ku = kundeUnterschriftDataUri;
+    const mu = monteurUnterschriftDataUri;
+    if (!ku || !mu) return;
     try {
-      const j = await postGenerate(false, sig, { notifyBetriebIntern: true });
+      const j = await postGenerate(false, ku, mu, { notifyBetriebIntern: true });
       if (!j) return;
       setAbschlussWarnung(
         j.betriebInternMailError ? String(j.betriebInternMailError) : null
@@ -1011,70 +1093,130 @@ export default function ProtokollNeuPage() {
                   src={`${pdfUrl}?t=${pdfBust}`}
                   className="h-[400px] w-full rounded-lg border border-slate-200 bg-slate-100"
                 />
-                <h3 className="text-base font-semibold text-slate-900">
-                  Kunde unterschreiben lassen
-                </h3>
-                <canvas
-                  ref={canvasRef}
-                  className="w-full touch-none rounded-lg border border-slate-300 bg-white"
-                  style={{ height: 200, touchAction: "none" }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-12 w-full text-base"
-                  onClick={clearCanvas}
-                >
-                  Löschen
-                </Button>
-                <div className="space-y-3 border-t border-slate-200 pt-4">
-                  <Button
-                    type="button"
-                    className="min-h-12 w-full text-base"
-                    disabled={
-                      !hasSignature ||
-                      generateBusy ||
-                      !effectiveKundenEmail()
-                    }
-                    onClick={() => void handleEmailSend()}
-                  >
-                    Per E-Mail senden
-                  </Button>
-                  {!kundenEmail?.trim() ? (
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="kunde-email-extra"
-                        className="block text-xs font-medium text-slate-600"
-                      >
-                        E-Mail-Adresse des Kunden (optional)
-                      </label>
-                      <input
-                        id="kunde-email-extra"
-                        type="email"
-                        autoComplete="email"
-                        inputMode="email"
-                        placeholder="name@beispiel.de"
-                        className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        value={kundenEmailExtra}
-                        onChange={(e) => setKundenEmailExtra(e.target.value)}
-                      />
-                    </div>
-                  ) : null}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-12 w-full border-slate-300 text-base text-slate-700"
-                    disabled={!hasSignature || generateBusy}
-                    onClick={() => void handleIntern()}
-                  >
-                    Intern speichern
-                  </Button>
-                </div>
+
+                {monteurUnterschriftDataUri == null &&
+                unterschriftPhase === "kunde" ? (
+                  <div className="space-y-3 border-t border-slate-200 pt-4">
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Unterschrift Kunde
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Bitte Kunden unterschreiben lassen
+                    </p>
+                    <canvas
+                      ref={kundeCanvasRef}
+                      className="w-full touch-none rounded-lg border border-slate-300 bg-white"
+                      style={{ height: 200, touchAction: "none" }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-12 w-full text-base"
+                      onClick={clearActiveCanvas}
+                    >
+                      Löschen
+                    </Button>
+                    <Button
+                      type="button"
+                      className="min-h-12 w-full text-base"
+                      disabled={!kundeCanvasHasInk}
+                      onClick={handleKundeUnterschriftWeiter}
+                    >
+                      Weiter
+                    </Button>
+                  </div>
+                ) : null}
+
+                {monteurUnterschriftDataUri == null &&
+                unterschriftPhase === "monteur" ? (
+                  <div className="space-y-3 border-t border-slate-200 pt-4">
+                    <p className="text-sm font-medium text-green-700">
+                      ✓ Kunde hat unterschrieben
+                    </p>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Ihre Unterschrift (Monteur)
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Bitte als Monteur unterschreiben
+                    </p>
+                    <canvas
+                      ref={monteurCanvasRef}
+                      className="w-full touch-none rounded-lg border border-slate-300 bg-white"
+                      style={{ height: 200, touchAction: "none" }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-12 w-full text-base"
+                      onClick={clearActiveCanvas}
+                    >
+                      Löschen
+                    </Button>
+                    <Button
+                      type="button"
+                      className="min-h-12 w-full text-base"
+                      disabled={!monteurCanvasHasInk}
+                      onClick={handleMonteurUnterschriftBestaetigen}
+                    >
+                      Bestätigen
+                    </Button>
+                  </div>
+                ) : null}
+
+                {monteurUnterschriftDataUri != null ? (
+                  <div className="space-y-3 border-t border-slate-200 pt-4">
+                    <Button
+                      type="button"
+                      className="min-h-12 w-full text-base"
+                      disabled={
+                        generateBusy || !effectiveKundenEmail()
+                      }
+                      onClick={() => void handleEmailSend()}
+                    >
+                      Per E-Mail senden
+                    </Button>
+                    {!kundenEmail?.trim() ? (
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="kunde-email-extra"
+                          className="block text-xs font-medium text-slate-600"
+                        >
+                          E-Mail-Adresse des Kunden (optional)
+                        </label>
+                        <input
+                          id="kunde-email-extra"
+                          type="email"
+                          autoComplete="email"
+                          inputMode="email"
+                          placeholder="name@beispiel.de"
+                          className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          value={kundenEmailExtra}
+                          onChange={(e) => setKundenEmailExtra(e.target.value)}
+                        />
+                      </div>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-12 w-full border-slate-300 text-base text-slate-700"
+                      disabled={generateBusy}
+                      onClick={() => void handleIntern()}
+                    >
+                      Intern speichern
+                    </Button>
+                  </div>
+                ) : null}
+
                 <Button
                   type="button"
                   variant="ghost"
                   className="min-h-12 w-full text-base text-slate-600"
-                  onClick={() => setStep(4)}
+                  onClick={() => {
+                    setUnterschriftPhase("kunde");
+                    setKundeUnterschriftDataUri(null);
+                    setMonteurUnterschriftDataUri(null);
+                    setStep(4);
+                  }}
                 >
                   Zurück
                 </Button>
