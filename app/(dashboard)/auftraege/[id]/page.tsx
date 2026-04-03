@@ -143,9 +143,7 @@ export default function AuftragBearbeitenPage() {
         {meta ? (
           <p className="mt-1 text-slate-600">
             <span className="font-medium tabular-nums text-slate-800">
-              #
-              {meta.auftragsnummer?.trim() ||
-                String(id).padStart(4, "0")}
+              {meta.auftragsnummer?.trim() || String(id).padStart(4, "0")}
             </span>
             {" · Kunde: "}
             <span className="font-medium text-slate-800">

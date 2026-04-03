@@ -18,8 +18,7 @@ const STATUS_OPTIONS: { value: AuftragStatus | "alle"; label: string }[] = [
 ];
 
 function formatAuftragsNrAnzeige(a: AuftragMitKunde): string {
-  const n = a.auftragsnummer?.trim() || String(a.id).padStart(4, "0");
-  return `#${n}`;
+  return a.auftragsnummer?.trim() || String(a.id).padStart(4, "0");
 }
 
 function StatusBadge({ status }: { status: string }) {
