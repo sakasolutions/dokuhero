@@ -70,6 +70,12 @@ export default function ProtokollAnsichtPage() {
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [bannerSuccess, setBannerSuccess] = useState<string | null>(null);
 
+  const [editMode, setEditMode] = useState(false);
+  const [editNotiz, setEditNotiz] = useState("");
+  const [editMaterialien, setEditMaterialien] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editFieldError, setEditFieldError] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setError(null);
     const res = await fetch(`/api/protokoll/${id}`);
@@ -81,6 +87,35 @@ export default function ProtokollAnsichtPage() {
     const j = (await res.json()) as ApiResponse;
     setData(j);
   }, [id]);
+
+  async function saveEdit() {
+    setEditFieldError(null);
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/protokoll/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_notiz",
+          notiz: editNotiz,
+          materialien: editMaterialien,
+        }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setEditFieldError(
+          typeof j.error === "string" ? j.error : "Speichern fehlgeschlagen."
+        );
+        return;
+      }
+      await load();
+      setEditMode(false);
+    } catch {
+      setEditFieldError("Netzwerkfehler.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -361,6 +396,8 @@ export default function ProtokollAnsichtPage() {
   const isFreigegeben = pStatus === "freigegeben";
   const isZurPruefung = pStatus === "zur_pruefung";
   const isEntwurf = pStatus === "entwurf";
+  const canEditNotizMaterialien =
+    (pStatus === "entwurf" || pStatus === "zur_pruefung") && !isArchiviert;
   const kiReadonly = isFreigegeben || isArchiviert;
   const showChefFreigabeCard = isZurPruefung && chef && !isArchiviert;
   const showChefFreigabeBar =
@@ -446,6 +483,23 @@ export default function ProtokollAnsichtPage() {
 
       <Card className="overflow-visible">
         <div className="space-y-4 overflow-visible">
+          {canEditNotizMaterialien && !editMode ? (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-8 px-3 py-1 text-xs"
+                onClick={() => {
+                  setEditFieldError(null);
+                  setEditNotiz(protokoll.notiz ?? "");
+                  setEditMaterialien(protokoll.materialien ?? "");
+                  setEditMode(true);
+                }}
+              >
+                Bearbeiten
+              </Button>
+            </div>
+          ) : null}
           <div>
             <h2 className="text-sm font-semibold text-slate-500">
               Auftragsbeschreibung
@@ -454,22 +508,94 @@ export default function ProtokollAnsichtPage() {
               {auftrag_beschreibung ?? "–"}
             </p>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-slate-500">Notiz</h2>
-            <p className="mt-1 whitespace-pre-wrap break-words text-slate-800">
-              {protokoll.notiz?.trim() ? protokoll.notiz : "–"}
-            </p>
-          </div>
-          {protokoll.materialien?.trim() ? (
-            <div>
-              <h2 className="text-sm font-semibold text-slate-500">
-                Materialien / Positionen
-              </h2>
-              <p className="mt-1 whitespace-pre-wrap break-words text-slate-800">
-                {protokoll.materialien}
-              </p>
-            </div>
-          ) : null}
+          {editMode ? (
+            <>
+              <div>
+                <label
+                  htmlFor="edit-notiz"
+                  className="block text-sm font-semibold text-slate-500"
+                >
+                  Notiz
+                </label>
+                <textarea
+                  id="edit-notiz"
+                  value={editNotiz}
+                  onChange={(e) => setEditNotiz(e.target.value)}
+                  rows={4}
+                  className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="edit-materialien"
+                  className="block text-sm font-semibold text-slate-500"
+                >
+                  Materialien / Positionen
+                </label>
+                <textarea
+                  id="edit-materialien"
+                  value={editMaterialien}
+                  onChange={(e) => setEditMaterialien(e.target.value)}
+                  rows={2}
+                  placeholder="Materialien, Ersatzteile, Positionen..."
+                  className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              {editFieldError ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {editFieldError}
+                </p>
+              ) : null}
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-10 text-sm"
+                  disabled={savingEdit}
+                  onClick={() => {
+                    setEditFieldError(null);
+                    setEditMode(false);
+                  }}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  type="button"
+                  className="min-h-10 gap-2 text-sm"
+                  disabled={savingEdit}
+                  onClick={() => void saveEdit()}
+                >
+                  {savingEdit ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Wird gespeichert…
+                    </>
+                  ) : (
+                    "Speichern"
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-500">Notiz</h2>
+                <p className="mt-1 whitespace-pre-wrap break-words text-slate-800">
+                  {protokoll.notiz?.trim() ? protokoll.notiz : "–"}
+                </p>
+              </div>
+              {protokoll.materialien?.trim() ? (
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-500">
+                    Materialien / Positionen
+                  </h2>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-slate-800">
+                    {protokoll.materialien}
+                  </p>
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
       </Card>
 

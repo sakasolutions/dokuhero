@@ -37,6 +37,11 @@ type RouteContext = { params: { id: string } };
 const patchSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reject") }),
   z.object({ action: z.literal("submit_review") }),
+  z.object({
+    action: z.literal("update_notiz"),
+    notiz: z.string().max(20000).nullable().optional(),
+    materialien: z.string().max(5000).nullable().optional(),
+  }),
 ]);
 
 const putArchiveSchema = z.object({ archivieren: z.literal(true) });
@@ -205,6 +210,33 @@ export async function PATCH(request: Request, context: RouteContext) {
         );
       }
       return NextResponse.json({ ok: true });
+    }
+
+    if (action === "update_notiz") {
+      const notizVal = parsed.data.notiz?.trim() || null;
+      const matVal = parsed.data.materialien?.trim() || null;
+      const [res] = await pool.execute<ResultSetHeader>(
+        `UPDATE protokolle
+         SET notiz = ?, materialien = ?
+         WHERE id = ?
+           AND status IN ('entwurf', 'zur_pruefung')
+           AND archiviert = 0
+           AND auftrag_id IN (
+             SELECT id FROM auftraege
+             WHERE betrieb_id = ? AND archiviert = 0
+           )`,
+        [notizVal, matVal, protokollId, session.user.betrieb_id]
+      );
+      if (res.affectedRows === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Aktualisieren nicht möglich (Status, archiviert oder nicht gefunden).",
+          },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ success: true });
     }
 
     const [res] = await pool.execute<ResultSetHeader>(
