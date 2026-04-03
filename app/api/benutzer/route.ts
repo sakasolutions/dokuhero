@@ -68,27 +68,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Max Benutzer check
-  const [countRows] = await pool.execute(
-    `SELECT COUNT(*) as anzahl FROM benutzer 
-     WHERE betrieb_id = ? AND aktiv = 1`,
-    [session.user.betrieb_id]
-  );
-  const anzahl = (countRows as any[])[0].anzahl;
-
-  const [betriebRows] = await pool.execute(
-    `SELECT max_benutzer FROM betriebe WHERE id = ?`,
-    [session.user.betrieb_id]
-  );
-  const maxBenutzer = (betriebRows as any[])[0]?.max_benutzer ?? 1;
-
-  if (anzahl >= maxBenutzer) {
-    return NextResponse.json(
-      { error: `Maximale Benutzeranzahl (${maxBenutzer}) erreicht` },
-      { status: 403 }
-    );
-  }
-
   const hash = await bcrypt.hash(passwort, 12);
 
   await pool.execute(
