@@ -254,7 +254,7 @@ export default function ProtokollNeuPage() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
-              Offenen Auftrag wählen
+              Offenen Auftrag wählen *
             </h2>
             {loadingAuftraege ? (
               <p className="text-slate-600">Laden…</p>
