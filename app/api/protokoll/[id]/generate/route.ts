@@ -3,7 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { generatePDF } from "@/lib/pdf";
-import { sendProtokollMail } from "@/lib/mail";
+import {
+  sendNeuesProtokollInternGespeichertMail,
+  sendProtokollKopieAnBetriebMail,
+  sendProtokollMail,
+} from "@/lib/mail";
 import { sessionMayFreigebenProtokoll } from "@/lib/protokoll-freigabe";
 import type { RowDataPacket } from "mysql2";
 import { z } from "zod";
@@ -16,6 +20,15 @@ const bodySchema = z.object({
   kiText: z.string(),
   sendMail: z.boolean().optional().default(false),
   unterschrift: z.string().nullable().optional(),
+  kundeEmail: z.preprocess(
+    (v) => {
+      if (v == null || v === "") return undefined;
+      const s = String(v).trim();
+      return s === "" ? undefined : s;
+    },
+    z.string().email("Ungültige E-Mail-Adresse").optional()
+  ),
+  notifyBetriebIntern: z.boolean().optional().default(false),
 });
 
 interface LoadRow extends RowDataPacket {
@@ -34,6 +47,7 @@ interface LoadRow extends RowDataPacket {
   kunde_adresse: string | null;
   kunde_telefon: string | null;
   betrieb_name: string;
+  betrieb_email: string | null;
   betrieb_logo_pfad: string | null;
   betrieb_telefon: string | null;
   betrieb_adresse: string | null;
@@ -72,7 +86,8 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const { kiText, sendMail, unterschrift } = parsed.data;
+    const { kiText, sendMail, unterschrift, kundeEmail, notifyBetriebIntern } =
+      parsed.data;
     const unterschriftVal =
       typeof unterschrift === "string" ? unterschrift.trim() : null;
     const hasUnterschrift =
@@ -89,6 +104,7 @@ export async function POST(request: Request, context: RouteContext) {
               k.name AS kunde_name, k.email AS kunde_email,
               k.adresse AS kunde_adresse, k.telefon AS kunde_telefon,
               b.name AS betrieb_name,
+              b.email AS betrieb_email,
               b.logo_pfad AS betrieb_logo_pfad,
               b.telefon AS betrieb_telefon,
               b.adresse AS betrieb_adresse
@@ -171,12 +187,15 @@ export async function POST(request: Request, context: RouteContext) {
 
     let emailSent = false;
     let mailError: string | null = null;
+    let kopieAnBetriebError: string | null = null;
+    let betriebInternNotified = false;
+    let betriebInternMailError: string | null = null;
 
     if (sendMail) {
-      const to = row.kunde_email?.trim();
+      const to = (kundeEmail?.trim() || row.kunde_email?.trim()) ?? "";
       if (!to) {
         return NextResponse.json(
-          { error: "Keine E-Mail-Adresse beim Kunden hinterlegt." },
+          { error: "Keine E-Mail-Adresse für den Kunden angegeben." },
           { status: 400 }
         );
       }
@@ -190,6 +209,25 @@ export async function POST(request: Request, context: RouteContext) {
           null
         );
         emailSent = true;
+        const betriebMail = row.betrieb_email?.trim();
+        if (betriebMail) {
+          try {
+            await sendProtokollKopieAnBetriebMail(
+              betriebMail,
+              row.betrieb_name,
+              kundeName,
+              to,
+              pdfBuffer,
+              null
+            );
+          } catch (e) {
+            console.error("Kopie an Betrieb fehlgeschlagen:", e);
+            kopieAnBetriebError =
+              e instanceof Error
+                ? e.message
+                : "Kopie an Betrieb konnte nicht gesendet werden.";
+          }
+        }
       } catch (e) {
         console.error("Mailversand fehlgeschlagen:", e);
         mailError =
@@ -212,11 +250,36 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    if (!sendMail && hasUnterschrift && notifyBetriebIntern) {
+      const betriebMail = row.betrieb_email?.trim();
+      if (betriebMail) {
+        try {
+          await sendNeuesProtokollInternGespeichertMail(
+            betriebMail,
+            row.betrieb_name,
+            row.kunde_name ?? "",
+            pdfBuffer,
+            null
+          );
+          betriebInternNotified = true;
+        } catch (e) {
+          console.error("Interne Betriebs-Mail fehlgeschlagen:", e);
+          betriebInternMailError =
+            e instanceof Error
+              ? e.message
+              : "Benachrichtigung an Betrieb fehlgeschlagen.";
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       pdfUrl,
       emailSent,
       ...(mailError ? { mailError } : {}),
+      ...(kopieAnBetriebError ? { kopieAnBetriebError } : {}),
+      betriebInternNotified,
+      ...(betriebInternMailError ? { betriebInternMailError } : {}),
     });
   } catch (error) {
     console.error("Protokoll generate Fehler:", error);

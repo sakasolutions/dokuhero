@@ -41,6 +41,11 @@ export default function ProtokollNeuPage() {
   const [kiText, setKiText] = useState("");
   const [kiLoading, setKiLoading] = useState(false);
   const [kundenEmail, setKundenEmail] = useState<string | null>(null);
+  /** Wenn in DB keine E-Mail: hier optional für Kunden-Versand */
+  const [kundenEmailExtra, setKundenEmailExtra] = useState("");
+  const [emailVersandZiel, setEmailVersandZiel] = useState<string | null>(null);
+  const [internBetriebNotified, setInternBetriebNotified] = useState(false);
+  const [abschlussWarnung, setAbschlussWarnung] = useState<string | null>(null);
 
   const [step3Busy, setStep3Busy] = useState(false);
   const [step4Error, setStep4Error] = useState<string | null>(null);
@@ -428,25 +433,45 @@ export default function ProtokollNeuPage() {
     }
   }
 
-  async function postGenerate(sendMail: boolean, unterschrift: string | null) {
+  function effectiveKundenEmail(): string {
+    const a = kundenEmail?.trim() ?? "";
+    const b = kundenEmailExtra.trim();
+    return a || b;
+  }
+
+  async function postGenerate(
+    sendMail: boolean,
+    unterschrift: string | null,
+    opts: { kundeEmail?: string; notifyBetriebIntern?: boolean } = {}
+  ) {
     if (generateBusy || protokollId == null) return null;
     setError(null);
     setGenerateBusy(true);
     try {
+      const body: Record<string, unknown> = {
+        kiText,
+        sendMail,
+        unterschrift,
+      };
+      if (opts.kundeEmail?.trim()) {
+        body.kundeEmail = opts.kundeEmail.trim();
+      }
+      if (opts.notifyBetriebIntern === true) {
+        body.notifyBetriebIntern = true;
+      }
       const res = await fetch(`/api/protokoll/${protokollId}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kiText,
-          sendMail,
-          unterschrift,
-        }),
+        body: JSON.stringify(body),
       });
       const j = (await res.json().catch(() => ({}))) as {
         success?: boolean;
         pdfUrl?: string;
         emailSent?: boolean;
         mailError?: string;
+        kopieAnBetriebError?: string;
+        betriebInternNotified?: boolean;
+        betriebInternMailError?: string;
         error?: string;
       };
       if (!res.ok) {
@@ -467,14 +492,25 @@ export default function ProtokollNeuPage() {
   async function handleEmailSend() {
     const sig = getSignatureDataUri();
     if (!sig) return;
+    const to = effectiveKundenEmail();
+    if (!to) {
+      setError("Bitte eine gültige E-Mail-Adresse des Kunden angeben.");
+      return;
+    }
     try {
-      const j = await postGenerate(true, sig);
+      const j = await postGenerate(true, sig, { kundeEmail: to });
       if (!j) return;
       if (j.mailError) {
         setError(String(j.mailError));
         return;
       }
       if (j.emailSent) {
+        setEmailVersandZiel(to);
+        setAbschlussWarnung(
+          j.kopieAnBetriebError
+            ? `Kopie an den Betrieb konnte nicht gesendet werden: ${j.kopieAnBetriebError}`
+            : null
+        );
         setAbschlussModus("email");
       }
     } catch (e) {
@@ -486,7 +522,7 @@ export default function ProtokollNeuPage() {
     const sig = getSignatureDataUri();
     if (!sig) return;
     try {
-      await postGenerate(false, sig);
+      await postGenerate(false, sig, { notifyBetriebIntern: false });
       const path = pdfUrl ?? `/uploads/pdfs/${protokollId}.pdf`;
       const absUrl = `${window.location.origin}${path}?t=${Date.now()}`;
       if (typeof navigator !== "undefined" && navigator.share) {
@@ -506,7 +542,12 @@ export default function ProtokollNeuPage() {
     const sig = getSignatureDataUri();
     if (!sig) return;
     try {
-      await postGenerate(false, sig);
+      const j = await postGenerate(false, sig, { notifyBetriebIntern: true });
+      if (!j) return;
+      setAbschlussWarnung(
+        j.betriebInternMailError ? String(j.betriebInternMailError) : null
+      );
+      setInternBetriebNotified(j.betriebInternNotified === true);
       setAbschlussModus("intern");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
@@ -618,14 +659,21 @@ export default function ProtokollNeuPage() {
             Protokoll abgeschlossen!
           </p>
           <p className="mt-4 text-base leading-relaxed text-green-800">
-            {abschlussModus === "email" && kundenEmail
-              ? `PDF wurde an ${kundenEmail} gesendet`
+            {abschlussModus === "email" && emailVersandZiel
+              ? `PDF wurde an ${emailVersandZiel} gesendet (Kunde). Der Betrieb erhält eine Kopie.`
               : abschlussModus === "email"
                 ? "PDF wurde per E-Mail gesendet."
                 : abschlussModus === "share"
                   ? "Protokoll wurde geteilt."
-                  : "Protokoll wurde gespeichert."}
+                  : internBetriebNotified
+                    ? "Protokoll wurde gespeichert. Der Betrieb (Chef) wurde per E-Mail mit PDF informiert."
+                    : "Protokoll wurde gespeichert."}
           </p>
+          {abschlussWarnung ? (
+            <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              {abschlussWarnung}
+            </p>
+          ) : null}
           <Button
             type="button"
             className="mt-8 min-h-12 w-full text-base sm:w-auto"
@@ -1006,26 +1054,32 @@ export default function ProtokollNeuPage() {
                     disabled={
                       !hasSignature ||
                       generateBusy ||
-                      !kundenEmail
+                      !effectiveKundenEmail()
                     }
                     onClick={() => void handleEmailSend()}
                   >
-                    📧 Per E-Mail senden
+                    📧 Per E-Mail senden (Kunde + Chef)
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-12 w-full text-base"
-                    disabled={
-                      !hasSignature ||
-                      generateBusy ||
-                      typeof navigator === "undefined" ||
-                      !navigator.share
-                    }
-                    onClick={() => void handleShare()}
-                  >
-                    📲 Teilen
-                  </Button>
+                  {!kundenEmail?.trim() ? (
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="kunde-email-extra"
+                        className="block text-xs font-medium text-slate-600"
+                      >
+                        E-Mail-Adresse des Kunden (optional)
+                      </label>
+                      <input
+                        id="kunde-email-extra"
+                        type="email"
+                        autoComplete="email"
+                        inputMode="email"
+                        placeholder="name@beispiel.de"
+                        className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        value={kundenEmailExtra}
+                        onChange={(e) => setKundenEmailExtra(e.target.value)}
+                      />
+                    </div>
+                  ) : null}
                   <Button
                     type="button"
                     variant="outline"
@@ -1033,8 +1087,20 @@ export default function ProtokollNeuPage() {
                     disabled={!hasSignature || generateBusy}
                     onClick={() => void handleIntern()}
                   >
-                    🏢 Nur intern speichern
+                    🏢 Nur intern speichern (nur Chef bekommt Mail)
                   </Button>
+                  {typeof navigator !== "undefined" &&
+                  typeof navigator.share === "function" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-12 w-full text-base"
+                      disabled={!hasSignature || generateBusy}
+                      onClick={() => void handleShare()}
+                    >
+                      📲 Teilen
+                    </Button>
+                  ) : null}
                 </div>
                 <Button
                   type="button"

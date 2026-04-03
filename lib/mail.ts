@@ -95,6 +95,99 @@ Mit freundlichen Grüßen,<br />
   }
 }
 
+/** Kopie des Kunden-Protokolls an den Betrieb (Inhaber), nach Versand an den Kunden. */
+export async function sendProtokollKopieAnBetriebMail(
+  betriebEmail: string,
+  betriebName: string,
+  kundeName: string,
+  kundeEmpfangsEmail: string,
+  pdfBuffer: Buffer,
+  logoUrl: string | null = null
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM;
+
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY ist nicht gesetzt.");
+  }
+  if (!from) {
+    throw new Error("MAIL_FROM ist nicht gesetzt.");
+  }
+
+  const resend = new Resend(apiKey);
+  const kn = kundeName.trim() || "Kunde";
+  const subject = `Kopie: Serviceprotokoll an Kunden gesendet – ${kn}`;
+
+  const content = `<p style="margin:0 0 16px;">Hallo,</p>
+<p style="margin:0 0 16px;">ein Serviceprotokoll für <strong>${escapeHtml(kn)}</strong> wurde an <strong>${escapeHtml(kundeEmpfangsEmail)}</strong> versendet.</p>
+<p style="margin:0;">Im Anhang finden Sie eine Kopie des PDFs.</p>`;
+
+  const html = mailWrapper(content, betriebName, logoUrl);
+
+  const { error } = await resend.emails.send({
+    from,
+    to: betriebEmail,
+    subject,
+    html,
+    attachments: [
+      {
+        filename: "protokoll.pdf",
+        content: pdfBuffer,
+      },
+    ],
+  });
+
+  if (error) {
+    throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
+  }
+}
+
+/** Intern: Protokoll nur gespeichert (mit Unterschrift), Benachrichtigung an Betriebs-E-Mail. */
+export async function sendNeuesProtokollInternGespeichertMail(
+  betriebEmail: string,
+  betriebName: string,
+  kundeName: string,
+  pdfBuffer: Buffer,
+  logoUrl: string | null = null
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM;
+
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY ist nicht gesetzt.");
+  }
+  if (!from) {
+    throw new Error("MAIL_FROM ist nicht gesetzt.");
+  }
+
+  const resend = new Resend(apiKey);
+  const kn = kundeName.trim() || "Kunde";
+  const subject = `Neues Protokoll gespeichert – ${kn}`;
+
+  const content = `<p style="margin:0 0 16px;">Hallo,</p>
+<p style="margin:0 0 16px;">ein neues Serviceprotokoll für <strong>${escapeHtml(kn)}</strong> wurde intern gespeichert (ohne automatischen Kunden-Versand).</p>
+<p style="margin:0;">Das PDF finden Sie im Anhang.</p>`;
+
+  const html = mailWrapper(content, betriebName, logoUrl);
+
+  const { error } = await resend.emails.send({
+    from,
+    to: betriebEmail,
+    subject,
+    html,
+    attachments: [
+      {
+        filename: "protokoll.pdf",
+        content: pdfBuffer,
+      },
+    ],
+  });
+
+  if (error) {
+    throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");
+  }
+}
+
 function getResendClient(): { resend: Resend; from: string } {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
