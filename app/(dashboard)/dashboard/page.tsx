@@ -178,8 +178,8 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <p className="text-sm font-semibold text-amber-900">
                 {(stats?.protokolle_zur_pruefung ?? 0) === 1
-                  ? "1 Protokoll wartet auf deine Freigabe"
-                  : `${stats?.protokolle_zur_pruefung} Protokolle warten auf deine Freigabe`}
+                  ? "1 Protokoll ist zur Freigabe bereit"
+                  : `${stats?.protokolle_zur_pruefung} Protokolle sind zur Freigabe bereit`}
               </p>
               <p className="mt-0.5 text-xs text-amber-700">
                 Bitte prüfe und gib sie frei.
@@ -190,7 +190,7 @@ export default function DashboardPage() {
             href="/auftraege?freigabe=1"
             className="ml-4 shrink-0 text-sm font-medium whitespace-nowrap text-amber-700 hover:text-amber-900"
           >
-            Jetzt prüfen →
+            Zur Freigabe →
           </Link>
         </div>
       ) : null}

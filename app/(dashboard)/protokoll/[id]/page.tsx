@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { FotoEintrag, Protokoll, ProtokollStatus } from "@/types";
+import { protokollStatusLabel } from "@/lib/protokoll-status-label";
+import type { FotoEintrag, Protokoll } from "@/types";
 
 type ApiResponse = {
   protokoll: Protokoll;
@@ -37,19 +38,6 @@ function formatDate(d: string | Date | null) {
 }
 
 type Busy = null | "preview" | "pdf" | "mail" | "submit" | "archiv";
-
-function protokollStatusLabel(s: ProtokollStatus | string): string {
-  switch (s) {
-    case "entwurf":
-      return "Entwurf";
-    case "zur_pruefung":
-      return "Zur Prüfung";
-    case "freigegeben":
-      return "Freigegeben";
-    default:
-      return String(s);
-  }
-}
 
 const REGENERATE_PRESETS: { label: string; text: string }[] = [
   { label: "Kürzer", text: "Bitte kürzer fassen" },
@@ -252,7 +240,7 @@ export default function ProtokollAnsichtPage() {
         );
         return;
       }
-      setBannerSuccess("Protokoll wurde erneut zur Prüfung eingereicht.");
+      setBannerSuccess("Protokoll wurde erneut zur Freigabe eingereicht.");
       await load();
     } catch {
       setBannerError("Netzwerkfehler.");
@@ -475,7 +463,7 @@ export default function ProtokollAnsichtPage() {
         <p className="mt-1 text-sm text-slate-600">
           {kiReadonly
             ? "Dieses Protokoll ist freigegeben – der Text kann nicht mehr geändert werden."
-            : "Erzeuge einen Entwurf mit KI, bearbeite ihn und reiche ihn zur Prüfung ein bzw. gehe als Freigeber zur PDF-Erstellung."}
+            : "Erzeuge mit KI einen Text, bearbeite ihn und reiche ihn zur Freigabe ein bzw. gehe als Freigeber zur PDF-Erstellung."}
         </p>
 
         {!hasKiText && !kiReadonly ? (

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
+import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card } from "@/components/ui/Card";
@@ -235,9 +236,12 @@ export default function AuftragBearbeitenPage() {
                 className="flex flex-col gap-2 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="font-medium text-slate-900">
-                    {formatProtokollDatum(p.erstellt_am)}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-slate-900">
+                      {formatProtokollDatum(p.erstellt_am)}
+                    </p>
+                    <ProtokollStatusBadge status={p.status} />
+                  </div>
                   <p className="text-sm text-slate-600">
                     PDF gesendet:{" "}
                     <span className="font-medium text-slate-800">

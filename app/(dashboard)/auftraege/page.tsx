@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Archive, Plus, X } from "lucide-react";
+import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { AuftragMitKunde, AuftragStatus } from "@/types";
@@ -261,7 +262,7 @@ export default function AuftraegeListePage() {
           role="status"
         >
           Es werden nur Aufträge angezeigt, deren aktuelles Protokoll{" "}
-          <strong>zur Prüfung</strong> steht.{" "}
+          <strong>Zur Freigabe bereit</strong> ist.{" "}
           <Link
             href="/auftraege"
             className="font-medium text-amber-950 underline decoration-amber-700/50 underline-offset-2 hover:text-amber-950"
@@ -398,7 +399,14 @@ export default function AuftraegeListePage() {
                         {a.beschreibung ?? "–"}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={a.status} />
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <StatusBadge status={a.status} />
+                          {a.protokoll_id != null && a.protokoll_status ? (
+                            <ProtokollStatusBadge
+                              status={a.protokoll_status}
+                            />
+                          ) : null}
+                        </div>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                         {formatDate(a.erstellt_am)}
@@ -477,7 +485,14 @@ export default function AuftraegeListePage() {
                       <span className="font-semibold text-slate-900">
                         {a.kunde_name ?? "–"}
                       </span>
-                      <StatusBadge status={a.status} />
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                        <StatusBadge status={a.status} />
+                        {a.protokoll_id != null && a.protokoll_status ? (
+                          <ProtokollStatusBadge
+                            status={a.protokoll_status}
+                          />
+                        ) : null}
+                      </div>
                     </div>
                     <p className="text-sm text-slate-600">
                       {a.beschreibung ?? "–"}

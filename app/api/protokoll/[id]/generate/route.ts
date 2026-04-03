@@ -108,7 +108,7 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json(
         {
           error:
-            "Nur Protokolle mit Status „zur Prüfung“ können hier verarbeitet werden.",
+            "Nur Protokolle mit Status „Zur Freigabe bereit“ können hier verarbeitet werden.",
         },
         { status: 400 }
       );

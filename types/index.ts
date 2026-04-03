@@ -92,7 +92,7 @@ export interface DashboardStats {
   protokolle_monat: number;
   /** Monatslimit (z. B. 50); null = unbegrenzt (Pro/Business/Trial o. ä.) */
   protokoll_limit: number | null;
-  /** Protokolle mit Status „zur Prüfung“ (Betrieb) */
+  /** Protokolle mit Status zur_pruefung / Anzeige „Zur Freigabe bereit“ (Betrieb) */
   protokolle_zur_pruefung: number;
   offeneAuftraege: number;
   bewertungen_positiv: number;
