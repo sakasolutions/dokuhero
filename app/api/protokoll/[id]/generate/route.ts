@@ -79,15 +79,6 @@ export async function POST(request: Request, context: RouteContext) {
       unterschriftVal != null && unterschriftVal.startsWith("data:image");
     const pool = getPool();
 
-    const mayFreigeben = sessionMayFreigebenProtokoll(session);
-    const erlaubtMitUnterschrift = sendMail && hasUnterschrift;
-    if (!mayFreigeben && !erlaubtMitUnterschrift) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung für PDF-Erstellung oder Freigabe-Versand." },
-        { status: 403 }
-      );
-    }
-
     const [rows] = await pool.execute<LoadRow[]>(
       `SELECT p.id AS protokoll_id, p.auftrag_id, p.protokoll_nummer, a.auftragsnummer, p.erstellt_am AS protokoll_erstellt,
               p.status AS protokoll_status,
@@ -119,6 +110,21 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json(
         { error: "Archivierte Einträge können nicht bearbeitet werden." },
         { status: 400 }
+      );
+    }
+
+    const mayFreigeben = sessionMayFreigebenProtokoll(session);
+    const isMitarbeiter = session.user.rolle === "mitarbeiter";
+    const mitarbeiterDarfPdf =
+      isMitarbeiter &&
+      (row.protokoll_status === "entwurf" ||
+        row.protokoll_status === "zur_pruefung") &&
+      (!sendMail || hasUnterschrift);
+
+    if (!mayFreigeben && !mitarbeiterDarfPdf) {
+      return NextResponse.json(
+        { error: "Keine Berechtigung für PDF-Erstellung oder Freigabe-Versand." },
+        { status: 403 }
       );
     }
 
