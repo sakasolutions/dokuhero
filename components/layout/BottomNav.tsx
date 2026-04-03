@@ -108,7 +108,8 @@ export function BottomNav({ rolle }: BottomNavProps) {
             const active = isProtokollNav
               ? isInhaber
                 ? pathname === "/protokolle" ||
-                  pathname.startsWith("/protokolle")
+                  pathname.startsWith("/protokolle") ||
+                  pathname.startsWith("/protokoll/")
                 : pathname.startsWith("/protokoll") &&
                   !pathname.startsWith("/protokolle")
               : pathname === href || pathname.startsWith(`${href}/`);

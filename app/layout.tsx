@@ -21,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de" className={font.variable}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

@@ -40,7 +40,9 @@ export function Sidebar({ rolle }: SidebarProps) {
             href === "/protokolle" || href === "/protokoll/neu";
           const active = isProtokollNav
             ? isInhaber
-              ? pathname === "/protokolle" || pathname.startsWith("/protokolle")
+              ? pathname === "/protokolle" ||
+                pathname.startsWith("/protokolle") ||
+                pathname.startsWith("/protokoll/")
               : pathname.startsWith("/protokoll") &&
                 !pathname.startsWith("/protokolle")
             : pathname === href || pathname.startsWith(`${href}/`);
