@@ -88,11 +88,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/preise", request.url));
   }
 
-  if (
-    (token as { rolle?: string }).rolle === "mitarbeiter" &&
-    pathname === "/dashboard"
-  ) {
-    return NextResponse.redirect(new URL("/protokoll/neu", request.url));
+  if ((token as { rolle?: string }).rolle === "mitarbeiter") {
+    const gesperrteSeiten = ["/dashboard", "/auftraege", "/kunden"];
+    const istGesperrt = gesperrteSeiten.some((s) => pathname.startsWith(s));
+    if (istGesperrt) {
+      return NextResponse.redirect(new URL("/protokoll/neu", request.url));
+    }
   }
 
   return NextResponse.next();
