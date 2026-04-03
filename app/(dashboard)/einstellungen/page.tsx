@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -18,8 +19,18 @@ const BRANCHEN = [
   "Sonstiges",
 ] as const;
 
-const TABS = ["Betrieb", "Marke", "Abo", "Sicherheit"] as const;
-type TabId = (typeof TABS)[number];
+const BASE_TABS = ["Betrieb", "Marke", "Abo", "Sicherheit"] as const;
+type TabId = (typeof BASE_TABS)[number] | "Team";
+
+type BenutzerRow = {
+  id: number;
+  name: string;
+  email: string | null;
+  username: string | null;
+  rolle: string;
+  aktiv: number;
+  erstellt_am: string;
+};
 
 type BetriebApi = {
   id: number;
@@ -122,6 +133,14 @@ function fileToJpegDataUrl(file: File): Promise<string> {
 }
 
 export default function EinstellungenPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const isInhaber = session?.user?.rolle === "inhaber";
+
+  const tabs = useMemo((): TabId[] => {
+    if (isInhaber) return [...BASE_TABS, "Team"];
+    return [...BASE_TABS];
+  }, [isInhaber]);
+
   const [activeTab, setActiveTab] = useState<TabId>("Betrieb");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,6 +158,18 @@ export default function EinstellungenPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalErr, setPortalErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [benutzer, setBenutzer] = useState<BenutzerRow[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [teamFormData, setTeamFormData] = useState({
+    name: "",
+    username: "",
+    passwort: "",
+  });
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamError, setTeamError] = useState<string | null>(null);
+  const [teamSuccess, setTeamSuccess] = useState<string | null>(null);
+  const [teamRowBusy, setTeamRowBusy] = useState<number | null>(null);
 
   const {
     register,
@@ -206,6 +237,40 @@ export default function EinstellungenPage() {
       cancelled = true;
     };
   }, [load]);
+
+  useEffect(() => {
+    if (activeTab !== "Team") return;
+    if (sessionStatus === "loading") return;
+    if (session?.user?.rolle !== "inhaber") {
+      setActiveTab("Betrieb");
+    }
+  }, [activeTab, session, sessionStatus]);
+
+  const loadBenutzer = useCallback(async () => {
+    setTeamLoading(true);
+    setTeamError(null);
+    try {
+      const res = await fetch("/api/benutzer");
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTeamError(
+          typeof j.error === "string" ? j.error : "Team konnte nicht geladen werden."
+        );
+        return;
+      }
+      setBenutzer(Array.isArray(j) ? (j as BenutzerRow[]) : []);
+    } catch {
+      setTeamError("Netzwerkfehler.");
+    } finally {
+      setTeamLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "Team" && isInhaber) {
+      void loadBenutzer();
+    }
+  }, [activeTab, isInhaber, loadBenutzer]);
 
   const aboAnzeige = useMemo(() => {
     const planKey = (aboPlan ?? "").trim().toLowerCase();
@@ -384,6 +449,86 @@ export default function EinstellungenPage() {
     await putEinstellungen(getValues(), "passwort");
   }
 
+  async function submitTeamMitarbeiter() {
+    setTeamError(null);
+    setTeamSuccess(null);
+    setTeamLoading(true);
+    try {
+      const res = await fetch("/api/benutzer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: teamFormData.name.trim(),
+          username: teamFormData.username.trim(),
+          passwort: teamFormData.passwort,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTeamError(
+          typeof j.error === "string" ? j.error : "Anlegen fehlgeschlagen."
+        );
+        return;
+      }
+      setTeamFormData({ name: "", username: "", passwort: "" });
+      setShowForm(false);
+      setTeamSuccess("Mitarbeiter wurde angelegt.");
+      await loadBenutzer();
+    } catch {
+      setTeamError("Netzwerkfehler.");
+    } finally {
+      setTeamLoading(false);
+    }
+  }
+
+  async function patchBenutzerAktiv(id: number, aktiv: boolean) {
+    setTeamError(null);
+    setTeamSuccess(null);
+    setTeamRowBusy(id);
+    try {
+      const res = await fetch(`/api/benutzer/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aktiv }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTeamError(
+          typeof j.error === "string" ? j.error : "Aktualisierung fehlgeschlagen."
+        );
+        return;
+      }
+      await loadBenutzer();
+    } catch {
+      setTeamError("Netzwerkfehler.");
+    } finally {
+      setTeamRowBusy(null);
+    }
+  }
+
+  async function deleteBenutzer(id: number) {
+    if (!window.confirm("Mitarbeiter wirklich löschen?")) return;
+    setTeamError(null);
+    setTeamSuccess(null);
+    setTeamRowBusy(id);
+    try {
+      const res = await fetch(`/api/benutzer/${id}`, { method: "DELETE" });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTeamError(
+          typeof j.error === "string" ? j.error : "Löschen fehlgeschlagen."
+        );
+        return;
+      }
+      setTeamSuccess("Mitarbeiter wurde entfernt.");
+      await loadBenutzer();
+    } catch {
+      setTeamError("Netzwerkfehler.");
+    } finally {
+      setTeamRowBusy(null);
+    }
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-xl space-y-4">
@@ -425,7 +570,7 @@ export default function EinstellungenPage() {
 
       <div className="-mx-1 mb-8 overflow-x-auto whitespace-nowrap border-b border-slate-200">
         <div className="flex min-w-0 gap-1 px-1">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
               type="button"
@@ -727,6 +872,185 @@ export default function EinstellungenPage() {
             </Button>
           </div>
         </Card>
+      ) : null}
+
+      {activeTab === "Team" && isInhaber ? (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Team verwalten
+              </h2>
+              <p className="mt-1 max-w-xl text-sm text-slate-600">
+                Mitarbeiter können Protokolle anlegen und KI-Text generieren.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-12 shrink-0 self-start"
+              onClick={() => {
+                setShowForm((v) => !v);
+                setTeamError(null);
+                setTeamSuccess(null);
+              }}
+            >
+              {showForm ? "Formular schließen" : "Mitarbeiter hinzufügen"}
+            </Button>
+          </div>
+
+          {teamSuccess ? (
+            <p
+              className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+              role="status"
+            >
+              {teamSuccess}
+            </p>
+          ) : null}
+          {teamError ? (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+              {teamError}
+            </p>
+          ) : null}
+
+          {showForm ? (
+            <Card>
+              <div className="space-y-4">
+                <Input
+                  label="Name"
+                  value={teamFormData.name}
+                  onChange={(e) =>
+                    setTeamFormData((d) => ({ ...d, name: e.target.value }))
+                  }
+                  autoComplete="name"
+                />
+                <div>
+                  <Input
+                    label="Username"
+                    value={teamFormData.username}
+                    onChange={(e) =>
+                      setTeamFormData((d) => ({
+                        ...d,
+                        username: e.target.value,
+                      }))
+                    }
+                    autoComplete="username"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Wird zum Einloggen verwendet, z.B. max.mueller (klein
+                    schreiben).
+                  </p>
+                </div>
+                <Input
+                  label="Passwort"
+                  type="password"
+                  value={teamFormData.passwort}
+                  onChange={(e) =>
+                    setTeamFormData((d) => ({ ...d, passwort: e.target.value }))
+                  }
+                  autoComplete="new-password"
+                />
+                <Button
+                  type="button"
+                  className="min-h-12 gap-2"
+                  disabled={teamLoading}
+                  onClick={() => void submitTeamMitarbeiter()}
+                >
+                  {teamLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Wird angelegt…
+                    </>
+                  ) : (
+                    "Anlegen"
+                  )}
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {teamLoading && !showForm && benutzer.length === 0 ? (
+            <p className="flex items-center gap-2 text-sm text-slate-600">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Team wird geladen…
+            </p>
+          ) : null}
+
+          <div className="space-y-3">
+            {benutzer.map((u) => {
+              const isInhaberRow = u.rolle === "inhaber";
+              const isAktiv = Number(u.aktiv) === 1;
+              const loginHint =
+                u.username?.trim() || u.email?.trim() || "–";
+              return (
+                <Card key={u.id}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900">
+                        {u.name}
+                        <span className="font-normal text-slate-500">
+                          {" "}
+                          · {loginHint}
+                        </span>
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span
+                          className={
+                            isInhaberRow
+                              ? "inline-flex rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                              : "inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700"
+                          }
+                        >
+                          {isInhaberRow ? "Inhaber" : "Mitarbeiter"}
+                        </span>
+                        <span
+                          className={
+                            isAktiv
+                              ? "inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"
+                              : "inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800"
+                          }
+                        >
+                          {isAktiv ? "Aktiv" : "Inaktiv"}
+                        </span>
+                      </div>
+                    </div>
+                    {!isInhaberRow ? (
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-10 text-sm"
+                          disabled={teamRowBusy === u.id || teamLoading}
+                          onClick={() =>
+                            void patchBenutzerAktiv(u.id, !isAktiv)
+                          }
+                        >
+                          {teamRowBusy === u.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isAktiv ? (
+                            "Deaktivieren"
+                          ) : (
+                            "Aktivieren"
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-10 border-red-200 text-sm text-red-700 hover:border-red-300 hover:bg-red-50"
+                          disabled={teamRowBusy === u.id || teamLoading}
+                          onClick={() => void deleteBenutzer(u.id)}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                          Löschen
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       ) : null}
     </div>
   );
