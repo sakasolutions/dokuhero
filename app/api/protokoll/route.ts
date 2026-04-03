@@ -105,10 +105,12 @@ export async function POST(request: Request) {
     const materialienText = materialien?.trim() || null;
 
     if (notizText) {
+      console.log("🔵 Notiz VOR Formatierung:", notizText);
       try {
         notizText = await formatiereNotiz(notizText);
-      } catch {
-        /* Original-Notiz beibehalten */
+        console.log("🟢 Notiz NACH Formatierung:", notizText);
+      } catch (e) {
+        console.error("🔴 formatiereNotiz Fehler:", e);
       }
     }
 
