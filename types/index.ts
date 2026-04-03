@@ -34,7 +34,9 @@ export interface Auftrag {
   id: number;
   betrieb_id: number;
   kunde_id: number | null;
-  beschreibung: string | null;
+  /** z. B. "0042" – Anzeige oft mit # */
+  auftragsnummer?: string | null;
+  beschreibung?: string | null;
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;

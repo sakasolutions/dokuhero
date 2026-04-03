@@ -17,6 +17,11 @@ const STATUS_OPTIONS: { value: AuftragStatus | "alle"; label: string }[] = [
   { value: "abgeschlossen", label: "Abgeschlossen" },
 ];
 
+function formatAuftragsNrAnzeige(a: AuftragMitKunde): string {
+  const n = a.auftragsnummer?.trim() || String(a.id).padStart(4, "0");
+  return `#${n}`;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     offen: "bg-amber-100 text-amber-700",
@@ -386,7 +391,7 @@ export default function AuftraegeListePage() {
                     Kunde
                   </th>
                   <th className="px-4 py-3 font-medium text-slate-700">
-                    Beschreibung
+                    Auftragsnr.
                   </th>
                   <th className="px-4 py-3 font-medium text-slate-700">
                     Status
@@ -423,8 +428,8 @@ export default function AuftraegeListePage() {
                       <td className="px-4 py-3 font-medium text-slate-900">
                         {a.kunde_name ?? "–"}
                       </td>
-                      <td className="max-w-xs truncate px-4 py-3 text-slate-600">
-                        {a.beschreibung ?? "–"}
+                      <td className="max-w-xs truncate px-4 py-3 font-medium tabular-nums text-slate-800">
+                        {formatAuftragsNrAnzeige(a)}
                       </td>
                       <td className="px-4 py-3">
                         <AuftragListenBadge a={a} />
@@ -511,8 +516,8 @@ export default function AuftraegeListePage() {
                         <AuftragListenBadge a={a} />
                       </div>
                     </div>
-                    <p className="text-sm text-slate-600">
-                      {a.beschreibung ?? "–"}
+                    <p className="text-sm font-medium tabular-nums text-slate-700">
+                      {formatAuftragsNrAnzeige(a)}
                     </p>
                     <p className="text-xs text-slate-500">
                       {formatDate(a.erstellt_am)}

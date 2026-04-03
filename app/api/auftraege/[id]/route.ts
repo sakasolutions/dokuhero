@@ -9,7 +9,7 @@ interface AuftragRow extends RowDataPacket {
   id: number;
   betrieb_id: number;
   kunde_id: number | null;
-  beschreibung: string | null;
+  auftragsnummer: string | null;
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
@@ -26,7 +26,6 @@ interface ProtokollKurzRow extends RowDataPacket {
 }
 
 const updateSchema = z.object({
-  beschreibung: z.string().optional().nullable(),
   status: z.enum(["offen", "in_bearbeitung", "abgeschlossen"]),
 });
 
@@ -50,7 +49,7 @@ export async function GET(
 
     const pool = getPool();
     const [rows] = await pool.execute<AuftragRow[]>(
-      `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am, a.archiviert,
+      `SELECT a.id, a.betrieb_id, a.kunde_id, a.auftragsnummer, a.status, a.erstellt_am, a.abgeschlossen_am, a.archiviert,
               k.name AS kunde_name
        FROM auftraege a
        LEFT JOIN kunden k ON k.id = a.kunde_id AND k.betrieb_id = a.betrieb_id
@@ -146,20 +145,14 @@ export async function PUT(
       );
     }
 
-    const { beschreibung, status } = parsed.data;
+    const { status } = parsed.data;
 
     const [result] = await pool.execute<ResultSetHeader>(
       `UPDATE auftraege
-       SET beschreibung = ?, status = ?,
+       SET status = ?,
            abgeschlossen_am = IF(? = 'abgeschlossen', COALESCE(abgeschlossen_am, NOW()), NULL)
        WHERE id = ? AND betrieb_id = ? AND archiviert = 0`,
-      [
-        beschreibung?.trim() ?? null,
-        status,
-        status,
-        auftragId,
-        session.user.betrieb_id,
-      ]
+      [status, status, auftragId, session.user.betrieb_id]
     );
 
     if (result.affectedRows === 0) {

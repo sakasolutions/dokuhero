@@ -8,7 +8,7 @@ interface Row extends RowDataPacket {
   id: number;
   betrieb_id: number;
   kunde_id: number | null;
-  beschreibung: string | null;
+  auftragsnummer: string | null;
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
@@ -26,7 +26,7 @@ export async function GET() {
 
     const pool = getPool();
     const [rows] = await pool.execute<Row[]>(
-      `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am,
+      `SELECT a.id, a.betrieb_id, a.kunde_id, a.auftragsnummer, a.status, a.erstellt_am, a.abgeschlossen_am,
               k.name AS kunde_name
        FROM auftraege a
        LEFT JOIN kunden k ON k.id = a.kunde_id AND k.betrieb_id = a.betrieb_id

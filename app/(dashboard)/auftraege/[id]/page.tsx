@@ -9,7 +9,6 @@ import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Textarea";
 import { Card } from "@/components/ui/Card";
 import type {
   AuftragMitProtokollen,
@@ -18,7 +17,6 @@ import type {
 } from "@/types";
 
 const schema = z.object({
-  beschreibung: z.string().optional(),
   status: z.enum(["offen", "in_bearbeitung", "abgeschlossen"]),
 });
 
@@ -40,6 +38,7 @@ export default function AuftragBearbeitenPage() {
   const [meta, setMeta] = useState<{
     kunde_name: string | null;
     erstellt_am: string;
+    auftragsnummer: string | null;
   } | null>(null);
   const [protokolle, setProtokolle] = useState<ProtokollListeEintrag[]>([]);
   const [auftragArchiviert, setAuftragArchiviert] = useState(false);
@@ -73,10 +72,10 @@ export default function AuftragBearbeitenPage() {
               typeof a.erstellt_am === "string"
                 ? a.erstellt_am
                 : String(a.erstellt_am),
+            auftragsnummer: a.auftragsnummer ?? null,
           });
           setProtokolle(Array.isArray(a.protokolle) ? a.protokolle : []);
           reset({
-            beschreibung: a.beschreibung ?? "",
             status: a.status as AuftragStatus,
           });
         }
@@ -108,7 +107,6 @@ export default function AuftragBearbeitenPage() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        beschreibung: data.beschreibung?.trim() || null,
         status: data.status,
       }),
     });
@@ -144,7 +142,12 @@ export default function AuftragBearbeitenPage() {
         <h1 className="text-2xl font-bold text-slate-900">Auftrag bearbeiten</h1>
         {meta ? (
           <p className="mt-1 text-slate-600">
-            Kunde:{" "}
+            <span className="font-medium tabular-nums text-slate-800">
+              #
+              {meta.auftragsnummer?.trim() ||
+                String(id).padStart(4, "0")}
+            </span>
+            {" · Kunde: "}
             <span className="font-medium text-slate-800">
               {meta.kunde_name ?? "–"}
             </span>
@@ -194,13 +197,6 @@ export default function AuftragBearbeitenPage() {
               <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
             ) : null}
           </div>
-
-          <Textarea
-            label="Beschreibung"
-            error={errors.beschreibung?.message}
-            disabled={auftragArchiviert}
-            {...register("beschreibung")}
-          />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Link

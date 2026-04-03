@@ -8,13 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Textarea";
 import { Card } from "@/components/ui/Card";
 import type { Kunde } from "@/types";
 
 const schema = z.object({
   kunde_id: z.string().min(1, "Bitte einen Kunden wählen"),
-  beschreibung: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -36,7 +34,6 @@ export default function AuftragNeuPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       kunde_id: preKundeId,
-      beschreibung: "",
     },
   });
 
@@ -73,7 +70,6 @@ export default function AuftragNeuPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kunde_id: Number(data.kunde_id),
-        beschreibung: data.beschreibung?.trim() || null,
       }),
     });
 
@@ -101,7 +97,7 @@ export default function AuftragNeuPage() {
 
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Neuer Auftrag</h1>
-        <p className="text-slate-600">Kunde und Kurzbeschreibung</p>
+        <p className="text-slate-600">Wähle den Kunden für den neuen Auftrag.</p>
       </div>
 
       <Card>
@@ -145,13 +141,6 @@ export default function AuftragNeuPage() {
               </p>
             ) : null}
           </div>
-
-          <Textarea
-            label="Beschreibung"
-            placeholder="Was ist zu tun?"
-            error={errors.beschreibung?.message}
-            {...register("beschreibung")}
-          />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Link

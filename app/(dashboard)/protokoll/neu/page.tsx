@@ -279,13 +279,11 @@ export default function ProtokollNeuPage() {
                     }`}
                   >
                     <span className="font-semibold text-slate-900">
-                      {a.kunde_name ?? "Unbekannt"}
+                      #
+                      {a.auftragsnummer?.trim() ||
+                        String(a.id).padStart(4, "0")}{" "}
+                      · {a.kunde_name ?? "Unbekannt"}
                     </span>
-                    {a.beschreibung ? (
-                      <span className="mt-0.5 line-clamp-2 text-sm text-slate-600">
-                        {a.beschreibung}
-                      </span>
-                    ) : null}
                   </button>
                 ))}
               </div>

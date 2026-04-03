@@ -20,6 +20,7 @@ const bodySchema = z.object({
 interface LoadRow extends RowDataPacket {
   protokoll_id: number;
   auftrag_id: number;
+  auftragsnummer: string | null;
   protokoll_erstellt: Date;
   protokoll_status: string;
   prot_archiviert: number;
@@ -76,7 +77,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const [rows] = await pool.execute<LoadRow[]>(
-      `SELECT p.id AS protokoll_id, p.auftrag_id, p.erstellt_am AS protokoll_erstellt,
+      `SELECT p.id AS protokoll_id, p.auftrag_id, a.auftragsnummer, p.erstellt_am AS protokoll_erstellt,
               p.status AS protokoll_status,
               p.archiviert AS prot_archiviert,
               a.archiviert AS auftrag_archiviert,
@@ -133,7 +134,7 @@ export async function POST(request: Request, context: RouteContext) {
       betriebName: row.betrieb_name,
       kundeName: row.kunde_name ?? "–",
       datum: datumStr,
-      auftragsnummer: String(row.auftrag_id),
+      auftragsnummer: row.auftragsnummer ?? String(row.auftrag_id),
       beschreibung: row.beschreibung ?? "",
       kiText,
       materialien: row.materialien?.trim() ? row.materialien : null,

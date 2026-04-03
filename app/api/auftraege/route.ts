@@ -11,7 +11,7 @@ interface AuftragRow extends RowDataPacket {
   id: number;
   betrieb_id: number;
   kunde_id: number | null;
-  beschreibung: string | null;
+  auftragsnummer: string | null;
   status: string;
   erstellt_am: Date;
   abgeschlossen_am: Date | null;
@@ -23,7 +23,6 @@ interface AuftragRow extends RowDataPacket {
 
 const createSchema = z.object({
   kunde_id: z.coerce.number().int().positive("Kunde auswählen"),
-  beschreibung: z.string().optional().nullable(),
 });
 
 export async function GET(request: Request) {
@@ -44,7 +43,7 @@ export async function GET(request: Request) {
 
     const pool = getPool();
     const [rows] = await pool.execute<AuftragRow[]>(
-      `SELECT a.id, a.betrieb_id, a.kunde_id, a.beschreibung, a.status, a.erstellt_am, a.abgeschlossen_am, a.archiviert,
+      `SELECT a.id, a.betrieb_id, a.kunde_id, a.auftragsnummer, a.status, a.erstellt_am, a.abgeschlossen_am, a.archiviert,
               k.name AS kunde_name,
               pr.id AS protokoll_id,
               pr.status AS protokoll_status
@@ -87,7 +86,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { kunde_id, beschreibung } = parsed.data;
+    const { kunde_id } = parsed.data;
     const pool = getPool();
 
     const [check] = await pool.execute<RowDataPacket[]>(
@@ -98,15 +97,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Kunde nicht gefunden" }, { status: 400 });
     }
 
+    const [cntRows] = await pool.execute<RowDataPacket[]>(
+      "SELECT COUNT(*) AS c FROM auftraege WHERE betrieb_id = ?",
+      [session.user.betrieb_id]
+    );
+    const rawC = (cntRows[0] as { c?: unknown })?.c;
+    const anzahl =
+      typeof rawC === "bigint" ? Number(rawC) : Number(rawC ?? 0);
+    const auftragsnummer = String(anzahl + 1).padStart(4, "0");
+
     const [result] = await pool.execute<ResultSetHeader>(
-      `INSERT INTO auftraege (betrieb_id, kunde_id, beschreibung, status, erstellt_am, abgeschlossen_am, archiviert)
+      `INSERT INTO auftraege (betrieb_id, kunde_id, auftragsnummer, status, erstellt_am, abgeschlossen_am, archiviert)
        VALUES (?, ?, ?, ?, NOW(), NULL, 0)`,
-      [
-        session.user.betrieb_id,
-        kunde_id,
-        beschreibung?.trim() || null,
-        STATUS_OFFEN,
-      ]
+      [session.user.betrieb_id, kunde_id, auftragsnummer, STATUS_OFFEN]
     );
 
     return NextResponse.json({ id: result.insertId }, { status: 201 });
