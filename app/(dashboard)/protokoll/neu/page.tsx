@@ -11,6 +11,8 @@ import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
 import type { AuftragMitKunde } from "@/types";
 
+type AuftragFuerProtokollWahl = AuftragMitKunde & { protokoll_anzahl: number };
+
 const STEPS = 3;
 
 type LimitPayload = {
@@ -24,7 +26,7 @@ export default function ProtokollNeuPage() {
   const searchParams = useSearchParams();
   const preAuftragIdRaw = searchParams.get("auftrag_id");
   const [step, setStep] = useState(1);
-  const [auftraege, setAuftraege] = useState<AuftragMitKunde[]>([]);
+  const [auftraege, setAuftraege] = useState<AuftragFuerProtokollWahl[]>([]);
   const [loadingAuftraege, setLoadingAuftraege] = useState(true);
   const [auftragId, setAuftragId] = useState<number | null>(null);
   const [fotos, setFotos] = useState<string[]>([]);
@@ -80,7 +82,7 @@ export default function ProtokollNeuPage() {
       try {
         const res = await fetch("/api/auftraege/offen");
         if (!res.ok) throw new Error("load");
-        const data = (await res.json()) as AuftragMitKunde[];
+        const data = (await res.json()) as AuftragFuerProtokollWahl[];
         if (!cancelled) setAuftraege(data);
       } catch {
         if (!cancelled) setError("Aufträge konnten nicht geladen werden.");
@@ -256,14 +258,14 @@ export default function ProtokollNeuPage() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
-              Offenen Auftrag wählen *
+              Auftrag wählen *
             </h2>
             {loadingAuftraege ? (
               <p className="text-slate-600">Laden…</p>
             ) : auftraege.length === 0 ? (
               <p className="text-slate-600">
-                Keine offenen Aufträge. Lege zuerst unter Aufträge einen
-                offenen Auftrag an.
+                Keine Aufträge mit Status „offen“ oder „in Bearbeitung“. Lege
+                zuerst unter Aufträge einen passenden Auftrag an.
               </p>
             ) : (
               <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
@@ -280,9 +282,19 @@ export default function ProtokollNeuPage() {
                   >
                     <span className="font-semibold text-slate-900">
                       {a.auftragsnummer?.trim() ||
-                        String(a.id).padStart(4, "0")}{" "}
-                      · {a.kunde_name ?? "Unbekannt"}
+                        String(a.id).padStart(4, "0")}
+                      {" · "}
+                      {a.kunde_name ?? "Unbekannt"}
                     </span>
+                    {Number(a.protokoll_anzahl) > 0 ? (
+                      <span className="mt-0.5 text-xs text-slate-500">
+                        (+{Number(a.protokoll_anzahl)}{" "}
+                        {Number(a.protokoll_anzahl) === 1
+                          ? "Protokoll"
+                          : "Protokolle"}
+                        )
+                      </span>
+                    ) : null}
                   </button>
                 ))}
               </div>
