@@ -121,12 +121,12 @@ function buildHtml(
     .info { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
     .info-row { margin: 4px 0; }
     .info-label { color: #64748b; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.04em; }
-    h2 { font-size: 12pt; margin: 18px 0 8px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .block { page-break-inside: auto; }
+    h2 { font-size: 12pt; margin: 18px 0 8px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; page-break-after: avoid; }
     .arbeiten { white-space: pre-wrap; }
-    .foto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; page-break-inside: avoid; }
-    .foto-cell { aspect-ratio: 1; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #f8fafc; }
+    .foto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    .foto-cell { aspect-ratio: 4/3; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #f8fafc; page-break-inside: avoid; break-inside: avoid; }
     .foto-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 9pt; color: #64748b; text-align: center; }
   </style>
 </head>
 <body>
@@ -155,7 +155,6 @@ function buildHtml(
       ? `<div class="block"><h2>Fotos</h2><div class="foto-grid">${fotoCells}</div></div>`
       : ""
   }
-  <div class="footer">${esc(data.datum)} · Erstellt mit DokuHero</div>
 </body>
 </html>`;
 }
@@ -185,13 +184,22 @@ export async function generatePDF(data: ProtokollData): Promise<Buffer> {
       timeout: 60_000,
     });
 
+    const footerBetrieb = esc(data.betriebName);
+    const footerTemplate = `<div style="font-size:8pt;color:#94a3b8;text-align:center;width:100%;padding:0 14mm;font-family:system-ui,-apple-system,sans-serif;">
+    ${footerBetrieb} · Serviceprotokoll · <span class="pageNumber"></span>/<span class="totalPages"></span>
+  </div>`;
+
     const pdfUint8 = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "16mm", bottom: "16mm", left: "14mm", right: "14mm" },
+      displayHeaderFooter: true,
+      headerTemplate: "<span></span>",
+      footerTemplate,
+      margin: { top: "14mm", bottom: "20mm", left: "14mm", right: "14mm" },
     });
 
     const buffer = Buffer.from(pdfUint8);
+    // TODO: Dateiname konfigurierbar über Betriebseinstellungen (Anhang-E-Mails nutzen derzeit separat „protokoll.pdf“).
     const outPath = join(getPdfsUploadDir(), `${data.protokollId}.pdf`);
     await writeFile(outPath, buffer);
     return buffer;
