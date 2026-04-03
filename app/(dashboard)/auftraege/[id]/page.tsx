@@ -305,7 +305,7 @@ export default function AuftragUebersichtPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <span className="text-xs font-semibold text-slate-500">
-                      Protokoll #{p.protokoll_nummer ?? index + 1}
+                      Protokoll #{p.protokoll_nummer ?? protokolle.length - index}
                     </span>
                     <p className="font-semibold text-stone-900">
                       {formatProtokollDatum(p.erstellt_am)}
