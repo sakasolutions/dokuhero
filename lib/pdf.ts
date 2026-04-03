@@ -108,7 +108,7 @@ function buildHtml(
 
   const logoBlock =
     logoDataUri != null
-      ? `<div class="logo-wrap has-logo"><img src=${JSON.stringify(logoDataUri)} alt="" /></div>`
+      ? `<div class="logo-wrap"><img src=${JSON.stringify(logoDataUri)} alt="" /></div>`
       : "";
 
   const materialienTrimmed = data.materialien?.trim() ?? "";
@@ -208,9 +208,6 @@ function buildHtml(
       height: auto;
       object-fit: contain;
       display: block;
-    }
-    .logo-wrap.has-logo img {
-      filter: brightness(0) invert(1);
     }
 
     /* CONTENT WRAPPER */

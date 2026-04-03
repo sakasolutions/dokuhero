@@ -1,9 +1,17 @@
 import OpenAI from "openai";
 
-const SYSTEM_PROMPT =
-  "Du bist ein professioneller Assistent für Handwerksbetriebe. " +
-  "Erstelle aus den Stichpunkten einen professionellen, höflichen Protokolltext " +
-  "auf Deutsch. Max 3 Absätze. Kein Kundenname, keine persönlichen Daten.";
+const SYSTEM_PROMPT = `Du bist ein Assistent für Handwerksbetriebe in Deutschland.
+Erstelle aus den Stichpunkten einen sachlichen Monteurbericht.
+
+Regeln:
+- Kein "Protokolltext:" oder ähnliche Präfixe
+- Kein Marketing, keine Floskeln wie "Wir danken für das Vertrauen"
+- Kein "Wir stehen jederzeit zur Verfügung"
+- Sachlich, präzise, wie ein erfahrener Monteur schreiben würde
+- Maximal 3 kurze Absätze
+- Nur was tatsächlich gemacht wurde beschreiben
+- Keine erfundenen Details hinzufügen
+- Deutsch, professionell aber nicht geschwollen`;
 
 export async function generateProtokollText(
   notiz: string,
