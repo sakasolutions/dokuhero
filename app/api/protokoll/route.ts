@@ -107,10 +107,19 @@ export async function POST(request: Request) {
     await conn.beginTransaction();
 
     try {
+      const [numRows] = await conn.execute<RowDataPacket[]>(
+        "SELECT COUNT(*) AS anzahl FROM protokolle WHERE auftrag_id = ?",
+        [auftrag_id]
+      );
+      const rawA = (numRows[0] as { anzahl?: unknown })?.anzahl;
+      const anzahlVorher =
+        typeof rawA === "bigint" ? Number(rawA) : Number(rawA ?? 0);
+      const protokollNummer = anzahlVorher + 1;
+
       const [pRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO protokolle (auftrag_id, notiz, materialien, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert)
-         VALUES (?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0)`,
-        [auftrag_id, notizText, materialienText]
+        `INSERT INTO protokolle (auftrag_id, protokoll_nummer, notiz, materialien, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert)
+         VALUES (?, ?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0)`,
+        [auftrag_id, protokollNummer, notizText, materialienText]
       );
       const protokollId = pRes.insertId;
 

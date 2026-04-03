@@ -16,6 +16,8 @@ export type ProtokollData = {
   datum: string;
   /** z. B. Auftrags-ID */
   auftragsnummer: string;
+  /** Laufende Nr. je Auftrag; PDF-Zeile „Protokoll“ nur wenn gesetzt */
+  protokoll_nummer?: number | null;
   beschreibung: string;
   kiText: string;
   /** Optional: verwendete Materialien / Positionen */
@@ -143,6 +145,11 @@ function buildHtml(
     <div class="info-row"><span class="info-label">Kunde</span><br/><strong>${esc(data.kundeName)}</strong></div>
     <div class="info-row" style="margin-top:10px"><span class="info-label">Datum</span><br/><strong>${esc(data.datum)}</strong></div>
     <div class="info-row" style="margin-top:10px"><span class="info-label">Auftragsnummer</span><br/><strong>${esc(data.auftragsnummer)}</strong></div>
+    ${
+      data.protokoll_nummer != null && Number.isFinite(Number(data.protokoll_nummer))
+        ? `<div class="info-row" style="margin-top:10px"><span class="info-label">Protokoll</span><br/><strong>#${esc(String(data.protokoll_nummer))} vom ${esc(data.datum)}</strong></div>`
+        : ""
+    }
   </div>
   <div class="block">
     <h2>Auftragsbeschreibung</h2>

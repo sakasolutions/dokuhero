@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 interface JoinRow extends RowDataPacket {
   id: number;
   auftrag_id: number;
+  protokoll_nummer: number | null;
   notiz: string | null;
   materialien: string | null;
   ki_text: string | null;
@@ -61,7 +62,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const pool = getPool();
 
     const [prows] = await pool.execute<JoinRow[]>(
-      `SELECT p.id, p.auftrag_id, p.notiz, p.materialien, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
+      `SELECT p.id, p.auftrag_id, p.protokoll_nummer, p.notiz, p.materialien, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
               k.name AS kunde_name, k.email AS kunde_email,
               a.beschreibung AS auftrag_beschreibung
        FROM protokolle p
@@ -80,6 +81,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const protokoll = {
       id: j.id,
       auftrag_id: j.auftrag_id,
+      protokoll_nummer: j.protokoll_nummer,
       notiz: j.notiz,
       materialien: j.materialien,
       ki_text: j.ki_text,

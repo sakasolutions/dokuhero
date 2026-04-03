@@ -417,7 +417,13 @@ export default function ProtokollAnsichtPage() {
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Protokoll</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          Protokoll
+          {protokoll.protokoll_nummer != null &&
+          Number.isFinite(Number(protokoll.protokoll_nummer))
+            ? ` #${protokoll.protokoll_nummer}`
+            : null}
+        </h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-slate-600">
           <span>
             {formatDate(protokoll.erstellt_am)}

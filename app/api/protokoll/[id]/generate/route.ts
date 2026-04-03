@@ -20,6 +20,7 @@ const bodySchema = z.object({
 interface LoadRow extends RowDataPacket {
   protokoll_id: number;
   auftrag_id: number;
+  protokoll_nummer: number | null;
   auftragsnummer: string | null;
   protokoll_erstellt: Date;
   protokoll_status: string;
@@ -77,7 +78,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const [rows] = await pool.execute<LoadRow[]>(
-      `SELECT p.id AS protokoll_id, p.auftrag_id, a.auftragsnummer, p.erstellt_am AS protokoll_erstellt,
+      `SELECT p.id AS protokoll_id, p.auftrag_id, p.protokoll_nummer, a.auftragsnummer, p.erstellt_am AS protokoll_erstellt,
               p.status AS protokoll_status,
               p.archiviert AS prot_archiviert,
               a.archiviert AS auftrag_archiviert,
@@ -135,6 +136,8 @@ export async function POST(request: Request, context: RouteContext) {
       kundeName: row.kunde_name ?? "–",
       datum: datumStr,
       auftragsnummer: row.auftragsnummer ?? String(row.auftrag_id),
+      protokoll_nummer:
+        row.protokoll_nummer != null ? Number(row.protokoll_nummer) : null,
       beschreibung: row.beschreibung ?? "",
       kiText,
       materialien: row.materialien?.trim() ? row.materialien : null,
@@ -184,12 +187,6 @@ export async function POST(request: Request, context: RouteContext) {
       await pool.execute(
         `UPDATE protokolle SET status = 'freigegeben' WHERE id = ?`,
         [protokollId]
-      );
-      await pool.execute(
-        `UPDATE auftraege
-         SET status = 'abgeschlossen', abgeschlossen_am = NOW()
-         WHERE id = ? AND betrieb_id = ?`,
-        [row.auftrag_id, session.user.betrieb_id]
       );
     }
 

@@ -69,6 +69,8 @@ export interface AuftragMitProtokollen extends AuftragMitKunde {
 export interface Protokoll {
   id: number;
   auftrag_id: number;
+  /** Fortlaufend pro Auftrag (1, 2, …); optional bei Altbestand */
+  protokoll_nummer?: number | null;
   notiz: string | null;
   ki_text: string | null;
   pdf_pfad: string | null;
