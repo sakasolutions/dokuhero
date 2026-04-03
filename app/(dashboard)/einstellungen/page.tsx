@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -133,8 +132,15 @@ function fileToJpegDataUrl(file: File): Promise<string> {
 }
 
 export default function EinstellungenPage() {
-  const { data: session, status: sessionStatus } = useSession();
-  const isInhaber = session?.user?.rolle === "inhaber";
+  const [rolle, setRolle] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => setRolle(data.rolle ?? null));
+  }, []);
+
+  const isInhaber = rolle === "inhaber";
 
   const tabs = useMemo((): TabId[] => {
     if (isInhaber) return [...BASE_TABS, "Team"];
@@ -240,11 +246,11 @@ export default function EinstellungenPage() {
 
   useEffect(() => {
     if (activeTab !== "Team") return;
-    if (sessionStatus === "loading") return;
-    if (session?.user?.rolle !== "inhaber") {
+    if (rolle === null) return;
+    if (rolle !== "inhaber") {
       setActiveTab("Betrieb");
     }
-  }, [activeTab, session, sessionStatus]);
+  }, [activeTab, rolle]);
 
   const loadBenutzer = useCallback(async () => {
     setTeamLoading(true);
