@@ -121,6 +121,9 @@ export async function PUT(
       !Array.isArray(body) &&
       (body as { archivieren?: unknown }).archivieren === true
     ) {
+      if (session.user.rolle !== "inhaber") {
+        return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+      }
       const [result] = await pool.execute<ResultSetHeader>(
         `UPDATE auftraege SET archiviert = 1
          WHERE id = ? AND betrieb_id = ? AND archiviert = 0`,

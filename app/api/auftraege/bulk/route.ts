@@ -37,6 +37,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (session.user.rolle !== "inhaber") {
+      return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+    }
+
     const betriebId = session.user.betrieb_id;
     const ids = [...new Set(parsed.data.ids)];
 
