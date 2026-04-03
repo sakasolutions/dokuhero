@@ -23,6 +23,7 @@ interface ProtokollKurzRow extends RowDataPacket {
   gesendet_am: Date | null;
   pdf_pfad: string | null;
   status: string | null;
+  notiz: string | null;
 }
 
 const updateSchema = z.object({
@@ -64,7 +65,7 @@ export async function GET(
     }
 
     const [pRows] = await pool.execute<ProtokollKurzRow[]>(
-      `SELECT p.id, p.erstellt_am, p.gesendet_am, p.pdf_pfad, p.status
+      `SELECT p.id, p.erstellt_am, p.gesendet_am, p.pdf_pfad, p.status, p.notiz
        FROM protokolle p
        INNER JOIN auftraege a ON a.id = p.auftrag_id
        WHERE p.auftrag_id = ? AND a.betrieb_id = ?
@@ -86,6 +87,7 @@ export async function GET(
             : null,
       pdf_pfad: p.pdf_pfad,
       status: p.status,
+      notiz: p.notiz,
     }));
 
     return NextResponse.json({ ...row, protokolle });

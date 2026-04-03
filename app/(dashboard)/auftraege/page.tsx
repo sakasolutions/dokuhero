@@ -4,68 +4,58 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Archive, Plus, X } from "lucide-react";
+import { Archive, FileText, Loader2, Pencil, Plus, Search, X } from "lucide-react";
 import { protokollStatusLabel } from "@/lib/protokoll-status-label";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { AuftragMitKunde, AuftragStatus } from "@/types";
 
-const STATUS_OPTIONS: { value: AuftragStatus | "alle"; label: string }[] = [
-  { value: "alle", label: "Alle Status" },
-  { value: "offen", label: "Offen" },
-  { value: "in_bearbeitung", label: "In Bearbeitung" },
-  { value: "abgeschlossen", label: "Abgeschlossen" },
-];
+type StatusTab = "alle" | AuftragStatus | "freigegeben";
 
 function formatAuftragsNrAnzeige(a: AuftragMitKunde): string {
   return a.auftragsnummer?.trim() || String(a.id).padStart(4, "0");
 }
 
-function StatusBadge({ status }: { status: string }) {
+function AuftragStatusPill({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    offen: "bg-amber-100 text-amber-700",
-    in_bearbeitung: "bg-blue-100 text-blue-700",
-    abgeschlossen: "bg-green-100 text-green-700",
-    gesperrt: "bg-red-100 text-red-700",
+    offen: "bg-amber-100 text-amber-800 ring-1 ring-amber-200/80",
+    in_bearbeitung: "bg-sky-100 text-sky-800 ring-1 ring-sky-200/80",
+    abgeschlossen: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/80",
   };
   const labels: Record<string, string> = {
     offen: "Offen",
     in_bearbeitung: "In Bearbeitung",
     abgeschlossen: "Abgeschlossen",
-    gesperrt: "Gesperrt",
   };
-  const cls = styles[status] ?? "bg-slate-100 text-slate-800";
+  const cls = styles[status] ?? "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}
     >
       {labels[status] ?? status}
     </span>
   );
 }
 
-/** Ein Badge: Protokoll-Status hat Vorrang, sonst Auftrags-Status. */
 function AuftragListenBadge({ a }: { a: AuftragMitKunde }) {
   const ps =
-    a.protokoll_id != null && a.protokoll_status
-      ? a.protokoll_status
-      : null;
+    a.protokoll_id != null && a.protokoll_status ? a.protokoll_status : null;
   if (ps) {
     const protoStyles: Record<string, string> = {
-      zur_pruefung: "bg-amber-100 text-amber-800",
-      entwurf: "bg-blue-100 text-blue-700",
-      freigegeben: "bg-green-100 text-green-800",
+      zur_pruefung: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
+      entwurf: "bg-blue-100 text-blue-800 ring-1 ring-blue-200",
+      freigegeben: "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200",
     };
-    const cls = protoStyles[ps] ?? "bg-slate-100 text-slate-700";
+    const cls = protoStyles[ps] ?? "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
     return (
       <span
-        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}
       >
         {protokollStatusLabel(ps)}
       </span>
     );
   }
-  return <StatusBadge status={a.status} />;
+  return <AuftragStatusPill status={a.status} />;
 }
 
 function formatDate(d: string | Date) {
@@ -90,12 +80,11 @@ export default function AuftraegeListePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<AuftragStatus | "alle">(
-    "alle"
-  );
+  const [statusTab, setStatusTab] = useState<StatusTab>("alle");
   const [archivFilter, setArchivFilter] = useState<ArchivFilter>("aktiv");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -127,15 +116,26 @@ export default function AuftraegeListePage() {
     setSelectedIds([]);
   }, [archivFilter]);
 
-  const filtered = useMemo(() => {
-    if (statusFilter === "alle") return auftraege;
-    return auftraege.filter((a) => a.status === statusFilter);
-  }, [auftraege, statusFilter]);
+  const byStatusTab = useMemo(() => {
+    return auftraege.filter((a) => {
+      if (statusTab === "alle") return true;
+      if (statusTab === "freigegeben")
+        return a.protokoll_status === "freigegeben";
+      return a.status === statusTab;
+    });
+  }, [auftraege, statusTab]);
 
-  const filteredIds = useMemo(
-    () => filtered.map((a) => a.id),
-    [filtered]
-  );
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return byStatusTab;
+    return byStatusTab.filter((a) => {
+      const nr = formatAuftragsNrAnzeige(a).toLowerCase();
+      const kunde = (a.kunde_name ?? "").toLowerCase();
+      return nr.includes(q) || kunde.includes(q);
+    });
+  }, [byStatusTab, searchQuery]);
+
+  const filteredIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
 
   const hasSelection = selectedIds.length > 0;
   const showBulkChrome = archivFilter === "aktiv";
@@ -151,11 +151,8 @@ export default function AuftraegeListePage() {
   }
 
   function toggleSelectAll() {
-    if (allFilteredSelected) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds([...filteredIds]);
-    }
+    if (allFilteredSelected) setSelectedIds([]);
+    else setSelectedIds([...filteredIds]);
   }
 
   function clearSelection() {
@@ -191,10 +188,7 @@ export default function AuftraegeListePage() {
     const res = await fetch("/api/auftraege/bulk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ids: selectedIds,
-        action: "archivieren",
-      }),
+      body: JSON.stringify({ ids: selectedIds, action: "archivieren" }),
     });
     const j = (await res.json().catch(() => ({}))) as {
       archiviert?: number;
@@ -220,21 +214,18 @@ export default function AuftraegeListePage() {
     window.setTimeout(() => setSuccessMsg(null), 4500);
   }
 
-  const checkboxCellClass = (selected: boolean) =>
-    `w-12 shrink-0 px-2 py-3 align-middle ${
-      selected ? "bg-blue-50/90" : ""
-    }`;
-
-  const checkboxClass = (selected: boolean) =>
-    `h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/30 transition-opacity duration-150 ${
-      hasSelection ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-    }`;
+  const statusTabs: { key: StatusTab; label: string }[] = [
+    { key: "alle", label: "Alle" },
+    { key: "offen", label: "Offen" },
+    { key: "in_bearbeitung", label: "In Bearbeitung" },
+    { key: "freigegeben", label: "Freigegeben" },
+  ];
 
   return (
     <div className="space-y-6">
       {showBulkChrome ? (
         <div
-          className={`fixed left-0 right-0 top-14 z-30 border-b border-slate-200 bg-white/95 shadow-md backdrop-blur-sm transition-[transform,opacity] duration-200 ease-out lg:left-[240px] ${
+          className={`fixed left-0 right-0 top-14 z-30 border-b border-stone-200/90 bg-white/95 shadow-md backdrop-blur-sm transition-[transform,opacity] duration-200 ease-out lg:left-[240px] ${
             hasSelection
               ? "translate-y-0 opacity-100"
               : "pointer-events-none -translate-y-full opacity-0"
@@ -242,8 +233,8 @@ export default function AuftraegeListePage() {
           role="toolbar"
           aria-hidden={!hasSelection}
         >
-          <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-            <p className="text-sm font-medium text-slate-800">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <p className="text-sm font-medium text-stone-800">
               <span className="tabular-nums">{selectedIds.length}</span>{" "}
               ausgewählt
             </p>
@@ -272,15 +263,19 @@ export default function AuftraegeListePage() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Aufträge</h1>
-          <p className="text-slate-600">Alle Aufträge deines Betriebs</p>
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+            Aufträge
+          </h1>
+          <p className="mt-1 text-sm text-stone-600 sm:text-base">
+            Alle Aufträge deines Betriebs — mobil optimiert
+          </p>
         </div>
         {archivFilter === "aktiv" ? (
           <Link
             href="/auftraege/neu"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
+            className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto sm:py-2.5"
           >
             <Plus className="h-4 w-4" />
             Neuer Auftrag
@@ -290,14 +285,14 @@ export default function AuftraegeListePage() {
 
       {freigabeOnly ? (
         <div
-          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          className="rounded-xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-sm text-amber-950"
           role="status"
         >
           Es werden nur Aufträge angezeigt, deren aktuelles Protokoll{" "}
           <strong>Zur Freigabe bereit</strong> ist.{" "}
           <Link
             href="/auftraege"
-            className="font-medium text-amber-950 underline decoration-amber-700/50 underline-offset-2 hover:text-amber-950"
+            className="font-semibold text-amber-950 underline decoration-amber-700/40 underline-offset-2 hover:decoration-amber-800"
           >
             Alle Aufträge anzeigen
           </Link>
@@ -306,24 +301,24 @@ export default function AuftraegeListePage() {
 
       {successMsg ? (
         <div
-          className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+          className="rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-900"
           role="status"
         >
           {successMsg}
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Ansicht</span>
-          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+          <span className="text-sm font-medium text-stone-700">Ansicht</span>
+          <div className="inline-flex w-full max-w-md rounded-xl border border-stone-200 bg-white p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setArchivFilter("aktiv")}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+              className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition sm:py-2 ${
                 archivFilter === "aktiv"
                   ? "bg-primary text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-50"
+                  : "text-stone-600 hover:bg-stone-50"
               }`}
             >
               Aktiv
@@ -331,173 +326,220 @@ export default function AuftraegeListePage() {
             <button
               type="button"
               onClick={() => setArchivFilter("archiv")}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+              className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition sm:py-2 ${
                 archivFilter === "archiv"
                   ? "bg-primary text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-50"
+                  : "text-stone-600 hover:bg-stone-50"
               }`}
             >
               Ältere anzeigen
             </button>
           </div>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <label className="text-sm font-medium text-slate-700">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as AuftragStatus | "alle")
-            }
-            className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-auto"
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-stone-700">Status</span>
+          <div className="-mx-1 overflow-x-auto pb-1">
+            <div
+              className="inline-flex min-w-min gap-1 rounded-xl border border-stone-200 bg-white p-1 shadow-sm"
+              role="tablist"
+              aria-label="Status-Filter"
+            >
+              {statusTabs.map(({ key, label }) => {
+                const active = statusTab === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setStatusTab(key)}
+                    className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition sm:px-4 ${
+                      active
+                        ? "bg-primary text-white shadow-sm"
+                        : "text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative max-w-lg">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Auftragsnr. oder Kunde suchen…"
+            className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            autoComplete="off"
+          />
         </div>
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
       {loading ? (
-        <p className="text-slate-600">Laden…</p>
+        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-3 text-stone-600">
+          <Loader2
+            className="h-10 w-10 animate-spin text-primary"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <p className="text-sm font-medium">Laden…</p>
+        </div>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr className="group/header">
-                  {showBulkChrome ? (
-                    <th
-                      className={`w-12 px-2 py-3 align-middle transition-opacity ${
-                        hasSelection
-                          ? "opacity-100"
-                          : "opacity-0 group-hover/header:opacity-100"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/30"
-                        checked={allFilteredSelected}
-                        onChange={toggleSelectAll}
-                        disabled={filteredIds.length === 0}
-                        aria-label="Alle sichtbaren Aufträge auswählen"
-                      />
-                    </th>
-                  ) : null}
-                  <th className="px-4 py-3 font-medium text-slate-700">
-                    Kunde
-                  </th>
-                  <th className="px-4 py-3 font-medium text-slate-700">
-                    Auftragsnr.
-                  </th>
-                  <th className="px-4 py-3 font-medium text-slate-700">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 font-medium text-slate-700">
-                    Datum
-                  </th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-700">
-                    Aktion
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+          {/* Desktop: styled rows */}
+          <div className="hidden md:block">
+            <div className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-sm">
+              <div
+                className={`grid gap-3 border-b border-stone-100 bg-stone-50/90 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-stone-500 ${
+                  showBulkChrome
+                    ? "grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto]"
+                    : "grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto]"
+                }`}
+              >
+                {showBulkChrome ? (
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-stone-300 text-primary focus:ring-primary/30"
+                      checked={allFilteredSelected}
+                      onChange={toggleSelectAll}
+                      disabled={filteredIds.length === 0}
+                      title="Alle sichtbaren auswählen"
+                      aria-label="Alle sichtbaren Aufträge auswählen"
+                    />
+                  </div>
+                ) : null}
+                <span>Auftragsnr.</span>
+                <span>Kunde</span>
+                <span>Status</span>
+                <span>Datum</span>
+                <span className="text-right">Aktionen</span>
+              </div>
+              <div className="divide-y divide-stone-100">
                 {filtered.map((a) => {
                   const selected = selectedIds.includes(a.id);
+                  const showProto =
+                    a.status === "in_bearbeitung" && a.protokoll_id != null;
                   return (
-                    <tr
+                    <div
                       key={a.id}
-                      className={`group border-b border-slate-100 ${
-                        selected ? "bg-blue-50" : ""
-                      }`}
+                      className={`group/row grid items-center gap-3 px-4 py-3 transition hover:bg-stone-50/80 ${
+                        showBulkChrome
+                          ? "grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto]"
+                          : "grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto]"
+                      } ${selected ? "bg-sky-50/50" : ""}`}
                     >
                       {showBulkChrome ? (
-                        <td className={checkboxCellClass(selected)}>
+                        <div className="flex items-center justify-center">
                           <input
                             type="checkbox"
-                            className={checkboxClass(selected)}
+                            className={`h-4 w-4 rounded border-stone-300 text-primary focus:ring-primary/30 ${
+                              hasSelection
+                                ? "opacity-100"
+                                : "opacity-0 group-hover/row:opacity-100"
+                            }`}
                             checked={selected}
                             onChange={() => toggleSelected(a.id)}
                             aria-label={`Auftrag ${a.id} auswählen`}
                           />
-                        </td>
-                      ) : null}
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        {a.kunde_name ?? "–"}
-                      </td>
-                      <td className="max-w-xs truncate px-4 py-3 font-medium tabular-nums text-slate-800">
-                        {formatAuftragsNrAnzeige(a)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <AuftragListenBadge a={a} />
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {formatDate(a.erstellt_am)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end sm:gap-3">
-                          {a.status === "in_bearbeitung" &&
-                          a.protokoll_id != null ? (
-                            <Link
-                              href={`/protokoll/${a.protokoll_id}`}
-                              className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
-                            >
-                              Protokoll ansehen
-                            </Link>
-                          ) : null}
-                          <Link
-                            href={`/auftraege/${a.id}`}
-                            className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
-                          >
-                            Bearbeiten
-                          </Link>
-                          {archivFilter === "aktiv" &&
-                          session?.user?.rolle === "inhaber" ? (
-                            <button
-                              type="button"
-                              onClick={() => void archiveAuftrag(a.id)}
-                              className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
-                              title="Auftrag archivieren"
-                            >
-                              <Archive className="h-4 w-4 shrink-0" />
-                              Archivieren
-                            </button>
-                          ) : null}
                         </div>
-                      </td>
-                    </tr>
+                      ) : null}
+                      <span className="font-semibold tabular-nums text-stone-900">
+                        {formatAuftragsNrAnzeige(a)}
+                      </span>
+                      <span className="truncate font-medium text-stone-800">
+                        {a.kunde_name ?? "–"}
+                      </span>
+                      <div className="min-w-0">
+                        <AuftragListenBadge a={a} />
+                      </div>
+                      <span className="whitespace-nowrap text-sm text-stone-600">
+                        {formatDate(a.erstellt_am)}
+                      </span>
+                      <div className="flex items-center justify-end gap-1">
+                        {showProto ? (
+                          <Link
+                            href={`/protokoll/${a.protokoll_id}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-primary transition hover:bg-primary/10 hover:text-primary"
+                            title="Protokoll ansehen"
+                            aria-label="Protokoll ansehen"
+                          >
+                            <FileText className="h-4 w-4" strokeWidth={2} />
+                          </Link>
+                        ) : (
+                          <span
+                            className="inline-flex h-9 w-9 shrink-0"
+                            aria-hidden
+                          />
+                        )}
+                        <Link
+                          href={`/auftraege/${a.id}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                          title="Auftrag öffnen"
+                          aria-label="Auftrag öffnen"
+                        >
+                          <Pencil className="h-4 w-4" strokeWidth={2} />
+                        </Link>
+                        {archivFilter === "aktiv" &&
+                        session?.user?.rolle === "inhaber" ? (
+                          <button
+                            type="button"
+                            onClick={() => void archiveAuftrag(a.id)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-stone-500 transition hover:bg-red-50 hover:text-red-700"
+                            title="Archivieren"
+                            aria-label="Auftrag archivieren"
+                          >
+                            <Archive className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-            {filtered.length === 0 ? (
-              <p className="p-6 text-center text-slate-500">
-                Keine Aufträge für diesen Filter.
-              </p>
-            ) : null}
+              </div>
+              {filtered.length === 0 ? (
+                <p className="p-8 text-center text-sm text-stone-500">
+                  Keine Aufträge für diese Filter oder Suche.
+                </p>
+              ) : null}
+            </div>
           </div>
 
+          {/* Mobile: cards */}
           <div className="space-y-3 md:hidden">
             {filtered.map((a) => {
               const selected = selectedIds.includes(a.id);
+              const showProto =
+                a.status === "in_bearbeitung" && a.protokoll_id != null;
               return (
                 <Card
                   key={a.id}
-                  className={`group relative overflow-hidden transition-colors ${
-                    selected ? "ring-2 ring-primary/50 bg-blue-50/60" : ""
+                  className={`group/card relative overflow-hidden border-stone-200/90 p-4 shadow-sm transition hover:border-stone-300 ${
+                    selected ? "ring-2 ring-primary/40 bg-sky-50/40" : ""
                   }`}
                 >
                   {showBulkChrome ? (
                     <div
-                      className={`absolute left-3 top-3 z-10 ${
-                        hasSelection ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                      } transition-opacity`}
+                      className={`absolute left-3 top-3 z-10 transition-opacity ${
+                        hasSelection
+                          ? "opacity-100"
+                          : "opacity-0 group-hover/card:opacity-100"
+                      }`}
                     >
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/30"
+                        className="h-4 w-4 rounded border-stone-300 text-primary focus:ring-primary/30"
                         checked={selected}
                         onChange={() => toggleSelected(a.id)}
                         aria-label={`Auftrag ${a.id} auswählen`}
@@ -505,35 +547,32 @@ export default function AuftraegeListePage() {
                     </div>
                   ) : null}
                   <div
-                    className={`flex flex-col gap-2 ${showBulkChrome ? "pl-9 pt-1" : ""}`}
+                    className={`flex flex-col gap-3 ${showBulkChrome ? "pl-8" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-semibold text-slate-900">
-                        {a.kunde_name ?? "–"}
-                      </span>
-                      <div className="shrink-0">
-                        <AuftragListenBadge a={a} />
-                      </div>
+                      <p className="text-base font-bold tabular-nums text-stone-900">
+                        {formatAuftragsNrAnzeige(a)}
+                      </p>
+                      <AuftragListenBadge a={a} />
                     </div>
-                    <p className="text-sm font-medium tabular-nums text-slate-700">
-                      {formatAuftragsNrAnzeige(a)}
+                    <p className="text-sm font-medium text-stone-800">
+                      {a.kunde_name ?? "–"}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-stone-500">
                       {formatDate(a.erstellt_am)}
                     </p>
-                    <div className="flex flex-wrap gap-3">
-                      {a.status === "in_bearbeitung" &&
-                      a.protokoll_id != null ? (
+                    <div className="flex flex-wrap gap-2 border-t border-stone-100 pt-3">
+                      {showProto ? (
                         <Link
                           href={`/protokoll/${a.protokoll_id}`}
-                          className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+                          className="inline-flex flex-1 min-w-[8rem] items-center justify-center rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-stone-50"
                         >
                           Protokoll ansehen
                         </Link>
                       ) : null}
                       <Link
                         href={`/auftraege/${a.id}`}
-                        className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+                        className="inline-flex flex-1 min-w-[8rem] items-center justify-center rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50"
                       >
                         Bearbeiten
                       </Link>
@@ -542,8 +581,7 @@ export default function AuftraegeListePage() {
                         <button
                           type="button"
                           onClick={() => void archiveAuftrag(a.id)}
-                          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
-                          title="Auftrag archivieren"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-stone-600 shadow-sm transition hover:bg-red-50 hover:text-red-800"
                         >
                           <Archive className="h-4 w-4 shrink-0" />
                           Archivieren
@@ -555,8 +593,8 @@ export default function AuftraegeListePage() {
               );
             })}
             {filtered.length === 0 ? (
-              <p className="text-center text-slate-500">
-                Keine Aufträge für diesen Filter.
+              <p className="py-8 text-center text-sm text-stone-500">
+                Keine Aufträge für diese Filter oder Suche.
               </p>
             ) : null}
           </div>

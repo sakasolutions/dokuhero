@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { ArrowLeft } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type {
   AuftragMitProtokollen,
@@ -16,71 +13,112 @@ import type {
   ProtokollListeEintrag,
 } from "@/types";
 
-const schema = z.object({
-  status: z.enum(["offen", "in_bearbeitung", "abgeschlossen"]),
-});
-
-type FormValues = z.infer<typeof schema>;
-
-const STATUS_OPTIONS: { value: AuftragStatus; label: string }[] = [
+const AUFTRAG_STATUS_OPTIONS: { value: AuftragStatus; label: string }[] = [
   { value: "offen", label: "Offen" },
   { value: "in_bearbeitung", label: "In Bearbeitung" },
   { value: "abgeschlossen", label: "Abgeschlossen" },
 ];
 
-export default function AuftragBearbeitenPage() {
+function formatAuftragsAnzeige(id: string, auftragsnummer: string | null) {
+  return auftragsnummer?.trim() || String(id).padStart(4, "0");
+}
+
+function formatAuftragMetaDatum(d: string | Date) {
+  try {
+    return new Date(d).toLocaleString("de-DE", {
+      dateStyle: "long",
+      timeStyle: "short",
+    });
+  } catch {
+    return "–";
+  }
+}
+
+function formatProtokollDatum(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("de-DE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function notizPreview(text: string | null | undefined): string {
+  const t = (text ?? "").trim().replace(/\s+/g, " ");
+  if (!t) return "–";
+  return t.length > 100 ? `${t.slice(0, 100)}…` : t;
+}
+
+function AuftragStatusPill({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    offen: "bg-amber-100 text-amber-900 ring-1 ring-amber-200",
+    in_bearbeitung: "bg-sky-100 text-sky-900 ring-1 ring-sky-200",
+    abgeschlossen: "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200",
+  };
+  const labels: Record<string, string> = {
+    offen: "Offen",
+    in_bearbeitung: "In Bearbeitung",
+    abgeschlossen: "Abgeschlossen",
+  };
+  const cls = styles[status] ?? "bg-stone-100 text-stone-800 ring-1 ring-stone-200";
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${cls}`}
+    >
+      {labels[status] ?? status}
+    </span>
+  );
+}
+
+export default function AuftragUebersichtPage() {
   const router = useRouter();
   const params = useParams();
   const id = String(params.id);
+  const { data: session } = useSession();
+  const isInhaber = session?.user?.rolle === "inhaber";
 
   const [loading, setLoading] = useState(true);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<{
-    kunde_name: string | null;
-    erstellt_am: string;
-    auftragsnummer: string | null;
-  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [kundeName, setKundeName] = useState<string | null>(null);
+  const [kundeId, setKundeId] = useState<number | null>(null);
+  const [auftragsnummer, setAuftragsnummer] = useState<string | null>(null);
+  const [erstelltAm, setErstelltAm] = useState<string>("");
+  const [auftragStatus, setAuftragStatus] = useState<AuftragStatus>("offen");
   const [protokolle, setProtokolle] = useState<ProtokollListeEintrag[]>([]);
   const [auftragArchiviert, setAuftragArchiviert] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-  });
+  const load = useCallback(async () => {
+    setError(null);
+    const res = await fetch(`/api/auftraege/${id}`);
+    if (!res.ok) {
+      setError("Auftrag nicht gefunden.");
+      return;
+    }
+    const a = (await res.json()) as AuftragMitProtokollen & {
+      archiviert?: number;
+    };
+    setAuftragArchiviert(Number(a.archiviert) === 1);
+    setKundeName(a.kunde_name ?? null);
+    setKundeId(a.kunde_id ?? null);
+    setAuftragsnummer(a.auftragsnummer ?? null);
+    setErstelltAm(
+      typeof a.erstellt_am === "string" ? a.erstellt_am : String(a.erstellt_am)
+    );
+    setAuftragStatus(a.status as AuftragStatus);
+    setProtokolle(Array.isArray(a.protokolle) ? a.protokolle : []);
+  }, [id]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/auftraege/${id}`);
-        if (!res.ok) {
-          if (!cancelled) setFormError("Auftrag nicht gefunden.");
-          return;
-        }
-        const a = (await res.json()) as AuftragMitProtokollen & {
-          archiviert?: number;
-        };
-        if (!cancelled) {
-          setAuftragArchiviert(Number(a.archiviert) === 1);
-          setMeta({
-            kunde_name: a.kunde_name,
-            erstellt_am:
-              typeof a.erstellt_am === "string"
-                ? a.erstellt_am
-                : String(a.erstellt_am),
-            auftragsnummer: a.auftragsnummer ?? null,
-          });
-          setProtokolle(Array.isArray(a.protokolle) ? a.protokolle : []);
-          reset({
-            status: a.status as AuftragStatus,
-          });
-        }
+        await load();
       } catch {
-        if (!cancelled) setFormError("Laden fehlgeschlagen.");
+        if (!cancelled) setError("Laden fehlgeschlagen.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -88,183 +126,213 @@ export default function AuftragBearbeitenPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, reset]);
+  }, [load]);
 
-  function formatProtokollDatum(iso: string) {
+  async function onStatusChange(next: AuftragStatus) {
+    if (!isInhaber || auftragArchiviert || next === auftragStatus) return;
+    setStatusSaving(true);
+    setError(null);
     try {
-      return new Date(iso).toLocaleString("de-DE", {
-        dateStyle: "medium",
-        timeStyle: "short",
+      const res = await fetch(`/api/auftraege/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
       });
+      if (!res.ok) {
+        setError("Status konnte nicht gespeichert werden.");
+        return;
+      }
+      setAuftragStatus(next);
+      router.refresh();
     } catch {
-      return iso;
+      setError("Netzwerkfehler beim Speichern.");
+    } finally {
+      setStatusSaving(false);
     }
-  }
-
-  async function onSubmit(data: FormValues) {
-    setFormError(null);
-    const res = await fetch(`/api/auftraege/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        status: data.status,
-      }),
-    });
-
-    if (!res.ok) {
-      setFormError("Speichern fehlgeschlagen.");
-      return;
-    }
-
-    router.push("/auftraege");
-    router.refresh();
   }
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-xl">
-        <p className="text-slate-600">Laden…</p>
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-stone-600">
+        <Loader2
+          className="h-10 w-10 animate-spin text-primary"
+          strokeWidth={2}
+          aria-hidden
+        />
+        <p className="text-sm font-medium">Laden…</p>
       </div>
     );
   }
 
+  if (error && protokolle.length === 0 && !kundeName && !auftragsnummer) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4">
+        <p className="text-red-600">{error}</p>
+        <Link
+          href="/auftraege"
+          className="text-sm font-semibold text-primary hover:underline"
+        >
+          Zurück zu Aufträgen
+        </Link>
+      </div>
+    );
+  }
+
+  const nrDisplay = formatAuftragsAnzeige(id, auftragsnummer);
+  const neuProtokollHref = `/protokoll/neu?auftrag_id=${encodeURIComponent(id)}`;
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-8 pb-12">
       <Link
         href="/auftraege"
-        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
+        className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-primary hover:text-primary/85 hover:underline"
       >
-        <ArrowLeft className="h-4 w-4" />
-        Zurück zur Liste
+        <ArrowLeft className="h-4 w-4 shrink-0" />
+        Zurück zu Aufträgen
       </Link>
-
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Auftrag bearbeiten</h1>
-        {meta ? (
-          <p className="mt-1 text-slate-600">
-            <span className="font-medium tabular-nums text-slate-800">
-              {meta.auftragsnummer?.trim() || String(id).padStart(4, "0")}
-            </span>
-            {" · Kunde: "}
-            <span className="font-medium text-slate-800">
-              {meta.kunde_name ?? "–"}
-            </span>
-          </p>
-        ) : null}
-      </div>
 
       {auftragArchiviert ? (
         <div
-          className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-800"
+          className="rounded-2xl border border-stone-300 bg-stone-100/90 px-4 py-3 text-sm text-stone-800"
           role="status"
         >
-          Dieser Auftrag ist <strong>archiviert</strong>. Änderungen sind nicht
-          mehr möglich – du kannst ihn unter Aufträge → Archiv weiterhin
-          öffnen.
+          Dieser Auftrag ist <strong>archiviert</strong> — nur noch einsehbar.
+          Unter <strong>Aufträge → Ältere anzeigen</strong> weiterhin abrufbar.
         </div>
       ) : null}
 
-      <Card>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {formError ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {formError}
-            </p>
-          ) : null}
+      {error ? (
+        <p className="rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-800">
+          {error}
+        </p>
+      ) : null}
 
-          <div className="w-full">
-            <label
-              htmlFor="status"
-              className="mb-1.5 block text-sm font-medium text-slate-700"
-            >
-              Status
-            </label>
-            <select
-              id="status"
-              disabled={auftragArchiviert}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-slate-100"
-              {...register("status")}
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.status?.message ? (
-              <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
-            ) : null}
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Link
-              href="/auftraege"
-              className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50 sm:order-first sm:w-auto"
-            >
-              Abbrechen
-            </Link>
-            <Button
-              type="submit"
-              disabled={isSubmitting || auftragArchiviert}
-              className="w-full sm:w-auto"
-            >
-              {isSubmitting ? "Speichern…" : "Speichern"}
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      <Card>
-        <h2 className="text-lg font-semibold text-slate-900">
-          Protokolle zu diesem Auftrag
-        </h2>
-        {protokolle.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-600">
-            Noch keine Protokolle erfasst.
+      <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+            Auftrag
           </p>
-        ) : (
-          <ul className="mt-4 divide-y divide-slate-200">
-            {protokolle.map((p) => (
-              <li
-                key={p.id}
-                className="flex flex-col gap-2 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
+          <h1 className="text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
+            {nrDisplay}
+          </h1>
+          {kundeId != null ? (
+            <Link
+              href={`/kunden/${kundeId}`}
+              className="inline-block text-lg font-semibold text-primary hover:text-primary/85 hover:underline"
+            >
+              {kundeName ?? "Kunde"}
+            </Link>
+          ) : (
+            <p className="text-lg font-semibold text-stone-800">
+              {kundeName ?? "–"}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-2 gap-y-2">
+            {isInhaber && !auftragArchiviert ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="auftrag-status" className="sr-only">
+                  Auftrags-Status
+                </label>
+                <select
+                  id="auftrag-status"
+                  value={auftragStatus}
+                  disabled={statusSaving}
+                  onChange={(e) =>
+                    void onStatusChange(e.target.value as AuftragStatus)
+                  }
+                  className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm font-semibold text-stone-800 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                >
+                  {AUFTRAG_STATUS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {statusSaving ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin text-stone-400"
+                    aria-hidden
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <AuftragStatusPill status={auftragStatus} />
+            )}
+            <span className="text-sm text-stone-500">
+              Erstellt {formatAuftragMetaDatum(erstelltAm)}
+            </span>
+          </div>
+        </div>
+        {!auftragArchiviert ? (
+          <Link
+            href={neuProtokollHref}
+            className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:py-2.5"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+            Neues Protokoll
+          </Link>
+        ) : null}
+      </header>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-bold text-stone-900">Protokolle</h2>
+
+        {protokolle.length === 0 ? (
+          <Card className="flex flex-col items-center gap-5 border-stone-200/90 px-6 py-14 text-center shadow-sm">
+            <p className="max-w-sm text-base font-medium text-stone-800">
+              Noch keine Protokolle — leg das erste an
+            </p>
+            {!auftragArchiviert ? (
+              <Link
+                href={neuProtokollHref}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-slate-900">
+                <Plus className="h-5 w-5" strokeWidth={2.5} />
+                Neues Protokoll
+              </Link>
+            ) : null}
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {protokolle.map((p) => (
+              <Card
+                key={p.id}
+                className="border-stone-200/90 p-4 shadow-sm transition hover:border-stone-300"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-stone-900">
                       {formatProtokollDatum(p.erstellt_am)}
                     </p>
-                    <ProtokollStatusBadge status={p.status} />
                   </div>
-                  <p className="text-sm text-slate-600">
-                    PDF gesendet:{" "}
-                    <span className="font-medium text-slate-800">
-                      {p.gesendet_am ? "Ja" : "Nein"}
-                    </span>
-                  </p>
+                  <ProtokollStatusBadge status={p.status} />
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-stone-500">
+                  {notizPreview(p.notiz)}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     href={`/protokoll/${p.id}`}
-                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                    className="inline-flex flex-1 min-w-[6rem] items-center justify-center rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50"
                   >
-                    Protokoll öffnen
+                    Öffnen
                   </Link>
                   {p.pdf_pfad ? (
                     <a
                       href={p.pdf_pfad}
-                      download
-                      className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex flex-1 min-w-[6rem] items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
                     >
-                      PDF herunterladen
+                      PDF
                     </a>
                   ) : null}
                 </div>
-              </li>
+              </Card>
             ))}
-          </ul>
+          </div>
         )}
-      </Card>
+      </section>
     </div>
   );
 }
