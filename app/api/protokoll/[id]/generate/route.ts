@@ -31,8 +31,12 @@ interface LoadRow extends RowDataPacket {
   materialien: string | null;
   kunde_name: string | null;
   kunde_email: string | null;
+  kunde_adresse: string | null;
+  kunde_telefon: string | null;
   betrieb_name: string;
   betrieb_logo_pfad: string | null;
+  betrieb_telefon: string | null;
+  betrieb_adresse: string | null;
 }
 
 interface FotoPfadRow extends RowDataPacket {
@@ -92,8 +96,11 @@ export async function POST(request: Request, context: RouteContext) {
               a.beschreibung,
               p.materialien,
               k.name AS kunde_name, k.email AS kunde_email,
+              k.adresse AS kunde_adresse, k.telefon AS kunde_telefon,
               b.name AS betrieb_name,
-              b.logo_pfad AS betrieb_logo_pfad
+              b.logo_pfad AS betrieb_logo_pfad,
+              b.telefon AS betrieb_telefon,
+              b.adresse AS betrieb_adresse
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
        LEFT JOIN kunden k ON a.kunde_id = k.id
@@ -141,16 +148,17 @@ export async function POST(request: Request, context: RouteContext) {
       protokollId,
       betriebName: row.betrieb_name,
       kundeName: row.kunde_name ?? "–",
+      kundeAdresse: row.kunde_adresse ?? null,
+      kundeTelefon: row.kunde_telefon ?? null,
       datum: datumStr,
-      auftragsnummer: row.auftragsnummer ?? String(row.auftrag_id),
-      protokoll_nummer:
-        row.protokoll_nummer != null ? Number(row.protokoll_nummer) : null,
-      beschreibung: row.beschreibung ?? "",
       kiText,
       materialien: row.materialien?.trim() ? row.materialien : null,
       fotoPfade,
       betriebLogoPfad: row.betrieb_logo_pfad,
       unterschriftDataUri: hasUnterschrift ? unterschriftVal : null,
+      monteurName: session.user.name ?? null,
+      betriebTelefon: row.betrieb_telefon ?? null,
+      betriebAdresse: row.betrieb_adresse ?? null,
     });
 
     const pdfUrl = `/uploads/pdfs/${protokollId}.pdf`;

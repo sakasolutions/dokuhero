@@ -13,12 +13,9 @@ export type ProtokollData = {
   protokollId: number;
   betriebName: string;
   kundeName: string;
+  kundeAdresse?: string | null;
+  kundeTelefon?: string | null;
   datum: string;
-  /** z. B. Auftrags-ID */
-  auftragsnummer: string;
-  /** Laufende Nr. je Auftrag; PDF-Zeile „Protokoll“ nur wenn gesetzt */
-  protokoll_nummer?: number | null;
-  beschreibung: string;
   kiText: string;
   /** Optional: verwendete Materialien / Positionen */
   materialien?: string | null;
@@ -31,6 +28,9 @@ export type ProtokollData = {
   betriebLogoPfad?: string | null;
   /** data:image/png;base64,… — Unterschrift Kunde */
   unterschriftDataUri?: string | null;
+  monteurName?: string | null;
+  betriebTelefon?: string | null;
+  betriebAdresse?: string | null;
 };
 
 function toFotoDiskPath(fotoRef: string): string {
@@ -58,6 +58,26 @@ function bufferToImageDataUri(buf: Buffer): string {
   return `data:image/jpeg;base64,${b64}`;
 }
 
+/** Bilder > 200 KB: max. 1200 px Kantenlänge (JPEG), sonst Original. */
+async function compressFotoBufferIfNeeded(buf: Buffer): Promise<Buffer> {
+  if (buf.length <= 200 * 1024) return buf;
+  try {
+    const sharp = (await import("sharp")).default;
+    const out = await sharp(buf)
+      .rotate()
+      .resize(1200, 1200, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toBuffer();
+    return Buffer.from(out) as Buffer;
+  } catch (e) {
+    console.error("PDF: Foto-Kompression übersprungen:", e);
+    return buf;
+  }
+}
+
 async function loadBetriebLogoDataUri(
   logoPfad: string | null | undefined
 ): Promise<string | null> {
@@ -77,7 +97,8 @@ async function loadFotosAsDataUris(fotoPfade: string[]): Promise<string[]> {
   for (const ref of fotoPfade.slice(0, 6)) {
     const diskPath = toFotoDiskPath(ref);
     try {
-      const imageBuffer = await readFile(diskPath);
+      const rawFile = await readFile(diskPath);
+      const imageBuffer: Buffer = await compressFotoBufferIfNeeded(rawFile);
       uris.push(bufferToImageDataUri(imageBuffer));
     } catch {
       console.error("Foto nicht gefunden:", diskPath);
@@ -92,6 +113,19 @@ function esc(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function formatErstelltMeta(
+  betriebName: string,
+  adresse: string | null | undefined,
+  telefon: string | null | undefined
+): string {
+  const parts = ["Erstellt mit DokuHero", betriebName];
+  const a = adresse?.trim();
+  const t = telefon?.trim();
+  if (a) parts.push(a);
+  if (t) parts.push(t);
+  return parts.map((p) => esc(p)).join(" · ");
 }
 
 function buildHtml(
@@ -130,36 +164,36 @@ function buildHtml(
     </div>`
       : "";
 
-  const fotosBlock =
+  const kundeAdresseRaw = data.kundeAdresse?.trim();
+  const kundeAdresseAnzeige = kundeAdresseRaw ? esc(kundeAdresseRaw) : "–";
+
+  const kundeTelefonRaw = data.kundeTelefon?.trim();
+  const kundeTelefonAnzeige = kundeTelefonRaw ? esc(kundeTelefonRaw) : "";
+
+  const fotosPage =
     fotoDataUris.length > 0
       ? `
-    <div class="section block">
+  <div class="page-break">
+    <div class="content foto-page-inner">
       <div class="section-title">Fotodokumentation</div>
       <div class="foto-grid">${fotoCells}</div>
-    </div>`
+    </div>
+  </div>`
       : "";
 
-  const protokollInfoValue =
-    data.protokoll_nummer != null &&
-    Number.isFinite(Number(data.protokoll_nummer))
-      ? `#${esc(String(data.protokoll_nummer))}`
-      : "–";
+  const monteurNameEsc = esc(
+    data.monteurName?.trim() ? data.monteurName.trim() : "–"
+  );
 
-  const unterschriftInner = data.unterschriftDataUri?.trim()
-    ? `
-        <div class="unterschrift-box">
-          <img src=${JSON.stringify(data.unterschriftDataUri.trim())} alt="Unterschrift" />
-          <div class="unterschrift-meta">
-            Digitale Unterschrift des Kunden · ${esc(data.datum)}
-          </div>
-        </div>
-      `
-    : `
-        <div style="margin-top: 12px;">
-          <div class="unterschrift-linie"></div>
-          <div class="unterschrift-label">Unterschrift Kunde / Datum</div>
-        </div>
-      `;
+  const kundeSigImg = data.unterschriftDataUri?.trim()
+    ? `<img class="sig-kunde-img" src=${JSON.stringify(data.unterschriftDataUri.trim())} alt="Unterschrift Kunde" />`
+    : `<div class="sig-kunde-placeholder"></div>`;
+
+  const erstelltMeta = formatErstelltMeta(
+    data.betriebName,
+    data.betriebAdresse,
+    data.betriebTelefon
+  );
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -176,7 +210,12 @@ function buildHtml(
       line-height: 1.5;
     }
 
-    /* HEADER */
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    /* HEADER (nur Seite 1) */
     .header {
       background: #1e293b;
       color: white;
@@ -210,10 +249,8 @@ function buildHtml(
       display: block;
     }
 
-    /* CONTENT WRAPPER */
     .content { padding: 28px 32px; }
 
-    /* INFO BLOCK */
     .info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -244,7 +281,6 @@ function buildHtml(
       color: #0f172a;
     }
 
-    /* SECTIONS */
     .section { margin-bottom: 24px; }
     .section-title {
       font-size: 9pt;
@@ -263,7 +299,6 @@ function buildHtml(
       white-space: pre-wrap;
     }
 
-    /* MATERIALIEN als Liste */
     .materialien-list {
       list-style: none;
       padding: 0;
@@ -274,7 +309,7 @@ function buildHtml(
       font-size: 10.5pt;
       color: #1e293b;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
     }
     .materialien-list li:last-child { border-bottom: none; }
@@ -282,9 +317,9 @@ function buildHtml(
       content: "·";
       color: #94a3b8;
       font-weight: 700;
+      flex-shrink: 0;
     }
 
-    /* FOTOS */
     .foto-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -307,62 +342,105 @@ function buildHtml(
       display: block;
     }
 
-    /* UNTERSCHRIFT */
-    .unterschrift-section {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 2px solid #e2e8f0;
+    /* Unterschrift — letzte Seite */
+    .signature-page {
       page-break-inside: avoid;
     }
-    .unterschrift-box {
-      margin-top: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 12px;
-      background: #ffffff;
-      max-width: 400px;
+    .signature-page .section-title {
+      margin-bottom: 16px;
     }
-    .unterschrift-box img {
-      max-height: 100px;
-      max-width: 100%;
+    .sig-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .sig-col-title {
+      font-size: 8pt;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    .sig-kunde-img {
+      width: 100%;
+      max-height: 120px;
+      object-fit: contain;
+      object-position: left top;
       display: block;
     }
-    .unterschrift-meta {
-      margin-top: 8px;
-      font-size: 8.5pt;
-      color: #64748b;
+    .sig-kunde-placeholder {
+      min-height: 120px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
     }
-    .unterschrift-linie {
+    .hline {
+      border: none;
       border-top: 1px solid #1e293b;
-      width: 280px;
-      margin-top: 60px;
-      margin-bottom: 6px;
+      margin: 12px 0 10px;
     }
-    .unterschrift-label {
+    .sig-field-label {
       font-size: 8.5pt;
       color: #64748b;
+      margin-top: 8px;
+    }
+    .sig-field-value {
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+    .monteur-empty {
+      min-height: 120px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .sig-monteur-block {
+      margin-top: 0;
+    }
+    .sig-monteur-name {
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #0f172a;
+      margin-top: 10px;
+    }
+    .sig-monteur-betrieb {
+      font-size: 10pt;
+      color: #475569;
+      margin-top: 4px;
+    }
+    .sig-monteur-datum {
+      font-size: 10pt;
+      color: #0f172a;
+      margin-top: 8px;
     }
 
-    /* RECHTLICHER HINWEIS */
-    .legal-note {
-      margin-top: 20px;
-      padding: 10px 14px;
+    .legal-primary {
+      margin-top: 28px;
+      padding: 14px 16px;
       background: #f8fafc;
       border-radius: 6px;
       border-left: 3px solid #4f6af5;
-      font-size: 8pt;
+      font-size: 9.5pt;
+      color: #1e293b;
+      line-height: 1.55;
+      font-weight: 500;
+    }
+    .legal-meta {
+      margin-top: 14px;
+      font-size: 7.5pt;
       color: #64748b;
-      line-height: 1.5;
+      line-height: 1.45;
     }
 
-    /* SEITENUMBRUCH */
     .block { page-break-inside: auto; }
-    h2 { page-break-after: avoid; }
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
   <div class="header">
     <div class="header-left">
       <div class="betrieb">${esc(data.betriebName)}</div>
@@ -372,8 +450,6 @@ function buildHtml(
   </div>
 
   <div class="content">
-
-    <!-- INFO GRID: Kunde, Datum, Auftrag, Protokoll -->
     <div class="info-grid">
       <div class="info-cell">
         <div class="info-label">Kunde</div>
@@ -384,40 +460,53 @@ function buildHtml(
         <div class="info-value">${esc(data.datum)}</div>
       </div>
       <div class="info-cell">
-        <div class="info-label">Auftragsnummer</div>
-        <div class="info-value">${esc(data.auftragsnummer)}</div>
+        <div class="info-label">Adresse</div>
+        <div class="info-value">${kundeAdresseAnzeige}</div>
       </div>
       <div class="info-cell">
-        <div class="info-label">Protokoll</div>
-        <div class="info-value">${protokollInfoValue}</div>
+        <div class="info-label">Telefon</div>
+        <div class="info-value">${kundeTelefonAnzeige}</div>
       </div>
     </div>
 
-    <!-- DURCHGEFÜHRTE ARBEITEN -->
     <div class="section block">
       <div class="section-title">Durchgeführte Arbeiten</div>
       <div class="section-content">${esc(data.kiText)}</div>
     </div>
 
     ${materialienBlock}
-
-    ${fotosBlock}
-
-    <!-- UNTERSCHRIFT -->
-    <div class="unterschrift-section">
-      <div class="section-title">Bestätigung & Unterschrift</div>
-      ${unterschriftInner}
-    </div>
-
-    <!-- RECHTLICHER HINWEIS -->
-    <div class="legal-note">
-      Dieses Protokoll wurde digital erstellt und dokumentiert die durchgeführten
-      Arbeiten zum angegebenen Datum. Mit der Unterschrift bestätigt der Kunde
-      die ordnungsgemäße Ausführung der beschriebenen Leistungen.
-      Erstellt mit DokuHero · ${esc(data.betriebName)}
-    </div>
-
   </div>
+
+  ${fotosPage}
+
+  <div class="page-break"></div>
+  <div class="content signature-page">
+    <div class="section-title">Bestätigung &amp; Unterschrift</div>
+    <div class="sig-two-col">
+      <div class="sig-col">
+        <div class="sig-col-title">Unterschrift Kunde</div>
+        ${kundeSigImg}
+        <hr class="hline" />
+        <div class="sig-field-label">Name in Druckbuchstaben:</div>
+        <div class="sig-field-value">${esc(data.kundeName)}</div>
+        <div class="sig-field-label">Datum:</div>
+        <div class="sig-field-value">${esc(data.datum)}</div>
+      </div>
+      <div class="sig-col sig-monteur-block">
+        <div class="sig-col-title">Monteur</div>
+        <div class="monteur-empty"></div>
+        <hr class="hline" />
+        <div class="sig-monteur-name">${monteurNameEsc}</div>
+        <div class="sig-monteur-betrieb">${esc(data.betriebName)}</div>
+        <div class="sig-monteur-datum">${esc(data.datum)}</div>
+      </div>
+    </div>
+    <div class="legal-primary">
+      Mit meiner Unterschrift bestätige ich die ordnungsgemäße Ausführung der beschriebenen Arbeiten und deren Abnahme.
+    </div>
+    <div class="legal-meta">${erstelltMeta}</div>
+  </div>
+
 </body>
 </html>`;
 }
@@ -455,6 +544,7 @@ export async function generatePDF(data: ProtokollData): Promise<Buffer> {
     const pdfUint8 = await page.pdf({
       format: "A4",
       printBackground: true,
+      preferCSSPageSize: false,
       displayHeaderFooter: true,
       headerTemplate: "<span></span>",
       footerTemplate,
@@ -462,7 +552,6 @@ export async function generatePDF(data: ProtokollData): Promise<Buffer> {
     });
 
     const buffer = Buffer.from(pdfUint8);
-    // TODO: Dateiname konfigurierbar über Betriebseinstellungen (Anhang-E-Mails nutzen derzeit separat „protokoll.pdf“).
     const outPath = join(getPdfsUploadDir(), `${data.protokollId}.pdf`);
     await writeFile(outPath, buffer);
     return buffer;
