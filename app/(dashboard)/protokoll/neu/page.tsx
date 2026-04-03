@@ -357,15 +357,12 @@ export default function ProtokollNeuPage() {
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Materialien / Positionen
               </p>
-              <p className="text-sm text-slate-500">
-                z.B. &apos;2 Ölfilter, 5L Motoröl&apos; — optional
-              </p>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="min-w-0 flex-1">
                   <Textarea
                     id="protokoll-materialien"
                     aria-label="Materialien / Positionen"
-                    placeholder="z.B. 2 Ölfilter, 5L Motoröl, 1 Dichtung"
+                    placeholder="Materialien, Ersatzteile, Positionen..."
                     value={materialien}
                     onChange={(e) => setMaterialien(e.target.value)}
                     rows={3}

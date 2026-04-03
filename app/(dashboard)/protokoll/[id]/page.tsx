@@ -16,8 +16,10 @@ import { Card } from "@/components/ui/Card";
 import { protokollStatusLabel } from "@/lib/protokoll-status-label";
 import type { FotoEintrag, Protokoll } from "@/types";
 
+type ProtokollMitMaterialien = Protokoll & { materialien?: string | null };
+
 type ApiResponse = {
-  protokoll: Protokoll;
+  protokoll: ProtokollMitMaterialien;
   kunde_name: string | null;
   kunde_email: string | null;
   auftrag_beschreibung: string | null;
@@ -458,6 +460,16 @@ export default function ProtokollAnsichtPage() {
               {protokoll.notiz?.trim() ? protokoll.notiz : "–"}
             </p>
           </div>
+          {protokoll.materialien?.trim() ? (
+            <div>
+              <h2 className="text-sm font-semibold text-slate-500">
+                Materialien / Positionen
+              </h2>
+              <p className="mt-1 whitespace-pre-wrap break-words text-slate-800">
+                {protokoll.materialien}
+              </p>
+            </div>
+          ) : null}
         </div>
       </Card>
 
