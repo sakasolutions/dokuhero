@@ -29,6 +29,8 @@ export type ProtokollData = {
    * gelesen (u. a. `DOKUHERO_PUBLIC_DIR=/var/www/dokuhero/public` oder `LOGO_UPLOAD_DIR`).
    */
   betriebLogoPfad?: string | null;
+  /** data:image/png;base64,… — Unterschrift Kunde */
+  unterschriftDataUri?: string | null;
 };
 
 function toFotoDiskPath(fotoRef: string): string {
@@ -131,6 +133,8 @@ function buildHtml(
     .foto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
     .foto-cell { aspect-ratio: 4/3; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #f8fafc; page-break-inside: avoid; break-inside: avoid; }
     .foto-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .unterschrift-wrap { margin-top: 8px; max-width: 320px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; background: #fff; }
+    .unterschrift-wrap img { max-height: 120px; max-width: 100%; display: block; }
   </style>
 </head>
 <body>
@@ -170,6 +174,11 @@ function buildHtml(
   ${
     fotoDataUris.length
       ? `<div class="block"><h2>Fotos</h2><div class="foto-grid">${fotoCells}</div></div>`
+      : ""
+  }
+  ${
+    data.unterschriftDataUri?.trim()
+      ? `<div class="block"><h2>Unterschrift Kunde</h2><div class="unterschrift-wrap"><img src=${JSON.stringify(data.unterschriftDataUri.trim())} alt="" /></div></div>`
       : ""
   }
 </body>

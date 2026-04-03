@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -39,7 +39,7 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail" | "submit" | "reject" | "archiv";
+type Busy = null | "preview" | "pdf" | "mail" | "reject" | "archiv";
 
 const REGENERATE_PRESETS: { label: string; text: string }[] = [
   { label: "Kürzer", text: "Bitte kürzer fassen" },
@@ -63,6 +63,15 @@ export default function ProtokollAnsichtPage() {
   /** Text im „Neu generieren“-Panel (Quick-Chips + Freitext). */
   const [regenerateFeedback, setRegenerateFeedback] = useState("");
   const [regeneratePanelOpen, setRegeneratePanelOpen] = useState(false);
+  const [unterschriftDataUri, setUnterschriftDataUri] = useState<string | null>(
+    null
+  );
+  const [showUnterschrift, setShowUnterschrift] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const unterschriftSectionRef = useRef<HTMLDivElement>(null);
+  const drawingRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const hasInkRef = useRef(false);
   const [stepPdf, setStepPdf] = useState(false);
   const [pdfCacheBust, setPdfCacheBust] = useState(0);
 
@@ -258,34 +267,6 @@ export default function ProtokollAnsichtPage() {
     }
   }
 
-  async function postSubmitReview() {
-    setBannerError(null);
-    setBannerSuccess(null);
-    setBusy("submit");
-    try {
-      const res = await fetch(`/api/protokoll/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "submit_review" }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setBannerError(
-          typeof j.error === "string"
-            ? j.error
-            : "Einreichen fehlgeschlagen."
-        );
-        return;
-      }
-      setBannerSuccess("Protokoll wurde erneut zur Freigabe eingereicht.");
-      await load();
-    } catch {
-      setBannerError("Netzwerkfehler.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function postReject() {
     setBannerError(null);
     setBannerSuccess(null);
@@ -314,7 +295,90 @@ export default function ProtokollAnsichtPage() {
     }
   }
 
-  async function postGenerate(sendMail: boolean) {
+  function initUnterschriftCanvas() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(320, canvas.offsetWidth || canvas.clientWidth || 600);
+    const h = 200;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#1e293b";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    hasInkRef.current = false;
+    setUnterschriftDataUri(null);
+  }
+
+  useEffect(() => {
+    if (!showUnterschrift) return;
+    const id = window.setTimeout(() => {
+      initUnterschriftCanvas();
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [showUnterschrift]);
+
+  function getCanvasPoint(
+    clientX: number,
+    clientY: number
+  ): { x: number; y: number } | null {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const lw = canvas.width / dpr;
+    const lh = canvas.height / dpr;
+    const x = ((clientX - rect.left) / rect.width) * lw;
+    const y = ((clientY - rect.top) / rect.height) * lh;
+    return { x, y };
+  }
+
+  function drawSegment(
+    from: { x: number; y: number },
+    to: { x: number; y: number }
+  ) {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    hasInkRef.current = true;
+  }
+
+  function clearUnterschriftCanvas() {
+    initUnterschriftCanvas();
+  }
+
+  async function confirmUnterschriftAndSend() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (!hasInkRef.current) {
+      setBannerError("Bitte unterschreiben Sie im Feld.");
+      return;
+    }
+    setBannerError(null);
+    const dataUri = canvas.toDataURL("image/png");
+    setUnterschriftDataUri(dataUri);
+    await postGenerate(true, dataUri);
+  }
+
+  async function postGenerate(
+    sendMail: boolean,
+    unterschriftExplicit: string | null | undefined = undefined
+  ) {
+    const unterschrift =
+      unterschriftExplicit !== undefined
+        ? unterschriftExplicit
+        : unterschriftDataUri;
     setBannerError(null);
     setBannerSuccess(null);
     setBusy(sendMail ? "mail" : "pdf");
@@ -322,7 +386,11 @@ export default function ProtokollAnsichtPage() {
       const res = await fetch(`/api/protokoll/${id}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kiText: kiTextDraft, sendMail }),
+        body: JSON.stringify({
+          kiText: kiTextDraft,
+          sendMail,
+          unterschrift,
+        }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -332,6 +400,9 @@ export default function ProtokollAnsichtPage() {
             : "PDF-Erstellung fehlgeschlagen."
         );
         return;
+      }
+      if (sendMail && unterschrift) {
+        setShowUnterschrift(false);
       }
       setPdfCacheBust((n) => n + 1);
       if (sendMail) {
@@ -768,28 +839,114 @@ export default function ProtokollAnsichtPage() {
         ) : null}
       </Card>
 
-      {isEntwurf && hasKiText && !isArchiviert ? (
-        <Card>
-          <p className="text-sm text-slate-600">
-            Protokolltext fertig? Dann jetzt zur Freigabe einreichen — dein
-            Chef wird benachrichtigt.
-          </p>
-          <Button
-            type="button"
-            className="mt-4 min-h-12 gap-2 text-base"
-            disabled={busy !== null}
-            onClick={() => void postSubmitReview()}
-          >
-            {busy === "submit" ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5" />
-            )}
-            {busy === "submit"
-              ? "Wird eingereicht…"
-              : "Zur Freigabe einreichen"}
-          </Button>
-        </Card>
+      {isEntwurf && hasKiText && !isArchiviert && !kiReadonly ? (
+        <Button
+          type="button"
+          className="min-h-12 w-full gap-2 bg-green-600 text-base text-white hover:bg-green-700 focus-visible:ring-green-600 sm:w-auto"
+          disabled={busy !== null}
+          onClick={() => {
+            setShowUnterschrift(true);
+            requestAnimationFrame(() => {
+              unterschriftSectionRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            });
+          }}
+        >
+          Weiter zur Unterschrift & Versand
+        </Button>
+      ) : null}
+
+      {showUnterschrift ? (
+        <div ref={unterschriftSectionRef}>
+          <Card className="border-slate-200 shadow-md">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Unterschrift Kunde
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Bitte hier mit dem Finger unterschreiben
+            </p>
+            <canvas
+              ref={canvasRef}
+              className="mt-4 w-full touch-none rounded-lg border border-[#e2e8f0] bg-white"
+              style={{ height: 200, touchAction: "none" }}
+              onMouseDown={(e) => {
+                const p = getCanvasPoint(e.clientX, e.clientY);
+                if (!p) return;
+                drawingRef.current = true;
+                lastPointRef.current = p;
+              }}
+              onMouseMove={(e) => {
+                if (!drawingRef.current || !lastPointRef.current) return;
+                const p = getCanvasPoint(e.clientX, e.clientY);
+                if (!p) return;
+                drawSegment(lastPointRef.current, p);
+                lastPointRef.current = p;
+              }}
+              onMouseUp={() => {
+                drawingRef.current = false;
+                lastPointRef.current = null;
+              }}
+              onMouseLeave={() => {
+                drawingRef.current = false;
+                lastPointRef.current = null;
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                const t = e.touches[0];
+                if (!t) return;
+                const p = getCanvasPoint(t.clientX, t.clientY);
+                if (!p) return;
+                drawingRef.current = true;
+                lastPointRef.current = p;
+              }}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                if (!drawingRef.current || !lastPointRef.current) return;
+                const t = e.touches[0];
+                if (!t) return;
+                const p = getCanvasPoint(t.clientX, t.clientY);
+                if (!p) return;
+                drawSegment(lastPointRef.current, p);
+                lastPointRef.current = p;
+              }}
+              onTouchEnd={() => {
+                drawingRef.current = false;
+                lastPointRef.current = null;
+              }}
+            />
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-12 flex-1 text-base"
+                disabled={busy !== null}
+                onClick={() => clearUnterschriftCanvas()}
+              >
+                Löschen
+              </Button>
+              <Button
+                type="button"
+                className="min-h-12 flex-1 bg-green-600 text-base text-white hover:bg-green-700 focus-visible:ring-green-600"
+                disabled={busy !== null || !emailDisplay}
+                onClick={() => void confirmUnterschriftAndSend()}
+                title={
+                  !emailDisplay
+                    ? "Keine E-Mail beim Kunden hinterlegt"
+                    : undefined
+                }
+              >
+                {busy === "mail" ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : null}
+                {busy === "mail"
+                  ? "Wird gesendet…"
+                  : "Unterschrift bestätigen"}
+              </Button>
+            </div>
+          </Card>
+        </div>
       ) : null}
 
       {stepPdf ? (

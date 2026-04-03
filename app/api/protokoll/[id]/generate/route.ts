@@ -15,6 +15,7 @@ export const maxDuration = 120;
 const bodySchema = z.object({
   kiText: z.string(),
   sendMail: z.boolean().optional().default(false),
+  unterschrift: z.string().nullable().optional(),
 });
 
 interface LoadRow extends RowDataPacket {
@@ -67,10 +68,16 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const { kiText, sendMail } = parsed.data;
+    const { kiText, sendMail, unterschrift } = parsed.data;
+    const unterschriftVal =
+      typeof unterschrift === "string" ? unterschrift.trim() : null;
+    const hasUnterschrift =
+      unterschriftVal != null && unterschriftVal.startsWith("data:image");
     const pool = getPool();
 
-    if (!sessionMayFreigebenProtokoll(session)) {
+    const mayFreigeben = sessionMayFreigebenProtokoll(session);
+    const erlaubtMitUnterschrift = sendMail && hasUnterschrift;
+    if (!mayFreigeben && !erlaubtMitUnterschrift) {
       return NextResponse.json(
         { error: "Keine Berechtigung für PDF-Erstellung oder Freigabe-Versand." },
         { status: 403 }
@@ -108,11 +115,11 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    if (row.protokoll_status !== "zur_pruefung") {
+    if (row.protokoll_status !== "entwurf" && row.protokoll_status !== "zur_pruefung") {
       return NextResponse.json(
         {
           error:
-            "Nur Protokolle mit Status „Zur Freigabe bereit“ können hier verarbeitet werden.",
+            "Nur Protokolle im Entwurf oder zur Freigabe können hier verarbeitet werden.",
         },
         { status: 400 }
       );
@@ -143,6 +150,7 @@ export async function POST(request: Request, context: RouteContext) {
       materialien: row.materialien?.trim() ? row.materialien : null,
       fotoPfade,
       betriebLogoPfad: row.betrieb_logo_pfad,
+      unterschriftDataUri: hasUnterschrift ? unterschriftVal : null,
     });
 
     const pdfUrl = `/uploads/pdfs/${protokollId}.pdf`;
