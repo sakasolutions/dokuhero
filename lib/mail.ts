@@ -1,10 +1,51 @@
 import { Resend } from "resend";
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function mailWrapper(
+  content: string,
+  betriebName: string,
+  logoUrl?: string | null
+): string {
+  const safeName = escapeHtml(betriebName);
+  const trimmedLogo = logoUrl?.trim();
+  const header = trimmedLogo
+    ? `<img src="${escapeHtml(trimmedLogo)}" height="36" style="display:block;" alt="${safeName}" />`
+    : `<span style="color:#ffffff;font-weight:700;font-size:18px;line-height:1.3;">${safeName}</span>`;
+
+  return `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="background-color:#f8fafc;padding:40px 16px;">
+    <div style="max-width:560px;margin:0 auto;background-color:#ffffff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;">
+      <div style="background-color:#1e293b;padding:24px 32px;">
+        ${header}
+      </div>
+      <div style="padding:32px;color:#334155;font-size:15px;line-height:1.6;">
+        ${content}
+      </div>
+      <div style="padding:20px 32px;border-top:1px solid #f1f5f9;font-size:12px;color:#94a3b8;text-align:center;">
+        Erstellt mit DokuHero · ${safeName}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export async function sendProtokollMail(
   to: string,
   betriebName: string,
   pdfBuffer: Buffer,
-  kundeName: string
+  kundeName: string,
+  logoUrl: string | null = null
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
@@ -19,17 +60,22 @@ export async function sendProtokollMail(
   const resend = new Resend(apiKey);
   const subject = `Ihr Serviceprotokoll von ${betriebName}`;
 
-  const html = `<!DOCTYPE html>
-<html lang="de">
-<head><meta charset="utf-8" /></head>
-<body style="font-family: system-ui, sans-serif; line-height: 1.5; color: #334155;">
-  <p>Guten Tag${kundeName ? ` ${escapeHtml(kundeName)}` : ""},</p>
-  <p>anbei erhalten Sie Ihr Serviceprotokoll von <strong>${escapeHtml(betriebName)}</strong>.</p>
-  <p>Bei Rückfragen stehen wir Ihnen gerne zur Verfügung.</p>
-  <p style="margin-top: 1.5rem;">Mit freundlichen Grüßen<br/><strong>${escapeHtml(betriebName)}</strong></p>
-  <p style="margin-top: 2rem; font-size: 0.85rem; color: #94a3b8;">Erstellt mit DokuHero</p>
-</body>
-</html>`;
+  const namePart = kundeName.trim()
+    ? ` ${escapeHtml(kundeName.trim())}`
+    : "";
+  const greeting = `Guten Tag${namePart},`;
+
+  const content = `<p style="margin:0 0 16px;">${greeting}</p>
+<p style="margin:0 0 16px;">anbei erhalten Sie Ihr Serviceprotokoll von <strong>${escapeHtml(betriebName)}</strong>. Das Dokument finden Sie als PDF-Anhang in dieser E-Mail.</p>
+<hr style="border:none;border-top:1px solid #f1f5f9;margin:24px 0;" />
+<div style="background:#f8fafc;border-radius:8px;padding:16px;font-size:14px;color:#64748b;">
+  📎 Ihr Protokoll ist als Anhang beigefügt (protokoll.pdf)
+</div>
+<p style="margin:24px 0 0;">Bei Fragen stehen wir Ihnen gerne zur Verfügung.<br />
+Mit freundlichen Grüßen,<br />
+<strong>${escapeHtml(betriebName)}</strong></p>`;
+
+  const html = mailWrapper(content, betriebName, logoUrl);
 
   const { error } = await resend.emails.send({
     from,
@@ -49,14 +95,6 @@ export async function sendProtokollMail(
   }
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function getResendClient(): { resend: Resend; from: string } {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
@@ -71,32 +109,34 @@ export async function sendZufriedenheitsAnfrageMail(
   betriebName: string,
   kundeName: string,
   urlJa: string,
-  urlNein: string
+  urlNein: string,
+  logoUrl: string | null = null
 ): Promise<void> {
   const { resend, from } = getResendClient();
   const subject = `Wie war Ihr Service bei ${betriebName}?`;
 
   const btn = (href: string, label: string, bg: string) =>
     `<td style="padding:8px;">
-      <a href="${escapeHtml(href)}" style="display:inline-block;padding:16px 24px;background:${bg};color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:16px;">${label}</a>
+      <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 28px;background:${bg};color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px;">${escapeHtml(label)}</a>
     </td>`;
 
-  const html = `<!DOCTYPE html>
-<html lang="de">
-<head><meta charset="utf-8" /></head>
-<body style="font-family: system-ui, sans-serif; line-height: 1.6; color: #334155; max-width: 560px;">
-  <p>Guten Tag${kundeName ? ` ${escapeHtml(kundeName)}` : ""},</p>
-  <p>kürzlich haben wir Ihnen ein Serviceprotokoll von <strong>${escapeHtml(betriebName)}</strong> per E-Mail gesendet.</p>
-  <p><strong>Waren Sie mit unserem Service zufrieden?</strong></p>
-  <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
-    <tr>
-      ${btn(urlJa, "👍 Ja, ich war zufrieden", "#16a34a")}
-      ${btn(urlNein, "👎 Nein, es gab Probleme", "#dc2626")}
-    </tr>
-  </table>
-  <p style="font-size:0.85rem;color:#94a3b8;">Mit einem Klick geben Sie uns kurz Bescheid. Vielen Dank!</p>
-</body>
-</html>`;
+  const namePart = kundeName.trim()
+    ? ` ${escapeHtml(kundeName.trim())}`
+    : "";
+  const greeting = `Guten Tag${namePart},`;
+
+  const content = `<p style="margin:0 0 16px;">${greeting}</p>
+<p style="margin:0 0 16px;">kürzlich haben wir Ihnen Ihr Serviceprotokoll von <strong>${escapeHtml(betriebName)}</strong> zugesendet. Wir würden uns über Ihr kurzes Feedback freuen.</p>
+<p style="margin:0 0 16px;"><strong>Waren Sie mit unserem Service zufrieden?</strong></p>
+<table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
+  <tr>
+    ${btn(urlJa, "👍 Ja, zufrieden", "#16a34a")}
+    ${btn(urlNein, "👎 Nein, Probleme", "#dc2626")}
+  </tr>
+</table>
+<p style="margin:0;font-size:13px;color:#94a3b8;">Mit einem Klick geben Sie uns kurz Bescheid — vielen Dank!</p>`;
+
+  const html = mailWrapper(content, betriebName, logoUrl);
 
   const { error } = await resend.emails.send({ from, to, subject, html });
   if (error) throw new Error(error.message ?? "Resend-Versand fehlgeschlagen.");

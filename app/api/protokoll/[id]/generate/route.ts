@@ -153,7 +153,13 @@ export async function POST(request: Request, context: RouteContext) {
       }
       const kundeName = row.kunde_name?.trim() ?? "";
       try {
-        await sendProtokollMail(to, row.betrieb_name, pdfBuffer, kundeName);
+        await sendProtokollMail(
+          to,
+          row.betrieb_name,
+          pdfBuffer,
+          kundeName,
+          null
+        );
         emailSent = true;
       } catch (e) {
         console.error("Mailversand fehlgeschlagen:", e);

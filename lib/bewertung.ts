@@ -70,7 +70,8 @@ export async function sendBewertungsAnfrage(
       row.betrieb_name,
       row.kunde_name?.trim() ?? "",
       urlJa,
-      urlNein
+      urlNein,
+      null
     );
     return true;
   } catch (e) {
