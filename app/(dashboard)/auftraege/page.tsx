@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Archive, Plus, X } from "lucide-react";
-import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
+import { protokollStatusLabel } from "@/lib/protokoll-status-label";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { AuftragMitKunde, AuftragStatus } from "@/types";
@@ -37,6 +37,30 @@ function StatusBadge({ status }: { status: string }) {
       {labels[status] ?? status}
     </span>
   );
+}
+
+/** Ein Badge: Protokoll-Status hat Vorrang, sonst Auftrags-Status. */
+function AuftragListenBadge({ a }: { a: AuftragMitKunde }) {
+  const ps =
+    a.protokoll_id != null && a.protokoll_status
+      ? a.protokoll_status
+      : null;
+  if (ps) {
+    const protoStyles: Record<string, string> = {
+      zur_pruefung: "bg-amber-100 text-amber-800",
+      entwurf: "bg-blue-100 text-blue-700",
+      freigegeben: "bg-green-100 text-green-800",
+    };
+    const cls = protoStyles[ps] ?? "bg-slate-100 text-slate-700";
+    return (
+      <span
+        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+      >
+        {protokollStatusLabel(ps)}
+      </span>
+    );
+  }
+  return <StatusBadge status={a.status} />;
 }
 
 function formatDate(d: string | Date) {
@@ -399,14 +423,7 @@ export default function AuftraegeListePage() {
                         {a.beschreibung ?? "–"}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <StatusBadge status={a.status} />
-                          {a.protokoll_id != null && a.protokoll_status ? (
-                            <ProtokollStatusBadge
-                              status={a.protokoll_status}
-                            />
-                          ) : null}
-                        </div>
+                        <AuftragListenBadge a={a} />
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                         {formatDate(a.erstellt_am)}
@@ -485,13 +502,8 @@ export default function AuftraegeListePage() {
                       <span className="font-semibold text-slate-900">
                         {a.kunde_name ?? "–"}
                       </span>
-                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                        <StatusBadge status={a.status} />
-                        {a.protokoll_id != null && a.protokoll_status ? (
-                          <ProtokollStatusBadge
-                            status={a.protokoll_status}
-                          />
-                        ) : null}
+                      <div className="shrink-0">
+                        <AuftragListenBadge a={a} />
                       </div>
                     </div>
                     <p className="text-sm text-slate-600">
