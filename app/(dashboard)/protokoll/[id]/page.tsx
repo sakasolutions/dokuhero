@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Archive,
   ArrowLeft,
@@ -53,6 +54,7 @@ const REGENERATE_PRESETS: { label: string; text: string }[] = [
 export default function ProtokollAnsichtPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const id = String(params.id);
 
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -78,6 +80,7 @@ export default function ProtokollAnsichtPage() {
   const [busy, setBusy] = useState<Busy>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const [bannerSuccess, setBannerSuccess] = useState<string | null>(null);
+  const [versandErfolg, setVersandErfolg] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [editNotiz, setEditNotiz] = useState("");
@@ -140,6 +143,10 @@ export default function ProtokollAnsichtPage() {
       cancelled = true;
     };
   }, [load]);
+
+  useEffect(() => {
+    setVersandErfolg(false);
+  }, [id]);
 
   useEffect(() => {
     if (!data) return;
@@ -301,8 +308,13 @@ export default function ProtokollAnsichtPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
-    const w = Math.max(320, canvas.offsetWidth || canvas.clientWidth || 600);
-    const h = 200;
+    const rect = canvas.getBoundingClientRect();
+    let w = Math.round(rect.width);
+    let h = Math.round(rect.height);
+    if (w < 48) w = Math.max(280, canvas.clientWidth || 320);
+    if (h < 48) {
+      h = window.matchMedia("(min-width: 640px)").matches ? 200 : 220;
+    }
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -323,6 +335,22 @@ export default function ProtokollAnsichtPage() {
       initUnterschriftCanvas();
     }, 80);
     return () => window.clearTimeout(id);
+  }, [showUnterschrift]);
+
+  useEffect(() => {
+    if (!showUnterschrift) return;
+    const el = canvasRef.current;
+    if (!el) return;
+    const opts: AddEventListenerOptions = { passive: false };
+    const blockScroll = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+    el.addEventListener("touchstart", blockScroll, opts);
+    el.addEventListener("touchmove", blockScroll, opts);
+    return () => {
+      el.removeEventListener("touchstart", blockScroll);
+      el.removeEventListener("touchmove", blockScroll);
+    };
   }, [showUnterschrift]);
 
   function getCanvasPoint(
@@ -359,6 +387,7 @@ export default function ProtokollAnsichtPage() {
   }
 
   async function confirmUnterschriftAndSend() {
+    if (busy !== null) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     if (!hasInkRef.current) {
@@ -375,6 +404,7 @@ export default function ProtokollAnsichtPage() {
     sendMail: boolean,
     unterschriftExplicit: string | null | undefined = undefined
   ) {
+    if (busy !== null) return;
     const unterschrift =
       unterschriftExplicit !== undefined
         ? unterschriftExplicit
@@ -401,24 +431,26 @@ export default function ProtokollAnsichtPage() {
         );
         return;
       }
-      if (sendMail && unterschrift) {
-        setShowUnterschrift(false);
-      }
       setPdfCacheBust((n) => n + 1);
-      if (sendMail) {
-        if (j.emailSent) {
-          const email = data?.kunde_email?.trim();
-          setBannerSuccess(
-            email
-              ? `PDF wurde erstellt und an ${email} gesendet.`
-              : "PDF wurde erstellt und per E-Mail versendet."
-          );
-        } else if (j.mailError) {
-          setBannerError(String(j.mailError));
-          setBannerSuccess("PDF wurde gespeichert. Der E-Mail-Versand ist fehlgeschlagen.");
-        }
+      if (sendMail && j.emailSent) {
+        setShowUnterschrift(false);
+        setVersandErfolg(true);
       } else {
-        setBannerSuccess("PDF wurde erstellt und gespeichert.");
+        if (sendMail && unterschrift) {
+          setShowUnterschrift(false);
+        }
+        if (sendMail) {
+          if (j.mailError) {
+            setBannerError(String(j.mailError));
+            setBannerSuccess(
+              "PDF wurde gespeichert. Der E-Mail-Versand ist fehlgeschlagen."
+            );
+          } else if (!j.emailSent) {
+            setBannerError("E-Mail konnte nicht versendet werden.");
+          }
+        } else {
+          setBannerSuccess("PDF wurde erstellt und gespeichert.");
+        }
       }
       await load();
     } catch {
@@ -436,12 +468,44 @@ export default function ProtokollAnsichtPage() {
     );
   }
 
+  const zurueckListeHref =
+    session?.user?.rolle === "mitarbeiter" ? "/protokolle" : "/auftraege";
+
+  if (versandErfolg) {
+    return (
+      <div className="mx-auto max-w-lg space-y-6 px-1 pb-24 pt-4 sm:px-0">
+        <Card className="border-green-200 bg-green-50/90 p-8 text-center shadow-md sm:p-10">
+          <p className="text-2xl font-bold text-green-900" role="status">
+            ✅ Protokoll wurde versendet!
+          </p>
+          <p className="mt-4 text-base leading-relaxed text-green-800">
+            Der Kunde erhält das PDF per E-Mail.
+          </p>
+          <Button
+            type="button"
+            className="mt-8 min-h-12 w-full text-base sm:w-auto"
+            onClick={() => router.push(zurueckListeHref)}
+          >
+            {session?.user?.rolle === "mitarbeiter"
+              ? "Zurück zu Meine Protokolle"
+              : "Zurück zu Aufträge"}
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   if (error || !data) {
     return (
       <div className="mx-auto max-w-3xl space-y-4 overflow-visible pb-24">
         <p className="text-red-600">{error ?? "Unbekannter Fehler"}</p>
-        <Link href="/auftraege" className="text-primary hover:text-primary/80 hover:underline">
-          Zurück zu Aufträgen
+        <Link
+          href={zurueckListeHref}
+          className="text-primary hover:text-primary/80 hover:underline"
+        >
+          {session?.user?.rolle === "mitarbeiter"
+            ? "Zurück zu Meine Protokolle"
+            : "Zurück zu Aufträgen"}
         </Link>
       </div>
     );
@@ -471,7 +535,12 @@ export default function ProtokollAnsichtPage() {
   const showChefFreigabeCard = isZurPruefung && chef && !isArchiviert;
   const showChefFreigabeBar =
     showChefFreigabeCard && !!protokoll.pdf_pfad;
-  const showWorkerWarten = isZurPruefung && !chef && !isArchiviert;
+  const showWerkerUnterschriftFlow =
+    !chef &&
+    (isEntwurf || isZurPruefung) &&
+    hasKiText &&
+    !isArchiviert &&
+    !kiReadonly;
   const showProtokollArchivieren =
     isFreigegeben && !isArchiviert;
   const hideSendInStep2 = showChefFreigabeBar;
@@ -480,11 +549,13 @@ export default function ProtokollAnsichtPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 overflow-visible pb-24">
       <Link
-        href="/auftraege"
+        href={zurueckListeHref}
         className="inline-flex min-h-12 items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
       >
         <ArrowLeft className="h-5 w-5" />
-        Zurück zu Aufträgen
+        {session?.user?.rolle === "mitarbeiter"
+          ? "Zurück zu Meine Protokolle"
+          : "Zurück zu Aufträgen"}
       </Link>
 
       <div>
@@ -543,16 +614,6 @@ export default function ProtokollAnsichtPage() {
         >
           Dieses Protokoll ist <strong>archiviert</strong> und nur noch
           einsehbar.
-        </div>
-      ) : null}
-
-      {showWorkerWarten ? (
-        <div
-          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-          role="status"
-        >
-          Dieses Protokoll wartet auf die Freigabe durch einen
-          berechtigten Nutzer (Chef / Administrator).
         </div>
       ) : null}
 
@@ -707,7 +768,9 @@ export default function ProtokollAnsichtPage() {
         <p className="mt-1 text-sm text-slate-600">
           {kiReadonly
             ? "Dieses Protokoll ist freigegeben – der Text kann nicht mehr geändert werden."
-            : "Erzeuge mit KI einen Text, bearbeite ihn und reiche ihn zur Freigabe ein bzw. gehe als Freigeber zur PDF-Erstellung."}
+            : chef
+              ? "Erzeuge mit KI einen Text, bearbeite ihn und gehe zur PDF-Erstellung bzw. Freigabe."
+              : "Erzeuge mit KI einen Text, bearbeite ihn, dann Unterschrift des Kunden und Versand per E-Mail."}
         </p>
 
         {!hasKiText && !kiReadonly ? (
@@ -741,11 +804,11 @@ export default function ProtokollAnsichtPage() {
               placeholder="Protokolltext…"
             />
             {!kiReadonly ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-12 gap-2 text-base"
+                className="min-h-12 w-full gap-2 text-base sm:w-auto"
                 disabled={busy !== null || regeneratePanelOpen}
                 onClick={openRegeneratePanel}
                 title={
@@ -760,7 +823,7 @@ export default function ProtokollAnsichtPage() {
               {showWeiterZuPdf ? (
                 <Button
                   type="button"
-                  className="min-h-12 gap-2 text-base"
+                  className="min-h-12 w-full gap-2 text-base sm:w-auto"
                   disabled={busy !== null}
                   onClick={() => setStepPdf(true)}
                 >
@@ -839,7 +902,7 @@ export default function ProtokollAnsichtPage() {
         ) : null}
       </Card>
 
-      {isEntwurf && hasKiText && !isArchiviert && !kiReadonly ? (
+      {showWerkerUnterschriftFlow ? (
         <Button
           type="button"
           className="min-h-12 w-full gap-2 bg-green-600 text-base text-white hover:bg-green-700 focus-visible:ring-green-600 sm:w-auto"
@@ -864,13 +927,16 @@ export default function ProtokollAnsichtPage() {
             <h2 className="text-lg font-semibold text-slate-900">
               Unterschrift Kunde
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Bitte hier mit dem Finger unterschreiben
+            <p className="mt-1 text-sm font-medium text-slate-700">
+              Bitte Kunden unterschreiben lassen.
+            </p>
+            <p className="mt-0.5 text-sm text-slate-500">
+              Hier mit dem Finger oder der Maus unterschreiben.
             </p>
             <canvas
               ref={canvasRef}
-              className="mt-4 w-full touch-none rounded-lg border border-[#e2e8f0] bg-white"
-              style={{ height: 200, touchAction: "none" }}
+              className="mt-4 h-[220px] w-full touch-none rounded-lg border border-[#e2e8f0] bg-white sm:h-[200px]"
+              style={{ touchAction: "none" }}
               onMouseDown={(e) => {
                 const p = getCanvasPoint(e.clientX, e.clientY);
                 if (!p) return;
@@ -916,11 +982,11 @@ export default function ProtokollAnsichtPage() {
                 lastPointRef.current = null;
               }}
             />
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:gap-3">
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-12 flex-1 text-base"
+                className="min-h-12 w-full text-base sm:flex-1"
                 disabled={busy !== null}
                 onClick={() => clearUnterschriftCanvas()}
               >
@@ -928,7 +994,7 @@ export default function ProtokollAnsichtPage() {
               </Button>
               <Button
                 type="button"
-                className="min-h-12 flex-1 bg-green-600 text-base text-white hover:bg-green-700 focus-visible:ring-green-600"
+                className="min-h-12 w-full bg-green-600 text-base text-white hover:bg-green-700 focus-visible:ring-green-600 sm:flex-1"
                 disabled={busy !== null || !emailDisplay}
                 onClick={() => void confirmUnterschriftAndSend()}
                 title={
@@ -938,11 +1004,11 @@ export default function ProtokollAnsichtPage() {
                 }
               >
                 {busy === "mail" ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 shrink-0 animate-spin" />
                 ) : null}
                 {busy === "mail"
-                  ? "Wird gesendet…"
-                  : "Unterschrift bestätigen"}
+                  ? "Wird versendet…"
+                  : "Unterschrift bestätigen & Senden"}
               </Button>
             </div>
           </Card>
@@ -1025,7 +1091,7 @@ export default function ProtokollAnsichtPage() {
                         <Send className="h-5 w-5" />
                       )}
                       {busy === "mail"
-                        ? "Wird gesendet…"
+                        ? "Wird versendet…"
                         : emailDisplay
                           ? `PDF senden an ${emailDisplay}`
                           : "PDF senden (keine E-Mail)"}
@@ -1093,7 +1159,7 @@ export default function ProtokollAnsichtPage() {
                   <Send className="h-5 w-5" />
                 )}
                 {busy === "mail"
-                  ? "Wird gesendet…"
+                  ? "Wird versendet…"
                   : "Freigeben & Senden"}
               </Button>
             ) : null}
