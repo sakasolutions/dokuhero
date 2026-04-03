@@ -60,6 +60,7 @@ export interface ProtokollListeEintrag {
   pdf_pfad: string | null;
   status?: ProtokollStatus | string | null;
   notiz?: string | null;
+  protokoll_nummer?: number | null;
 }
 
 export interface AuftragMitProtokollen extends AuftragMitKunde {

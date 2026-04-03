@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Camera,
+  ClipboardList,
+  FileText,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -29,6 +31,27 @@ function planBadgeLabel(plan: string | null): string {
   return plan!.trim();
 }
 
+function itemActive(pathname: string, href: string, isInhaber: boolean): boolean {
+  if (href === "/protokoll/neu") {
+    return pathname === "/protokoll/neu";
+  }
+  if (href === "/protokolle") {
+    if (isInhaber) {
+      return (
+        pathname === "/protokolle" ||
+        pathname.startsWith("/protokolle/") ||
+        pathname.startsWith("/protokoll/")
+      );
+    }
+    return (
+      pathname === "/protokolle" ||
+      pathname.startsWith("/protokolle/") ||
+      /^\/protokoll\/\d+/.test(pathname)
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function BottomNav({ rolle }: BottomNavProps) {
   const pathname = usePathname();
   const isInhaber = rolle === "inhaber";
@@ -37,15 +60,17 @@ export function BottomNav({ rolle }: BottomNavProps) {
   const [betriebName, setBetriebName] = useState("");
   const [plan, setPlan] = useState<string | null>(null);
 
-  const links = [
-    { href: "/dashboard", label: "Start", icon: LayoutDashboard },
-    {
-      href: isInhaber ? "/protokolle" : "/protokoll/neu",
-      label: isInhaber ? "Protokolle" : "Protokoll",
-      icon: Camera,
-    },
-    { href: "/kunden", label: "Kunden", icon: Users },
-  ];
+  const links = isInhaber
+    ? [
+        { href: "/dashboard", label: "Start", icon: LayoutDashboard },
+        { href: "/protokolle", label: "Protokolle", icon: Camera },
+        { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
+        { href: "/kunden", label: "Kunden", icon: Users },
+      ]
+    : [
+        { href: "/protokoll/neu", label: "Protokoll", icon: Camera },
+        { href: "/protokolle", label: "Meine Protokolle", icon: FileText },
+      ];
 
   useEffect(() => {
     let cancelled = false;
@@ -101,16 +126,7 @@ export function BottomNav({ rolle }: BottomNavProps) {
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-dark px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden">
         <div className="mx-auto flex max-w-lg justify-around">
           {links.map(({ href, label, icon: Icon }) => {
-            const isProtokollNav =
-              href === "/protokolle" || href === "/protokoll/neu";
-            const active = isProtokollNav
-              ? isInhaber
-                ? pathname === "/protokolle" ||
-                  pathname.startsWith("/protokolle") ||
-                  pathname.startsWith("/protokoll/")
-                : pathname.startsWith("/protokoll") &&
-                  !pathname.startsWith("/protokolle")
-              : pathname === href || pathname.startsWith(`${href}/`);
+            const active = itemActive(pathname, href, isInhaber);
             return (
               <Link
                 key={href}

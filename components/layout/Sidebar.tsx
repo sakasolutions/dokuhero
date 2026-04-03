@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Camera,
+  ClipboardList,
+  FileText,
   LayoutDashboard,
   Settings,
   Users,
@@ -13,19 +15,42 @@ export interface SidebarProps {
   rolle: string;
 }
 
+function itemActive(pathname: string, href: string, isInhaber: boolean): boolean {
+  if (href === "/protokoll/neu") {
+    return pathname === "/protokoll/neu";
+  }
+  if (href === "/protokolle") {
+    if (isInhaber) {
+      return (
+        pathname === "/protokolle" ||
+        pathname.startsWith("/protokolle/") ||
+        pathname.startsWith("/protokoll/")
+      );
+    }
+    return (
+      pathname === "/protokolle" ||
+      pathname.startsWith("/protokolle/") ||
+      /^\/protokoll\/\d+/.test(pathname)
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function Sidebar({ rolle }: SidebarProps) {
   const pathname = usePathname();
   const isInhaber = rolle === "inhaber";
 
-  const links = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    {
-      href: isInhaber ? "/protokolle" : "/protokoll/neu",
-      label: isInhaber ? "Protokolle" : "Protokoll",
-      icon: Camera,
-    },
-    { href: "/kunden", label: "Kunden", icon: Users },
-  ];
+  const links = isInhaber
+    ? [
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/protokolle", label: "Protokolle", icon: Camera },
+        { href: "/auftraege", label: "Aufträge", icon: ClipboardList },
+        { href: "/kunden", label: "Kunden", icon: Users },
+      ]
+    : [
+        { href: "/protokoll/neu", label: "Protokoll", icon: Camera },
+        { href: "/protokolle", label: "Meine Protokolle", icon: FileText },
+      ];
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
@@ -34,16 +59,7 @@ export function Sidebar({ rolle }: SidebarProps) {
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {links.map(({ href, label, icon: Icon }) => {
-          const isProtokollNav =
-            href === "/protokolle" || href === "/protokoll/neu";
-          const active = isProtokollNav
-            ? isInhaber
-              ? pathname === "/protokolle" ||
-                pathname.startsWith("/protokolle") ||
-                pathname.startsWith("/protokoll/")
-              : pathname.startsWith("/protokoll") &&
-                !pathname.startsWith("/protokolle")
-            : pathname === href || pathname.startsWith(`${href}/`);
+          const active = itemActive(pathname, href, isInhaber);
           return (
             <Link
               key={href}

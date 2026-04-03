@@ -105,12 +105,10 @@ export async function POST(request: Request) {
     let materialienText = materialien?.trim() || null;
 
     if (notizText) {
-      console.log("🔵 Notiz VOR Formatierung:", notizText);
       try {
         notizText = await formatiereNotiz(notizText);
-        console.log("🟢 Notiz NACH Formatierung:", notizText);
-      } catch (e) {
-        console.error("🔴 formatiereNotiz Fehler:", e);
+      } catch {
+        /* Original-Notiz beibehalten */
       }
     }
 
@@ -135,10 +133,12 @@ export async function POST(request: Request) {
         typeof rawA === "bigint" ? Number(rawA) : Number(rawA ?? 0);
       const protokollNummer = anzahlVorher + 1;
 
+      const erstelltVon =
+        session.user.benutzer_id != null ? session.user.benutzer_id : null;
       const [pRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO protokolle (auftrag_id, protokoll_nummer, notiz, materialien, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert)
-         VALUES (?, ?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0)`,
-        [auftrag_id, protokollNummer, notizText, materialienText]
+        `INSERT INTO protokolle (auftrag_id, protokoll_nummer, notiz, materialien, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert, erstellt_von_benutzer_id)
+         VALUES (?, ?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0, ?)`,
+        [auftrag_id, protokollNummer, notizText, materialienText, erstelltVon]
       );
       const protokollId = pRes.insertId;
 

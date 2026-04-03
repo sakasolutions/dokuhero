@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FileText, Loader2 } from "lucide-react";
 import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
@@ -44,23 +43,17 @@ function fahrzeugZeile(p: ProtokollListeItem): string | null {
 }
 
 export default function ProtokollePage() {
-  const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
+  const isMitarbeiter = session?.user?.rolle === "mitarbeiter";
 
   const [alle, setAlle] = useState<ProtokollListeItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<ProtokollTab>("alle");
-
-  useEffect(() => {
-    if (sessionStatus !== "loading" && session?.user?.rolle === "mitarbeiter") {
-      router.replace("/protokoll/neu");
-    }
-  }, [sessionStatus, session?.user?.rolle, router]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (sessionStatus === "loading") return;
-    if (session?.user?.rolle === "mitarbeiter") return;
 
     let alive = true;
     (async () => {
@@ -81,17 +74,25 @@ export default function ProtokollePage() {
     return () => {
       alive = false;
     };
-  }, [sessionStatus, session?.user?.rolle]);
+  }, [sessionStatus]);
 
   const countZurFreigabe = useMemo(
     () => alle.filter((p) => p.status === "zur_pruefung").length,
     [alle]
   );
 
-  const gefiltert = useMemo(() => {
+  const gefiltertTab = useMemo(() => {
     if (tab === "alle") return alle;
     return alle.filter((p) => p.status === tab);
   }, [alle, tab]);
+
+  const gefiltert = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return gefiltertTab;
+    return gefiltertTab.filter((p) =>
+      (p.kunde_name ?? "").toLowerCase().includes(q)
+    );
+  }, [gefiltertTab, search]);
 
   if (sessionStatus === "loading") {
     return (
@@ -106,32 +107,28 @@ export default function ProtokollePage() {
     );
   }
 
-  if (session?.user?.rolle === "mitarbeiter") {
-    return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-slate-600">
-        <Loader2
-          className="h-8 w-8 animate-spin text-primary"
-          strokeWidth={2}
-          aria-hidden
-        />
-        <p className="text-sm">Weiterleitung…</p>
-      </div>
-    );
-  }
-
   const tabs: { key: ProtokollTab; label: string; showFreigabeBadge?: boolean }[] =
-    [
-      { key: "alle", label: "Alle" },
-      { key: "zur_pruefung", label: "Zur Freigabe", showFreigabeBadge: true },
-      { key: "entwurf", label: "Entwürfe" },
-      { key: "freigegeben", label: "Freigegeben" },
-    ];
+    isMitarbeiter
+      ? [
+          { key: "alle", label: "Alle" },
+          { key: "zur_pruefung", label: "Zur Freigabe", showFreigabeBadge: true },
+          { key: "entwurf", label: "Entwurf" },
+          { key: "freigegeben", label: "Freigegeben" },
+        ]
+      : [
+          { key: "alle", label: "Alle" },
+          { key: "zur_pruefung", label: "Zur Freigabe", showFreigabeBadge: true },
+          { key: "entwurf", label: "Entwürfe" },
+          { key: "freigegeben", label: "Freigegeben" },
+        ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-900">Protokolle</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {isMitarbeiter ? "Meine Protokolle" : "Protokolle"}
+          </h1>
           <span
             className="inline-flex min-w-[2rem] items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-slate-800"
             aria-label={`${alle.length} Protokolle gesamt`}
@@ -139,11 +136,29 @@ export default function ProtokollePage() {
             {alle.length}
           </span>
         </div>
-        <p className="text-slate-600">Alle Protokolle deines Betriebs</p>
+        <p className="text-slate-600">
+          {isMitarbeiter
+            ? "Deine Protokolle, neueste zuerst"
+            : "Alle Protokolle deines Betriebs"}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="protokoll-suche" className="text-sm font-medium text-slate-700">
+          Suche (Kundenname)
+        </label>
+        <input
+          id="protokoll-suche"
+          type="search"
+          placeholder="Name eingeben…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-md rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
       </div>
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-slate-700">Ansicht</span>
+        <span className="text-sm font-medium text-slate-700">Filter</span>
         <div className="-mx-1 overflow-x-auto pb-1">
           <div
             className="inline-flex min-w-min gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm"
@@ -198,8 +213,9 @@ export default function ProtokollePage() {
               Noch keine Protokolle
             </p>
             <p className="mt-1 max-w-sm text-sm text-slate-600">
-              Sobald du Aufträge protokollierst, erscheinen sie hier mit Status
-              und Freigabe-Übersicht.
+              {isMitarbeiter
+                ? "Lege unter „Protokoll“ dein erstes Protokoll an."
+                : "Sobald du Aufträge protokollierst, erscheinen sie hier mit Status und Freigabe-Übersicht."}
             </p>
           </div>
         </Card>
@@ -209,9 +225,34 @@ export default function ProtokollePage() {
             Keine Protokolle in dieser Ansicht.
           </p>
           <p className="mt-1 text-sm text-slate-600">
-            Wähle einen anderen Tab oder lege ein neues Protokoll an.
+            Filter oder Suche anpassen oder ein neues Protokoll anlegen.
           </p>
         </Card>
+      ) : isMitarbeiter ? (
+        <div className="space-y-3">
+          {gefiltert.map((p) => (
+            <Card
+              key={p.id}
+              className="flex flex-wrap items-center justify-between gap-3 p-4 shadow-sm transition hover:border-slate-300"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-slate-900">
+                  {p.kunde_name?.trim() || "–"}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span>{formatDatumTTMMJJJJ(p.erstellt_am)}</span>
+                  <ProtokollStatusBadge status={p.status} />
+                </div>
+              </div>
+              <Link
+                href={`/protokoll/${p.id}`}
+                className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                Öffnen
+              </Link>
+            </Card>
+          ))}
+        </div>
       ) : (
         <div className="space-y-3">
           {gefiltert.map((p) => {

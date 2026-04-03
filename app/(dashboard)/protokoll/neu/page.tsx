@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
-import type { AuftragMitKunde } from "@/types";
 
-type AuftragFuerProtokollWahl = AuftragMitKunde & { protokoll_anzahl: number };
+type KundeOption = { id: number; name: string };
 
 const STEPS = 3;
 
@@ -24,11 +24,15 @@ type LimitPayload = {
 export default function ProtokollNeuPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const preAuftragIdRaw = searchParams.get("auftrag_id");
+  const { data: session, status: sessionStatus } = useSession();
+  const preKundeIdRaw = searchParams.get("kunde_id");
+  const isInhaber = session?.user?.rolle === "inhaber";
+
   const [step, setStep] = useState(1);
-  const [auftraege, setAuftraege] = useState<AuftragFuerProtokollWahl[]>([]);
-  const [loadingAuftraege, setLoadingAuftraege] = useState(true);
-  const [auftragId, setAuftragId] = useState<number | null>(null);
+  const [kunden, setKunden] = useState<KundeOption[]>([]);
+  const [loadingKunden, setLoadingKunden] = useState(true);
+  const [kundeIdSelected, setKundeIdSelected] = useState<number | null>(null);
+  const [neuerKundeName, setNeuerKundeName] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
   const [notiz, setNotiz] = useState("");
   const [materialien, setMaterialien] = useState("");
@@ -40,6 +44,8 @@ export default function ProtokollNeuPage() {
   const [limitInfo, setLimitInfo] = useState<{ count: number; limit: number } | null>(
     null
   );
+
+  const zurueckHref = isInhaber ? "/dashboard" : "/protokolle";
 
   useEffect(() => {
     let cancelled = false;
@@ -80,14 +86,14 @@ export default function ProtokollNeuPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/auftraege/offen");
+        const res = await fetch("/api/kunden");
         if (!res.ok) throw new Error("load");
-        const data = (await res.json()) as AuftragFuerProtokollWahl[];
-        if (!cancelled) setAuftraege(data);
+        const data = (await res.json()) as KundeOption[];
+        if (!cancelled) setKunden(Array.isArray(data) ? data : []);
       } catch {
-        if (!cancelled) setError("Aufträge konnten nicht geladen werden.");
+        if (!cancelled) setError("Kunden konnten nicht geladen werden.");
       } finally {
-        if (!cancelled) setLoadingAuftraege(false);
+        if (!cancelled) setLoadingKunden(false);
       }
     })();
     return () => {
@@ -96,20 +102,22 @@ export default function ProtokollNeuPage() {
   }, [limitPhase, limitBlocked]);
 
   useEffect(() => {
-    if (!preAuftragIdRaw || auftraege.length === 0) return;
-    const n = Number(preAuftragIdRaw);
+    if (!preKundeIdRaw || kunden.length === 0) return;
+    const n = Number(preKundeIdRaw);
     if (!Number.isFinite(n)) return;
-    if (auftraege.some((a) => a.id === n)) {
-      setAuftragId(n);
+    if (kunden.some((k) => k.id === n)) {
+      setKundeIdSelected(n);
+      setNeuerKundeName("");
     }
-  }, [preAuftragIdRaw, auftraege]);
+  }, [preKundeIdRaw, kunden]);
 
   function canGoStep2() {
-    return auftragId != null;
+    const neu = neuerKundeName.trim();
+    return kundeIdSelected != null || neu.length > 0;
   }
 
   function canSubmit() {
-    return auftragId != null;
+    return canGoStep2();
   }
 
   async function refreshLimitAndBlock() {
@@ -128,16 +136,60 @@ export default function ProtokollNeuPage() {
     }
   }
 
+  async function resolveKundeId(): Promise<number> {
+    const neu = neuerKundeName.trim();
+    if (neu) {
+      const res = await fetch("/api/kunden", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: neu }),
+      });
+      const j = (await res.json().catch(() => ({}))) as {
+        id?: number;
+        error?: unknown;
+      };
+      if (!res.ok || typeof j.id !== "number") {
+        const msg =
+          typeof j.error === "object" && j.error != null && "name" in j.error
+            ? String((j.error as { name?: string[] }).name?.[0])
+            : "Kunde konnte nicht angelegt werden.";
+        throw new Error(msg);
+      }
+      return j.id;
+    }
+    if (kundeIdSelected != null) return kundeIdSelected;
+    throw new Error("Bitte einen Kunden wählen oder einen Namen eingeben.");
+  }
+
   async function handleSubmit() {
-    if (!auftragId) return;
+    if (!canSubmit()) return;
     setError(null);
     setSubmitting(true);
     try {
+      const kundeId = await resolveKundeId();
+      const resAuf = await fetch("/api/auftraege", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kunde_id: kundeId }),
+      });
+      const jAuf = (await resAuf.json().catch(() => ({}))) as {
+        id?: number;
+        error?: unknown;
+      };
+      if (!resAuf.ok || typeof jAuf.id !== "number") {
+        setError(
+          typeof jAuf.error === "string"
+            ? jAuf.error
+            : "Auftrag konnte nicht erstellt werden."
+        );
+        return;
+      }
+
       const res = await fetch("/api/protokoll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          auftrag_id: auftragId,
+          auftrag_id: jAuf.id,
           notiz: notiz.trim() || null,
           materialien: materialien.trim() || null,
           fotos,
@@ -157,16 +209,16 @@ export default function ProtokollNeuPage() {
         );
         return;
       }
-      router.push("/auftraege");
+      router.push("/protokolle");
       router.refresh();
-    } catch {
-      setError("Netzwerkfehler.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Netzwerkfehler.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (limitPhase === "loading") {
+  if (limitPhase === "loading" || sessionStatus === "loading") {
     return (
       <div className="mx-auto flex min-h-[50vh] max-w-lg items-center justify-center pb-6">
         <p className="text-slate-600">Laden…</p>
@@ -193,9 +245,9 @@ export default function ProtokollNeuPage() {
             <Button
               type="button"
               className="min-h-12 w-full text-base sm:w-auto"
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push(zurueckHref)}
             >
-              Zurück zum Dashboard
+              {isInhaber ? "Zurück zum Dashboard" : "Zu meinen Protokollen"}
             </Button>
           </div>
         </Card>
@@ -207,7 +259,7 @@ export default function ProtokollNeuPage() {
     <div className="mx-auto min-h-[70vh] max-w-lg pb-6">
       <div className="mb-4 flex items-center gap-3">
         <Link
-          href="/dashboard"
+          href={zurueckHref}
           className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-primary hover:bg-surface"
           aria-label="Zurück"
         >
@@ -216,7 +268,6 @@ export default function ProtokollNeuPage() {
         <h1 className="text-xl font-bold text-slate-900">Protokoll</h1>
       </div>
 
-      {/* Step indicator */}
       <div className="mb-6 flex items-center justify-center gap-2">
         {Array.from({ length: STEPS }, (_, i) => i + 1).map((s) => (
           <div key={s} className="flex items-center gap-2">
@@ -242,7 +293,7 @@ export default function ProtokollNeuPage() {
       <p className="mb-6 text-center text-sm font-medium text-slate-600">
         Schritt {step} von {STEPS}
         {step === 1
-          ? " · Auftrag wählen"
+          ? " · Kunde wählen"
           : step === 2
             ? " · Fotos"
             : " · Notiz"}
@@ -258,47 +309,63 @@ export default function ProtokollNeuPage() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
-              Auftrag wählen *
+              Kunde wählen *
             </h2>
-            {loadingAuftraege ? (
+            {loadingKunden ? (
               <p className="text-slate-600">Laden…</p>
-            ) : auftraege.length === 0 ? (
-              <p className="text-slate-600">
-                Keine Aufträge mit Status „offen“ oder „in Bearbeitung“. Lege
-                zuerst unter Aufträge einen passenden Auftrag an.
-              </p>
             ) : (
-              <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
-                {auftraege.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setAuftragId(a.id)}
-                    className={`flex min-h-14 w-full flex-col items-start rounded-xl border-2 px-4 py-3 text-left transition ${
-                      auftragId === a.id
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/25"
-                        : "border-slate-200 hover:border-slate-300"
-                    }`}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="kunde-select"
+                    className="block text-sm font-medium text-slate-700"
                   >
-                    <span className="font-semibold text-slate-900">
-                      {a.auftragsnummer?.trim() ||
-                        String(a.id).padStart(4, "0")}
-                      {" · "}
-                      {a.kunde_name ?? "Unbekannt"}
-                    </span>
-                    {Number(a.protokoll_anzahl) > 0 ? (
-                      <span className="mt-0.5 text-xs text-slate-500">
-                        (+{Number(a.protokoll_anzahl)}{" "}
-                        {Number(a.protokoll_anzahl) === 1
-                          ? "Protokoll"
-                          : "Protokolle"}
-                        )
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
+                    Bestehender Kunde
+                  </label>
+                  <select
+                    id="kunde-select"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-900 shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    value={kundeIdSelected ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setKundeIdSelected(v === "" ? null : Number(v));
+                      if (v !== "") setNeuerKundeName("");
+                    }}
+                  >
+                    <option value="">Aus Liste wählen…</option>
+                    {kunden.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="kunde-neu"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Neuer Kunde — Name eingeben
+                  </label>
+                  <input
+                    id="kunde-neu"
+                    type="text"
+                    autoComplete="organization"
+                    placeholder="z. B. Müller GmbH"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    value={neuerKundeName}
+                    onChange={(e) => {
+                      setNeuerKundeName(e.target.value);
+                      if (e.target.value.trim()) setKundeIdSelected(null);
+                    }}
+                  />
+                </div>
               </div>
             )}
+            <p className="text-xs text-slate-500">
+              Entweder einen bestehenden Kunden auswählen oder einen neuen Namen
+              eintragen — der Auftrag wird im Hintergrund automatisch angelegt.
+            </p>
             <Button
               type="button"
               className="min-h-12 w-full text-base"

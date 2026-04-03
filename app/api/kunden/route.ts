@@ -20,7 +20,14 @@ interface KundeRow extends RowDataPacket {
 
 const createSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
-  email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben"),
+  email: z.preprocess(
+    (v) => {
+      if (v === undefined || v === null) return undefined;
+      const s = String(v).trim();
+      return s === "" ? undefined : s;
+    },
+    z.string().email("Bitte eine gültige E-Mail-Adresse eingeben").optional()
+  ),
   telefon: z.string().optional().nullable(),
   adresse: z.string().optional().nullable(),
   fahrzeug: z.string().optional().nullable(),
@@ -74,7 +81,7 @@ export async function POST(request: Request) {
       [
         session.user.betrieb_id,
         d.name.trim(),
-        d.email.trim(),
+        d.email ?? null,
         d.telefon?.trim() || null,
         d.adresse?.trim() || null,
         d.fahrzeug?.trim() || null,

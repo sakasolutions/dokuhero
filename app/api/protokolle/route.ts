@@ -51,6 +51,23 @@ export async function GET(request: Request) {
       queryParams.push(statusRaw);
     }
 
+    const isMitarbeiter = session.user.rolle === "mitarbeiter";
+    let creatorClause = "";
+    if (isMitarbeiter && session.user.benutzer_id != null) {
+      creatorClause = " AND p.erstellt_von_benutzer_id = ?";
+      queryParams.push(session.user.benutzer_id);
+    }
+
+    const orderSql = isMitarbeiter
+      ? " ORDER BY p.erstellt_am DESC"
+      : ` ORDER BY 
+         CASE p.status 
+           WHEN 'zur_pruefung' THEN 1 
+           WHEN 'entwurf' THEN 2 
+           WHEN 'freigegeben' THEN 3 
+         END ASC,
+         p.erstellt_am DESC`;
+
     const pool = getPool();
     const [rows] = await pool.execute<ProtokollListeRow[]>(
       `SELECT 
@@ -70,13 +87,8 @@ export async function GET(request: Request) {
        LEFT JOIN kunden k ON a.kunde_id = k.id
        WHERE a.betrieb_id = ? AND p.archiviert = 0
          ${statusClause}
-       ORDER BY 
-         CASE p.status 
-           WHEN 'zur_pruefung' THEN 1 
-           WHEN 'entwurf' THEN 2 
-           WHEN 'freigegeben' THEN 3 
-         END ASC,
-         p.erstellt_am DESC`,
+         ${creatorClause}
+       ${orderSql}`,
       queryParams
     );
 
