@@ -294,13 +294,16 @@ export default function AuftragUebersichtPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {protokolle.map((p) => (
+            {protokolle.map((p, index) => (
               <Card
                 key={p.id}
                 className="border-stone-200/90 p-4 shadow-sm transition hover:border-stone-300"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
+                    <span className="text-xs font-semibold text-slate-500">
+                      Protokoll #{p.protokoll_nummer ?? index + 1}
+                    </span>
                     <p className="font-semibold text-stone-900">
                       {formatProtokollDatum(p.erstellt_am)}
                     </p>
