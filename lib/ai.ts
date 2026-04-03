@@ -43,6 +43,37 @@ export async function generateProtokollText(
   return text;
 }
 
+const FORMATIERE_NOTIZ_SYSTEM = `Du korrigierst deutsche Handwerker-Notizen. 
+Regeln:
+- Korrigiere Groß/Kleinschreibung
+- Setze fehlende Satzzeichen
+- Behalte alle Inhalte exakt bei — kein Wort hinzufügen oder weglassen
+- Kein ausformulierter Text, nur die Stichpunkte sauber formatiert
+- Jeder Stichpunkt eine eigene Zeile
+Gib NUR den korrigierten Text zurück, keine Erklärungen.`;
+
+export async function formatiereNotiz(rohtext: string): Promise<string> {
+  if (!rohtext.trim()) return rohtext;
+
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) {
+    throw new Error("OPENAI_API_KEY ist nicht gesetzt.");
+  }
+
+  const client = new OpenAI({ apiKey: key });
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_tokens: 300,
+    temperature: 0.2,
+    messages: [
+      { role: "system", content: FORMATIERE_NOTIZ_SYSTEM },
+      { role: "user", content: rohtext.trim() },
+    ],
+  });
+
+  return response.choices[0]?.message?.content?.trim() ?? rohtext;
+}
+
 const REFINE_SYSTEM_PROMPT =
   "Du bist ein Assistent für Handwerksbetriebe. Der folgende Text ist ein Servicereport- bzw. Protokollentwurf. " +
   "Passe ihn präzise an die Anweisung des Nutzers an. Bleibe professionell und höflich auf Deutsch, höchstens drei Absätze. " +

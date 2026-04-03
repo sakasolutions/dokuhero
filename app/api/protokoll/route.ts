@@ -8,6 +8,7 @@ import { join } from "path";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
 import { fetchBetriebProtokollMonatsCap } from "@/lib/protokoll-limit";
+import { formatiereNotiz } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -100,8 +101,16 @@ export async function POST(request: Request) {
     // entspricht z. B. /var/www/dokuhero/public/uploads/fotos/ wenn cwd = Projektroot
     const uploadDir = await ensureFotosUploadDir();
     const ts = Date.now();
-    const notizText = notiz?.trim() || null;
+    let notizText = notiz?.trim() || null;
     const materialienText = materialien?.trim() || null;
+
+    if (notizText) {
+      try {
+        notizText = await formatiereNotiz(notizText);
+      } catch {
+        /* Original-Notiz beibehalten */
+      }
+    }
 
     const conn = await pool.getConnection();
     await conn.beginTransaction();
