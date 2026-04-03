@@ -637,7 +637,8 @@ export default function ProtokollAnsichtPage() {
       {isEntwurf && hasKiText && !isArchiviert ? (
         <Card>
           <p className="text-sm text-slate-600">
-            Protokolltext geprüft und fertig? Dann zur Freigabe einreichen.
+            Protokolltext fertig? Dann jetzt zur Freigabe einreichen — dein
+            Chef wird benachrichtigt.
           </p>
           <Button
             type="button"
