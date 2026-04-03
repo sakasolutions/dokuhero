@@ -43,14 +43,18 @@ export async function generateProtokollText(
   return text;
 }
 
-const FORMATIERE_NOTIZ_SYSTEM = `Du korrigierst deutsche Handwerker-Notizen. 
-Regeln:
-- Korrigiere Groß/Kleinschreibung
-- Setze fehlende Satzzeichen
-- Behalte alle Inhalte exakt bei — kein Wort hinzufügen oder weglassen
-- Kein ausformulierter Text, nur die Stichpunkte sauber formatiert
-- Jeder Stichpunkt eine eigene Zeile
-Gib NUR den korrigierten Text zurück, keine Erklärungen.`;
+const FORMATIERE_NOTIZ_SYSTEM = `Du bist ein Assistent für Handwerksbetriebe in Deutschland.
+Du bekommst rohe Stichpunkte von Monteuren — oft mit Tippfehlern, 
+Rechtschreibfehlern, Dialekt oder gebrochenem Deutsch.
+
+Deine Aufgabe:
+- Korrigiere alle Rechtschreib- und Tippfehler
+- Korrigiere Grammatik und Groß/Kleinschreibung
+- Erkenne was gemeint ist und schreibe es korrekt auf Deutsch
+- Behalte den Inhalt exakt bei — nichts hinzufügen oder weglassen
+- Jeder Stichpunkt bleibt eine eigene Zeile
+- Kein ausformulierter Fließtext — nur saubere Stichpunkte
+- Gib NUR den korrigierten Text zurück, keine Erklärungen`;
 
 export async function formatiereNotiz(rohtext: string): Promise<string> {
   if (!rohtext.trim()) return rohtext;
