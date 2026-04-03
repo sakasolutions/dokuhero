@@ -269,7 +269,7 @@ export default function AuftraegeListePage() {
             Aufträge
           </h1>
           <p className="mt-1 text-sm text-stone-600 sm:text-base">
-            Alle Aufträge deines Betriebs — mobil optimiert
+            Alle Aufträge deines Betriebs
           </p>
         </div>
         {archivFilter === "aktiv" ? (
@@ -561,18 +561,18 @@ export default function AuftraegeListePage() {
                     <p className="text-xs text-stone-500">
                       {formatDate(a.erstellt_am)}
                     </p>
-                    <div className="flex flex-wrap gap-2 border-t border-stone-100 pt-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-stone-100 pt-3">
                       {showProto ? (
                         <Link
-                          href={`/protokoll/${a.protokoll_id}`}
-                          className="inline-flex flex-1 min-w-[8rem] items-center justify-center rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-stone-50"
+                          href={`/auftraege/${a.id}`}
+                          className="text-sm font-semibold text-primary hover:text-primary/80 hover:underline"
                         >
                           Protokoll ansehen
                         </Link>
                       ) : null}
                       <Link
                         href={`/auftraege/${a.id}`}
-                        className="inline-flex flex-1 min-w-[8rem] items-center justify-center rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50"
+                        className="text-sm font-semibold text-stone-600 hover:text-stone-900 hover:underline"
                       >
                         Bearbeiten
                       </Link>
@@ -581,10 +581,11 @@ export default function AuftraegeListePage() {
                         <button
                           type="button"
                           onClick={() => void archiveAuftrag(a.id)}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-stone-600 shadow-sm transition hover:bg-red-50 hover:text-red-800"
+                          className="inline-flex items-center justify-center rounded-lg p-1.5 text-stone-500 transition hover:bg-red-50 hover:text-red-700"
+                          title="Archivieren"
+                          aria-label="Auftrag archivieren"
                         >
-                          <Archive className="h-4 w-4 shrink-0" />
-                          Archivieren
+                          <Archive className="h-4 w-4 shrink-0" strokeWidth={2} />
                         </button>
                       ) : null}
                     </div>
