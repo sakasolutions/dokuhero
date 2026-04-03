@@ -10,9 +10,15 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  if (pathname === "/") {
+    if (token) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return NextResponse.next(); // Landingpage für Gäste
+  }
+
   // Public paths - immer erlaubt
   if (
-    pathname === "/" ||
     pathname === "/impressum" ||
     pathname === "/datenschutz" ||
     pathname === "/agb"
@@ -80,6 +86,13 @@ export async function middleware(request: NextRequest) {
 
   if (trialAbgelaufen || expired) {
     return NextResponse.redirect(new URL("/preise", request.url));
+  }
+
+  if (
+    (token as { rolle?: string }).rolle === "mitarbeiter" &&
+    pathname === "/dashboard"
+  ) {
+    return NextResponse.redirect(new URL("/protokoll/neu", request.url));
   }
 
   return NextResponse.next();
