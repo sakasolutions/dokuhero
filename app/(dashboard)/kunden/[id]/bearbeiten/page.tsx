@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/Card";
 
 const schema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
-  email: z.union([z.string().email("Ungültige E-Mail"), z.literal("")]),
+  email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben"),
   telefon: z.string().optional(),
   adresse: z.string().optional(),
   fahrzeug: z.string().optional(),
@@ -92,7 +92,7 @@ export default function KundeBearbeitenPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: data.name,
-        email: data.email || "",
+        email: data.email.trim(),
         telefon: data.telefon || null,
         adresse: data.adresse || null,
         fahrzeug: data.fahrzeug || null,
@@ -170,7 +170,7 @@ export default function KundeBearbeitenPage() {
             {...register("name")}
           />
           <Input
-            label="E-Mail"
+            label="E-Mail *"
             type="email"
             error={errors.email?.message}
             {...register("email")}

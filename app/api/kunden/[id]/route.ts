@@ -46,7 +46,7 @@ function num(v: unknown): number {
 
 const updateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
-  email: z.union([z.string().email(), z.literal("")]).optional(),
+  email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben"),
   telefon: z.string().optional().nullable(),
   adresse: z.string().optional().nullable(),
   fahrzeug: z.string().optional().nullable(),
@@ -167,8 +167,6 @@ export async function PUT(
     }
 
     const d = parsed.data;
-    const email =
-      d.email && d.email.length > 0 ? d.email : null;
 
     const pool = getPool();
     const [result] = await pool.execute<ResultSetHeader>(
@@ -176,7 +174,7 @@ export async function PUT(
        WHERE id = ? AND betrieb_id = ?`,
       [
         d.name.trim(),
-        email,
+        d.email.trim(),
         d.telefon?.trim() || null,
         d.adresse?.trim() || null,
         d.fahrzeug?.trim() || null,
