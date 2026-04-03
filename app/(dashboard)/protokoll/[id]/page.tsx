@@ -396,8 +396,6 @@ export default function ProtokollAnsichtPage() {
   const isFreigegeben = pStatus === "freigegeben";
   const isZurPruefung = pStatus === "zur_pruefung";
   const isEntwurf = pStatus === "entwurf";
-  const canEditNotizMaterialien =
-    (pStatus === "entwurf" || pStatus === "zur_pruefung") && !isArchiviert;
   const kiReadonly = isFreigegeben || isArchiviert;
   const showChefFreigabeCard = isZurPruefung && chef && !isArchiviert;
   const showChefFreigabeBar =
@@ -483,7 +481,9 @@ export default function ProtokollAnsichtPage() {
 
       <Card className="overflow-visible">
         <div className="space-y-4 overflow-visible">
-          {canEditNotizMaterialien && !editMode ? (
+          {(pStatus === "entwurf" || pStatus === "zur_pruefung") &&
+          !protokoll.archiviert &&
+          !editMode ? (
             <div className="flex justify-end">
               <Button
                 type="button"
