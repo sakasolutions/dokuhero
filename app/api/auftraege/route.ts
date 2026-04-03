@@ -97,14 +97,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Kunde nicht gefunden" }, { status: 400 });
     }
 
-    const [cntRows] = await pool.execute<RowDataPacket[]>(
-      "SELECT COUNT(*) AS c FROM auftraege WHERE betrieb_id = ?",
-      [session.user.betrieb_id]
+    const jahr = new Date().getFullYear();
+    const betriebId = session.user.betrieb_id;
+    const [countRows] = await pool.execute<RowDataPacket[]>(
+      "SELECT COUNT(*) AS anzahl FROM auftraege WHERE betrieb_id = ? AND YEAR(erstellt_am) = ?",
+      [betriebId, jahr]
     );
-    const rawC = (cntRows[0] as { c?: unknown })?.c;
-    const anzahl =
-      typeof rawC === "bigint" ? Number(rawC) : Number(rawC ?? 0);
-    const auftragsnummer = String(anzahl + 1).padStart(4, "0");
+    const rawA = (countRows[0] as { anzahl?: unknown })?.anzahl;
+    const anzahlJahr =
+      typeof rawA === "bigint" ? Number(rawA) : Number(rawA ?? 0);
+    const nummer = String(anzahlJahr + 1).padStart(5, "0");
+    const auftragsnummer = `DH-${jahr}-${nummer}`;
 
     const [result] = await pool.execute<ResultSetHeader>(
       `INSERT INTO auftraege (betrieb_id, kunde_id, auftragsnummer, status, erstellt_am, abgeschlossen_am, archiviert)
