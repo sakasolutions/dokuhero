@@ -518,26 +518,6 @@ export default function ProtokollNeuPage() {
     }
   }
 
-  async function handleShare() {
-    const sig = getSignatureDataUri();
-    if (!sig) return;
-    try {
-      await postGenerate(false, sig, { notifyBetriebIntern: false });
-      const path = pdfUrl ?? `/uploads/pdfs/${protokollId}.pdf`;
-      const absUrl = `${window.location.origin}${path}?t=${Date.now()}`;
-      if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({
-          title: "Serviceprotokoll",
-          url: absUrl,
-        });
-      }
-      setAbschlussModus("share");
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      setError(e instanceof Error ? e.message : "Teilen fehlgeschlagen.");
-    }
-  }
-
   async function handleIntern() {
     const sig = getSignatureDataUri();
     if (!sig) return;
@@ -1058,7 +1038,7 @@ export default function ProtokollNeuPage() {
                     }
                     onClick={() => void handleEmailSend()}
                   >
-                    📧 Per E-Mail senden (Kunde + Chef)
+                    Per E-Mail senden
                   </Button>
                   {!kundenEmail?.trim() ? (
                     <div className="space-y-1">
@@ -1083,24 +1063,12 @@ export default function ProtokollNeuPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-12 w-full text-base"
+                    className="min-h-12 w-full border-slate-300 text-base text-slate-700"
                     disabled={!hasSignature || generateBusy}
                     onClick={() => void handleIntern()}
                   >
-                    🏢 Nur intern speichern (nur Chef bekommt Mail)
+                    Intern speichern
                   </Button>
-                  {typeof navigator !== "undefined" &&
-                  typeof navigator.share === "function" ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-12 w-full text-base"
-                      disabled={!hasSignature || generateBusy}
-                      onClick={() => void handleShare()}
-                    >
-                      📲 Teilen
-                    </Button>
-                  ) : null}
                 </div>
                 <Button
                   type="button"
