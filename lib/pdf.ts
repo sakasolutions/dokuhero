@@ -108,79 +108,319 @@ function buildHtml(
 
   const logoBlock =
     logoDataUri != null
-      ? `<div class="logo-wrap"><img src=${JSON.stringify(logoDataUri)} alt="" /></div>`
+      ? `<div class="logo-wrap has-logo"><img src=${JSON.stringify(logoDataUri)} alt="" /></div>`
       : "";
+
+  const materialienTrimmed = data.materialien?.trim() ?? "";
+  const materialienItems = materialienTrimmed
+    .split("\n")
+    .map((m) => m.trim())
+    .filter(Boolean)
+    .map((m) => `<li>${esc(m)}</li>`)
+    .join("");
+
+  const materialienBlock =
+    materialienItems.length > 0
+      ? `
+    <div class="section block">
+      <div class="section-title">Verwendete Materialien</div>
+      <ul class="materialien-list">
+        ${materialienItems}
+      </ul>
+    </div>`
+      : "";
+
+  const fotosBlock =
+    fotoDataUris.length > 0
+      ? `
+    <div class="section block">
+      <div class="section-title">Fotodokumentation</div>
+      <div class="foto-grid">${fotoCells}</div>
+    </div>`
+      : "";
+
+  const protokollInfoValue =
+    data.protokoll_nummer != null &&
+    Number.isFinite(Number(data.protokoll_nummer))
+      ? `#${esc(String(data.protokoll_nummer))}`
+      : "–";
+
+  const unterschriftInner = data.unterschriftDataUri?.trim()
+    ? `
+        <div class="unterschrift-box">
+          <img src=${JSON.stringify(data.unterschriftDataUri.trim())} alt="Unterschrift" />
+          <div class="unterschrift-meta">
+            Digitale Unterschrift des Kunden · ${esc(data.datum)}
+          </div>
+        </div>
+      `
+    : `
+        <div style="margin-top: 12px;">
+          <div class="unterschrift-linie"></div>
+          <div class="unterschrift-label">Unterschrift Kunde / Datum</div>
+        </div>
+      `;
 
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="utf-8" />
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-size: 11pt; color: #111; margin: 24px; line-height: 1.45; }
-    .header { border-bottom: 2px solid #4f6af5; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
-    .header-text { flex: 1; min-width: 0; }
-    .logo-wrap { flex-shrink: 0; max-width: 160px; }
-    .logo-wrap img { max-height: 56px; max-width: 160px; width: auto; height: auto; object-fit: contain; display: block; }
-    .betrieb { font-size: 22pt; font-weight: 800; color: #1e293b; letter-spacing: -0.02em; }
-    .subtitle { font-size: 12pt; color: #64748b; margin-top: 4px; font-weight: 600; }
-    .info { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
-    .info-row { margin: 4px 0; }
-    .info-label { color: #64748b; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.04em; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 10.5pt;
+      color: #1e293b;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* HEADER */
+    .header {
+      background: #1e293b;
+      color: white;
+      padding: 24px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-left { flex: 1; }
+    .betrieb {
+      font-size: 18pt;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+    .subtitle {
+      font-size: 10pt;
+      color: #94a3b8;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+    }
+    .logo-wrap { flex-shrink: 0; margin-left: 24px; }
+    .logo-wrap img {
+      max-height: 48px;
+      max-width: 140px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+    .logo-wrap.has-logo img {
+      filter: brightness(0) invert(1);
+    }
+
+    /* CONTENT WRAPPER */
+    .content { padding: 28px 32px; }
+
+    /* INFO BLOCK */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .info-cell {
+      padding: 12px 16px;
+      border-right: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .info-cell:nth-child(even) { border-right: none; }
+    .info-cell:nth-last-child(-n+2) { border-bottom: none; }
+    .info-label {
+      font-size: 8pt;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .info-value {
+      font-size: 11pt;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    /* SECTIONS */
+    .section { margin-bottom: 24px; }
+    .section-title {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 12px;
+    }
+    .section-content {
+      font-size: 10.5pt;
+      color: #1e293b;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    /* MATERIALIEN als Liste */
+    .materialien-list {
+      list-style: none;
+      padding: 0;
+    }
+    .materialien-list li {
+      padding: 6px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 10.5pt;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .materialien-list li:last-child { border-bottom: none; }
+    .materialien-list li::before {
+      content: "·";
+      color: #94a3b8;
+      font-weight: 700;
+    }
+
+    /* FOTOS */
+    .foto-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .foto-cell {
+      aspect-ratio: 4/3;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #f8fafc;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .foto-cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* UNTERSCHRIFT */
+    .unterschrift-section {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid #e2e8f0;
+      page-break-inside: avoid;
+    }
+    .unterschrift-box {
+      margin-top: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+      max-width: 400px;
+    }
+    .unterschrift-box img {
+      max-height: 100px;
+      max-width: 100%;
+      display: block;
+    }
+    .unterschrift-meta {
+      margin-top: 8px;
+      font-size: 8.5pt;
+      color: #64748b;
+    }
+    .unterschrift-linie {
+      border-top: 1px solid #1e293b;
+      width: 280px;
+      margin-top: 60px;
+      margin-bottom: 6px;
+    }
+    .unterschrift-label {
+      font-size: 8.5pt;
+      color: #64748b;
+    }
+
+    /* RECHTLICHER HINWEIS */
+    .legal-note {
+      margin-top: 20px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border-radius: 6px;
+      border-left: 3px solid #4f6af5;
+      font-size: 8pt;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* SEITENUMBRUCH */
     .block { page-break-inside: auto; }
-    h2 { font-size: 12pt; margin: 18px 0 8px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; page-break-after: avoid; }
-    .arbeiten { white-space: pre-wrap; }
-    .foto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-    .foto-cell { aspect-ratio: 4/3; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #f8fafc; page-break-inside: avoid; break-inside: avoid; }
-    .foto-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .unterschrift-wrap { margin-top: 8px; max-width: 320px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; background: #fff; }
-    .unterschrift-wrap img { max-height: 120px; max-width: 100%; display: block; }
+    h2 { page-break-after: avoid; }
   </style>
 </head>
 <body>
+
+  <!-- HEADER -->
   <div class="header">
-    <div class="header-text">
+    <div class="header-left">
       <div class="betrieb">${esc(data.betriebName)}</div>
       <div class="subtitle">Serviceprotokoll</div>
     </div>
     ${logoBlock}
   </div>
-  <div class="info">
-    <div class="info-row"><span class="info-label">Kunde</span><br/><strong>${esc(data.kundeName)}</strong></div>
-    <div class="info-row" style="margin-top:10px"><span class="info-label">Datum</span><br/><strong>${esc(data.datum)}</strong></div>
-    <div class="info-row" style="margin-top:10px"><span class="info-label">Auftragsnummer</span><br/><strong>${esc(data.auftragsnummer)}</strong></div>
-    ${
-      data.protokoll_nummer != null && Number.isFinite(Number(data.protokoll_nummer))
-        ? `<div class="info-row" style="margin-top:10px"><span class="info-label">Protokoll</span><br/><strong>#${esc(String(data.protokoll_nummer))} vom ${esc(data.datum)}</strong></div>`
-        : ""
-    }
+
+  <div class="content">
+
+    <!-- INFO GRID: Kunde, Datum, Auftrag, Protokoll -->
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="info-label">Kunde</div>
+        <div class="info-value">${esc(data.kundeName)}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Datum</div>
+        <div class="info-value">${esc(data.datum)}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Auftragsnummer</div>
+        <div class="info-value">${esc(data.auftragsnummer)}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Protokoll</div>
+        <div class="info-value">${protokollInfoValue}</div>
+      </div>
+    </div>
+
+    <!-- DURCHGEFÜHRTE ARBEITEN -->
+    <div class="section block">
+      <div class="section-title">Durchgeführte Arbeiten</div>
+      <div class="section-content">${esc(data.kiText)}</div>
+    </div>
+
+    ${materialienBlock}
+
+    ${fotosBlock}
+
+    <!-- UNTERSCHRIFT -->
+    <div class="unterschrift-section">
+      <div class="section-title">Bestätigung & Unterschrift</div>
+      ${unterschriftInner}
+    </div>
+
+    <!-- RECHTLICHER HINWEIS -->
+    <div class="legal-note">
+      Dieses Protokoll wurde digital erstellt und dokumentiert die durchgeführten
+      Arbeiten zum angegebenen Datum. Mit der Unterschrift bestätigt der Kunde
+      die ordnungsgemäße Ausführung der beschriebenen Leistungen.
+      Erstellt mit DokuHero · ${esc(data.betriebName)}
+    </div>
+
   </div>
-  <div class="block">
-    <h2>Auftragsbeschreibung</h2>
-    <p>${esc(data.beschreibung || "–")}</p>
-  </div>
-  <div class="block">
-    <h2>Durchgeführte Arbeiten</h2>
-    <p class="arbeiten">${esc(data.kiText)}</p>
-  </div>
-  ${
-    data.materialien?.trim()
-      ? `<div class="block">
-    <h2>Materialien / Positionen</h2>
-    <p>${esc(data.materialien.trim())}</p>
-  </div>`
-      : ""
-  }
-  ${
-    fotoDataUris.length
-      ? `<div class="block"><h2>Fotos</h2><div class="foto-grid">${fotoCells}</div></div>`
-      : ""
-  }
-  ${
-    data.unterschriftDataUri?.trim()
-      ? `<div class="block"><h2>Unterschrift Kunde</h2><div class="unterschrift-wrap"><img src=${JSON.stringify(data.unterschriftDataUri.trim())} alt="" /></div></div>`
-      : ""
-  }
 </body>
 </html>`;
 }
