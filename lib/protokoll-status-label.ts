@@ -7,8 +7,14 @@ export function protokollStatusLabel(s: ProtokollStatus | string): string {
     case "zur_pruefung":
       return "Zur Freigabe bereit";
     case "freigegeben":
-      return "Freigegeben";
+      return "Abgeschlossen";
     default:
       return String(s);
   }
+}
+
+export function protokollStatusLabelWerker(s: string): string {
+  if (s === "entwurf") return "In Bearbeitung";
+  if (s === "freigegeben") return "Abgeschlossen";
+  return protokollStatusLabel(s);
 }

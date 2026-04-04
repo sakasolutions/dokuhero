@@ -40,7 +40,7 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail" | "reject" | "archiv";
+type Busy = null | "preview" | "pdf" | "mail" | "reject" | "archiv" | "submit";
 
 const REGENERATE_PRESETS: { label: string; text: string }[] = [
   { label: "Kürzer", text: "Bitte kürzer fassen" },
@@ -267,6 +267,35 @@ export default function ProtokollAnsichtPage() {
       setBannerSuccess("Protokoll wurde archiviert.");
       await load();
       router.refresh();
+    } catch {
+      setBannerError("Netzwerkfehler.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function postSubmitReview() {
+    if (busy !== null) return;
+    setBannerError(null);
+    setBannerSuccess(null);
+    setBusy("submit");
+    try {
+      const res = await fetch(`/api/protokoll/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "submit_review" }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setBannerError(
+          typeof j.error === "string"
+            ? j.error
+            : "Einreichen zur Freigabe fehlgeschlagen."
+        );
+        return;
+      }
+      setBannerSuccess("Protokoll wurde zur Freigabe eingereicht.");
+      await load();
     } catch {
       setBannerError("Netzwerkfehler.");
     } finally {
@@ -520,6 +549,7 @@ export default function ProtokollAnsichtPage() {
     freigabe_erlaubt: freigabeRaw,
   } = data;
   const chef = freigabeRaw === true;
+  const isInhaber = session?.user?.rolle === "inhaber";
   const pdfHref = protokoll.pdf_pfad ?? undefined;
   const pdfIframeSrc = pdfHref
     ? `${pdfHref}${pdfHref.includes("?") ? "&" : "?"}t=${pdfCacheBust}`
@@ -574,7 +604,7 @@ export default function ProtokollAnsichtPage() {
           {isFreigegeben ? (
             <>
               <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-                Freigegeben
+                Abgeschlossen
               </span>
               {protokoll.gesendet_am ? (
                 <span className="text-sm text-slate-500">
@@ -828,6 +858,27 @@ export default function ProtokollAnsichtPage() {
                   onClick={() => setStepPdf(true)}
                 >
                   Weiter zu PDF
+                </Button>
+              ) : null}
+              {isInhaber &&
+              chef &&
+              isEntwurf &&
+              hasKiText &&
+              !isArchiviert ? (
+                <Button
+                  type="button"
+                  className="min-h-12 w-full gap-2 text-base sm:w-auto"
+                  disabled={busy !== null}
+                  onClick={() => void postSubmitReview()}
+                >
+                  {busy === "submit" ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Wird eingereicht…
+                    </>
+                  ) : (
+                    "Zur Freigabe einreichen"
+                  )}
                 </Button>
               ) : null}
             </div>

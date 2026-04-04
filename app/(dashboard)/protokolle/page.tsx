@@ -45,6 +45,7 @@ function fahrzeugZeile(p: ProtokollListeItem): string | null {
 export default function ProtokollePage() {
   const { data: session, status: sessionStatus } = useSession();
   const isMitarbeiter = session?.user?.rolle === "mitarbeiter";
+  const isInhaber = session?.user?.rolle === "inhaber";
 
   const [alle, setAlle] = useState<ProtokollListeItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -108,18 +109,17 @@ export default function ProtokollePage() {
   }
 
   const tabs: { key: ProtokollTab; label: string; showFreigabeBadge?: boolean }[] =
-    isMitarbeiter
+    isInhaber
       ? [
-          { key: "alle", label: "Alle" },
-          { key: "zur_pruefung", label: "Zur Freigabe", showFreigabeBadge: true },
-          { key: "entwurf", label: "Entwurf" },
-          { key: "freigegeben", label: "Freigegeben" },
-        ]
-      : [
           { key: "alle", label: "Alle" },
           { key: "zur_pruefung", label: "Zur Freigabe", showFreigabeBadge: true },
           { key: "entwurf", label: "Entwürfe" },
           { key: "freigegeben", label: "Freigegeben" },
+        ]
+      : [
+          { key: "alle", label: "Alle" },
+          { key: "entwurf", label: "In Bearbeitung" },
+          { key: "freigegeben", label: "Abgeschlossen" },
         ];
 
   return (
@@ -228,28 +228,32 @@ export default function ProtokollePage() {
         </Card>
       ) : isMitarbeiter ? (
         <div className="space-y-3">
-          {gefiltert.map((p) => (
-            <Card
-              key={p.id}
-              className="flex flex-wrap items-center justify-between gap-3 p-4 shadow-sm transition hover:border-slate-300"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-slate-900">
-                  {p.kunde_name?.trim() || "–"}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                  <span>{formatDatumTTMMJJJJ(p.erstellt_am)}</span>
-                  <ProtokollStatusBadge status={p.status} />
-                </div>
-              </div>
-              <Link
-                href={`/protokoll/${p.id}`}
-                className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          {gefiltert.map((p) => {
+            const actionLabel =
+              p.status === "entwurf" ? "Weiterbearbeiten" : "Ansehen";
+            return (
+              <Card
+                key={p.id}
+                className="flex flex-wrap items-center justify-between gap-3 p-4 shadow-sm transition hover:border-slate-300"
               >
-                Öffnen
-              </Link>
-            </Card>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-900">
+                    {p.kunde_name?.trim() || "–"}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span>{formatDatumTTMMJJJJ(p.erstellt_am)}</span>
+                    <ProtokollStatusBadge status={p.status} werkerLabels />
+                  </div>
+                </div>
+                <Link
+                  href={`/protokoll/${p.id}`}
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  {actionLabel}
+                </Link>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="space-y-3">
