@@ -31,7 +31,9 @@ export default function ProtokollNeuPage() {
   const prevStepRef = useRef(step);
 
   const [kundenName, setKundenName] = useState("");
-  const [kundenAdresse, setKundenAdresse] = useState("");
+  const [kundenStrasse, setKundenStrasse] = useState("");
+  const [kundenPlz, setKundenPlz] = useState("");
+  const [kundenStadt, setKundenStadt] = useState("");
   const [kundenTelefon, setKundenTelefon] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
   const [notiz, setNotiz] = useState("");
@@ -146,12 +148,18 @@ export default function ProtokollNeuPage() {
   /** Kunde + Auftrag + Protokoll; setzt bei Fehler `error`, liefert null. */
   async function saveProtokollCore(): Promise<number | null> {
     setError(null);
+    const adresse = [
+      kundenStrasse?.trim(),
+      [kundenPlz?.trim(), kundenStadt?.trim()].filter(Boolean).join(" "),
+    ]
+      .filter(Boolean)
+      .join(", ");
     const resKunde = await fetch("/api/kunden", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: kundenName.trim(),
-        adresse: kundenAdresse.trim() || null,
+        adresse: adresse || null,
         telefon: kundenTelefon.trim() || null,
       }),
     });
@@ -847,20 +855,58 @@ export default function ProtokollNeuPage() {
             </div>
             <div className="space-y-2">
               <label
-                htmlFor="kunde-adresse"
+                htmlFor="kunde-strasse"
                 className="block text-sm font-medium text-slate-700"
               >
-                Adresse
+                Straße &amp; Hausnummer
               </label>
               <input
-                id="kunde-adresse"
+                id="kunde-strasse"
                 type="text"
                 autoComplete="street-address"
-                placeholder="Straße, PLZ Ort"
+                placeholder="z.B. Musterstraße 12"
                 className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                value={kundenAdresse}
-                onChange={(e) => setKundenAdresse(e.target.value)}
+                value={kundenStrasse}
+                onChange={(e) => setKundenStrasse(e.target.value)}
               />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label
+                  htmlFor="kunde-plz"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  PLZ
+                </label>
+                <input
+                  id="kunde-plz"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  maxLength={5}
+                  placeholder="89537"
+                  className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  value={kundenPlz}
+                  onChange={(e) => setKundenPlz(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-1">
+                <label
+                  htmlFor="kunde-stadt"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Stadt
+                </label>
+                <input
+                  id="kunde-stadt"
+                  type="text"
+                  autoComplete="address-level2"
+                  placeholder="z.B. Giengen an der Brenz"
+                  className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  value={kundenStadt}
+                  onChange={(e) => setKundenStadt(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <label
