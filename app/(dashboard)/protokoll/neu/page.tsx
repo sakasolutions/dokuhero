@@ -4,7 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Check, CheckCircle2, Loader2, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  Loader2,
+  Plus,
+  Save,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
@@ -84,6 +91,7 @@ export default function ProtokollNeuPage() {
 
   const [generateBusy, setGenerateBusy] = useState(false);
   const [abschlussModus, setAbschlussModus] = useState<AbschlussModus>(null);
+  const [saveExitBusy, setSaveExitBusy] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [limitPhase, setLimitPhase] = useState<"loading" | "ready">("loading");
@@ -134,6 +142,22 @@ export default function ProtokollNeuPage() {
 
   function canSubmit() {
     return canGoStep2();
+  }
+
+  async function saveAndExit() {
+    if (!kundenName.trim()) return;
+    setSaveExitBusy(true);
+    setError(null);
+    try {
+      if (protokollId == null) {
+        const id = await saveProtokollCore();
+        if (id == null) return;
+        setProtokollId(id);
+      }
+      router.push("/protokolle");
+    } finally {
+      setSaveExitBusy(false);
+    }
   }
 
   async function refreshLimitAndBlock() {
@@ -787,15 +811,38 @@ export default function ProtokollNeuPage() {
 
   return (
     <div className="mx-auto min-h-[70vh] max-w-2xl pb-6">
-      <div className="mb-4 flex items-center gap-3">
-        <Link
-          href={zurueckHref}
-          className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-primary hover:bg-surface"
-          aria-label="Zurück"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </Link>
-        <h1 className="text-xl font-bold text-slate-900">Protokoll</h1>
+      <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          <Link
+            href={zurueckHref}
+            className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-lg text-primary hover:bg-surface"
+            aria-label="Zurück"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-10 shrink-0 gap-2 px-3 py-2 text-sm"
+            disabled={!canGoStep2() || saveExitBusy}
+            title={
+              !canGoStep2()
+                ? "Bitte zuerst Kundennamen eingeben"
+                : undefined
+            }
+            onClick={() => void saveAndExit()}
+          >
+            {saveExitBusy ? (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+            ) : (
+              <Save className="h-4 w-4 shrink-0" aria-hidden />
+            )}
+            Speichern & Zurück
+          </Button>
+          <h1 className="min-w-0 text-xl font-bold text-slate-900">
+            Protokoll
+          </h1>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
