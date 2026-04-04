@@ -149,12 +149,14 @@ export default function ProtokollNeuPage() {
     setSaveExitBusy(true);
     setError(null);
     try {
-      if (protokollId == null) {
+      let targetId = protokollId;
+      if (targetId == null) {
         const id = await saveProtokollCore();
         if (id == null) return;
         setProtokollId(id);
+        targetId = id;
       }
-      router.push("/protokolle");
+      router.push(`/protokoll/${targetId}`);
     } finally {
       setSaveExitBusy(false);
     }

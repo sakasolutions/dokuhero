@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { protokollStatusLabel } from "@/lib/protokoll-status-label";
 import type { FotoEintrag, Protokoll } from "@/types";
 
@@ -40,7 +41,7 @@ function formatDate(d: string | Date | null) {
   }
 }
 
-type Busy = null | "preview" | "pdf" | "mail" | "reject" | "archiv" | "submit";
+type Busy = null | "preview" | "pdf" | "mail" | "reject" | "archiv" | "submit" | "fotos";
 
 const REGENERATE_PRESETS: { label: string; text: string }[] = [
   { label: "Kürzer", text: "Bitte kürzer fassen" },
@@ -87,6 +88,8 @@ export default function ProtokollAnsichtPage() {
   const [editMaterialien, setEditMaterialien] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [editFieldError, setEditFieldError] = useState<string | null>(null);
+  /** Nur Entwurf: neue Fotos vor „Fotos hinzufügen“ (Base64 wie FotoUpload). */
+  const [pendingFotos, setPendingFotos] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setError(null);
@@ -99,6 +102,39 @@ export default function ProtokollAnsichtPage() {
     const j = (await res.json()) as ApiResponse;
     setData(j);
   }, [id]);
+
+  async function uploadPendingFotos() {
+    if (pendingFotos.length === 0 || busy !== null) return;
+    setBannerError(null);
+    setBannerSuccess(null);
+    setBusy("fotos");
+    try {
+      const res = await fetch(`/api/protokoll/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add_fotos",
+          fotos: pendingFotos,
+        }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setBannerError(
+          typeof j.error === "string"
+            ? j.error
+            : "Fotos konnten nicht gespeichert werden."
+        );
+        return;
+      }
+      setPendingFotos([]);
+      setBannerSuccess("Fotos wurden hinzugefügt.");
+      await load();
+    } catch {
+      setBannerError("Netzwerkfehler.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function saveEdit() {
     setEditFieldError(null);
@@ -146,6 +182,10 @@ export default function ProtokollAnsichtPage() {
 
   useEffect(() => {
     setVersandErfolg(false);
+  }, [id]);
+
+  useEffect(() => {
+    setPendingFotos([]);
   }, [id]);
 
   useEffect(() => {
@@ -767,7 +807,72 @@ export default function ProtokollAnsichtPage() {
         </div>
       </Card>
 
-      {fotos.length > 0 ? (
+      {isEntwurf && !isArchiviert ? (
+        <Card className="overflow-visible">
+          <h2 className="text-lg font-semibold text-slate-900">Fotos</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Bestehende Fotos und bei Bedarf weitere aus Kamera oder Galerie
+            hinzufügen (max. 10 gesamt).
+          </p>
+          {fotos.length > 0 ? (
+            <div className="mt-4 overflow-visible">
+              <p className="mb-2 text-sm font-medium text-slate-700">
+                Gespeicherte Fotos
+              </p>
+              <div className="grid grid-cols-2 gap-2 overflow-visible sm:grid-cols-3">
+                {fotos.map((f) => (
+                  <a
+                    key={f.id}
+                    href={f.datei_pfad}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="aspect-square rounded-lg bg-slate-100 ring-1 ring-slate-200"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={f.datei_pfad}
+                      alt={f.dateiname}
+                      className="h-full w-full rounded-lg object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-600">Noch keine Fotos.</p>
+          )}
+          {fotos.length < 10 ? (
+            <div className="mt-6 space-y-4 border-t border-slate-200 pt-6">
+              <p className="text-sm font-medium text-slate-700">
+                Weitere Fotos auswählen
+              </p>
+              <FotoUpload
+                value={pendingFotos}
+                onChange={setPendingFotos}
+                maxPhotos={10 - fotos.length}
+                disabled={busy !== null}
+              />
+              <Button
+                type="button"
+                className="min-h-12 w-full gap-2 text-base sm:w-auto"
+                disabled={
+                  busy !== null || pendingFotos.length === 0
+                }
+                onClick={() => void uploadPendingFotos()}
+              >
+                {busy === "fotos" ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Wird gespeichert…
+                  </>
+                ) : (
+                  "Fotos hinzufügen"
+                )}
+              </Button>
+            </div>
+          ) : null}
+        </Card>
+      ) : fotos.length > 0 ? (
         <div className="overflow-visible">
           <h2 className="mb-2 text-sm font-semibold text-slate-500">Fotos</h2>
           <div className="grid grid-cols-2 gap-2 overflow-visible sm:grid-cols-3">

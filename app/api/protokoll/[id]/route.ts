@@ -2,9 +2,20 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
+import { ensureFotosUploadDir } from "@/lib/protokoll-upload";
 import { sessionMayFreigebenProtokoll } from "@/lib/protokoll-freigabe";
+import { writeFile, unlink } from "fs/promises";
+import { join } from "path";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import { z } from "zod";
+
+function stripBase64(input: string): string {
+  const t = input.trim();
+  if (t.includes(",")) {
+    return t.split(",")[1] ?? "";
+  }
+  return t;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +49,10 @@ type RouteContext = { params: { id: string } };
 const patchSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reject") }),
   z.object({ action: z.literal("submit_review") }),
+  z.object({
+    action: z.literal("add_fotos"),
+    fotos: z.array(z.string()).min(1).max(10),
+  }),
   z.object({
     action: z.literal("update_notiz"),
     notiz: z.string().max(20000).nullable().optional(),
@@ -239,6 +254,114 @@ export async function PATCH(request: Request, context: RouteContext) {
         );
       }
       return NextResponse.json({ success: true });
+    }
+
+    if (action === "add_fotos") {
+      const rawList = parsed.data.fotos;
+      let writtenFiles: string[] = [];
+      const conn = await pool.getConnection();
+      await conn.beginTransaction();
+      try {
+        const [pRows] = await conn.execute<RowDataPacket[]>(
+          `SELECT p.id, p.status, p.auftrag_id
+           FROM protokolle p
+           INNER JOIN auftraege a ON p.auftrag_id = a.id
+           WHERE p.id = ? AND a.betrieb_id = ?
+             AND p.archiviert = 0 AND a.archiviert = 0
+           LIMIT 1`,
+          [protokollId, session.user.betrieb_id]
+        );
+        const prow = pRows[0] as
+          | { id: number; status: string; auftrag_id: number }
+          | undefined;
+        if (!prow || prow.status !== "entwurf") {
+          await conn.rollback();
+          return NextResponse.json(
+            {
+              error:
+                "Fotos können nur bei Protokollen im Status „Entwurf“ ergänzt werden.",
+            },
+            { status: 400 }
+          );
+        }
+
+        const [cntRows] = await conn.execute<RowDataPacket[]>(
+          `SELECT COUNT(*) AS c FROM fotos WHERE protokoll_id = ?`,
+          [protokollId]
+        );
+        const rawC = (cntRows[0] as { c?: unknown })?.c;
+        const existing =
+          typeof rawC === "bigint" ? Number(rawC) : Number(rawC ?? 0);
+        const remaining = 10 - existing;
+        if (remaining <= 0) {
+          await conn.rollback();
+          return NextResponse.json(
+            { error: "Es sind bereits 10 Fotos vorhanden." },
+            { status: 400 }
+          );
+        }
+
+        const toAdd = rawList.slice(0, remaining);
+        const uploadDir = await ensureFotosUploadDir();
+        const ts = Date.now();
+        const auftrag_id = prow.auftrag_id;
+        let fileIndex = 0;
+
+        for (let i = 0; i < toAdd.length; i++) {
+          const b64 = stripBase64(toAdd[i]);
+          if (!b64) continue;
+          const buf = Buffer.from(b64, "base64");
+          if (buf.length === 0) continue;
+
+          const dateiname = `${auftrag_id}_${ts}_${fileIndex}.jpg`;
+          fileIndex += 1;
+          const fullPath = join(uploadDir, dateiname);
+          const dateiPfad = `/uploads/fotos/${dateiname}`;
+
+          await writeFile(fullPath, buf);
+          writtenFiles.push(fullPath);
+
+          await conn.execute(
+            `INSERT INTO fotos (protokoll_id, datei_pfad, dateiname, erstellt_am)
+             VALUES (?, ?, ?, NOW())`,
+            [protokollId, dateiPfad, dateiname]
+          );
+        }
+
+        if (fileIndex === 0) {
+          await conn.rollback();
+          for (const f of writtenFiles) {
+            try {
+              await unlink(f);
+            } catch {
+              /* ignore */
+            }
+          }
+          return NextResponse.json(
+            { error: "Keine gültigen Fotodaten übermittelt." },
+            { status: 400 }
+          );
+        }
+
+        await conn.commit();
+        return NextResponse.json({ ok: true, added: fileIndex });
+      } catch (e) {
+        await conn.rollback();
+        for (const f of writtenFiles) {
+          try {
+            await unlink(f);
+          } catch {
+            /* ignore */
+          }
+        }
+        console.error("add_fotos:", e);
+        return NextResponse.json(
+          { error: "Fotos konnten nicht gespeichert werden." },
+          { status: 500 }
+        );
+      } finally {
+        conn.release();
+      }
     }
 
     const [res] = await pool.execute<ResultSetHeader>(
