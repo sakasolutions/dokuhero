@@ -6,6 +6,15 @@ import { Camera, ImagePlus, Trash2 } from "lucide-react";
 const MAX_PHOTOS = 10;
 const MAX_EDGE = 1200;
 const JPEG_QUALITY = 0.8;
+/** Nur diese MIME-Typen (kein image/*, video/*, audio/*). */
+const FILE_ACCEPT = "image/jpeg,image/png,image/webp,image/heic";
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+]);
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 async function compressImageFile(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
@@ -59,7 +68,8 @@ export function FotoUpload({
       for (let i = 0; i < files.length; i++) {
         if (next.length >= maxPhotos) break;
         const file = files[i];
-        if (!file.type.startsWith("image/")) continue;
+        if (!ALLOWED_IMAGE_TYPES.has(file.type)) continue;
+        if (file.size > MAX_FILE_BYTES) continue;
         try {
           const b64 = await compressImageFile(file);
           next.push(b64);
@@ -107,7 +117,7 @@ export function FotoUpload({
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/*"
+        accept={FILE_ACCEPT}
         capture="environment"
         className="hidden"
         multiple
@@ -119,7 +129,7 @@ export function FotoUpload({
       <input
         ref={galleryInputRef}
         type="file"
-        accept="image/*"
+        accept={FILE_ACCEPT}
         className="hidden"
         multiple
         onChange={(e) => {

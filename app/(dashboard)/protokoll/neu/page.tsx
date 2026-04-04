@@ -13,6 +13,13 @@ import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
 
 const STEPS = 5;
 
+/** Body-Feld `feedback` für POST /api/protokoll/[id]/preview (Verfeinerung). */
+const PREVIEW_FEEDBACK = {
+  kuerzer: "Bitte kürzer fassen",
+  formeller: "Bitte formeller formulieren",
+  einfacher: "Bitte einfacher und direkter formulieren",
+} as const;
+
 type LimitPayload = {
   limitReached: boolean;
   count: number;
@@ -232,11 +239,11 @@ export default function ProtokollNeuPage() {
     return j.protokoll_id;
   }
 
-  async function fetchKiPreview(id: number) {
+  async function postKiPreview(id: number, body: object) {
     const res = await fetch(`/api/protokoll/${id}/preview`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify(body),
     });
     const j = (await res.json().catch(() => ({}))) as {
       kiText?: string;
@@ -248,6 +255,28 @@ export default function ProtokollNeuPage() {
       );
     }
     setKiText(j.kiText ?? "");
+  }
+
+  async function fetchKiPreview(id: number) {
+    await postKiPreview(id, {});
+  }
+
+  async function previewMitHinweis(hinweis: string) {
+    if (protokollId == null) return;
+    setStep4Error(null);
+    setKiLoading(true);
+    try {
+      await postKiPreview(protokollId, {
+        feedback: hinweis,
+        previousText: kiText,
+      });
+    } catch (e) {
+      setStep4Error(
+        e instanceof Error ? e.message : "KI-Text konnte nicht erstellt werden."
+      );
+    } finally {
+      setKiLoading(false);
+    }
   }
 
   async function proceedToStep4() {
@@ -1070,32 +1099,45 @@ export default function ProtokollNeuPage() {
                 <p className="text-xs text-slate-500">
                   Du kannst den Text anpassen
                 </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-12 w-full text-base"
-                  disabled={kiLoading || protokollId == null}
-                  onClick={() =>
-                    protokollId != null &&
-                    void (async () => {
-                      setStep4Error(null);
-                      setKiLoading(true);
-                      try {
-                        await fetchKiPreview(protokollId);
-                      } catch (e) {
-                        setStep4Error(
-                          e instanceof Error
-                            ? e.message
-                            : "KI-Text konnte nicht erstellt werden."
-                        );
-                      } finally {
-                        setKiLoading(false);
-                      }
-                    })()
-                  }
-                >
-                  Text neu generieren
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-12 flex-1 text-base sm:min-w-[140px]"
+                    disabled={
+                      kiLoading || protokollId == null || !kiText.trim()
+                    }
+                    onClick={() => void previewMitHinweis(PREVIEW_FEEDBACK.kuerzer)}
+                  >
+                    Kürzer
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-12 flex-1 text-base sm:min-w-[140px]"
+                    disabled={
+                      kiLoading || protokollId == null || !kiText.trim()
+                    }
+                    onClick={() =>
+                      void previewMitHinweis(PREVIEW_FEEDBACK.formeller)
+                    }
+                  >
+                    Formeller
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-12 flex-1 text-base sm:min-w-[140px]"
+                    disabled={
+                      kiLoading || protokollId == null || !kiText.trim()
+                    }
+                    onClick={() =>
+                      void previewMitHinweis(PREVIEW_FEEDBACK.einfacher)
+                    }
+                  >
+                    Einfacher
+                  </Button>
+                </div>
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Button
                     type="button"

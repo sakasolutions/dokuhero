@@ -39,6 +39,11 @@ function parsePreviewBody(raw: string): {
   }
 }
 
+/**
+ * POST-Body (JSON, optional):
+ * - `{}` — Text aus Notiz/Materialien neu erzeugen (`generateProtokollText`).
+ * - `{ feedback: string, previousText: string }` — Entwurf verfeinern (`refineProtokollText`).
+ */
 export async function POST(request: Request, context: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
