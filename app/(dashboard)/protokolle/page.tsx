@@ -231,6 +231,10 @@ export default function ProtokollePage() {
           {gefiltert.map((p) => {
             const actionLabel =
               p.status === "entwurf" ? "Weiterbearbeiten" : "Ansehen";
+            const actionHref =
+              p.status === "entwurf"
+                ? `/protokoll/neu?resume=${p.id}`
+                : `/protokoll/${p.id}`;
             return (
               <Card
                 key={p.id}
@@ -246,7 +250,7 @@ export default function ProtokollePage() {
                   </div>
                 </div>
                 <Link
-                  href={`/protokoll/${p.id}`}
+                  href={actionHref}
                   className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   {actionLabel}
