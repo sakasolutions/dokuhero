@@ -1167,13 +1167,14 @@ function ProtokollNeuPageInner() {
               <h3 className="text-sm font-semibold text-slate-900">
                 Einsatzzeit
               </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-2 overflow-hidden [&>*]:min-w-0">
                 <Input
                   id="einsatz-von"
                   label="Von"
                   type="time"
                   value={einsatzVon}
                   onChange={(e) => setEinsatzVon(e.target.value)}
+                  className="w-full max-w-full min-w-0 overflow-hidden text-sm px-2"
                 />
                 <Input
                   id="einsatz-bis"
@@ -1181,6 +1182,7 @@ function ProtokollNeuPageInner() {
                   type="time"
                   value={einsatzBis}
                   onChange={(e) => setEinsatzBis(e.target.value)}
+                  className="w-full max-w-full min-w-0 overflow-hidden text-sm px-2"
                 />
               </div>
               {einsatzDauerAnzeige ? (

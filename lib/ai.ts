@@ -1,17 +1,20 @@
 import OpenAI from "openai";
 
 const SYSTEM_PROMPT = `Du bist ein Assistent für Handwerksbetriebe in Deutschland.
-Erstelle aus den Stichpunkten einen sachlichen Monteurbericht.
+Erstelle aus den Stichpunkten eine strukturierte Leistungsliste.
 
 Regeln:
-- Kein "Protokolltext:" oder ähnliche Präfixe
-- Kein Marketing, keine Floskeln wie "Wir danken für das Vertrauen"
-- Kein "Wir stehen jederzeit zur Verfügung"
-- Sachlich, präzise, wie ein erfahrener Monteur schreiben würde
-- Maximal 3 kurze Absätze
-- Nur was tatsächlich gemacht wurde beschreiben
-- Keine erfundenen Details hinzufügen
-- Deutsch, professionell aber nicht geschwollen`;
+- Jede Tätigkeit = eine eigene Zeile
+- Format: kurzer, präziser Satz (max. 1 Zeile)
+- Fachlich korrekt, keine Füllwörter
+- Kein Fließtext, keine langen Absätze
+- Kein "Im Rahmen der...", kein "Es wurde festgestellt dass..."
+- Direkt und sachlich: "Ölwechsel durchgeführt" statt 
+  "Im Rahmen der Wartung wurde ein Ölwechsel vorgenommen"
+- Materialien wenn vorhanden am Ende als eigene Zeile
+- Keine Nummerierung, keine Bullet-Points (•/-/*)
+- Kein Marketing, keine Dankesfloskeln
+- Gib NUR die Leistungsliste zurück, keine Erklärungen`;
 
 export async function generateProtokollText(
   notiz: string,
@@ -86,10 +89,21 @@ export async function formatiereNotiz(rohtext: string): Promise<string> {
   return response.choices[0]?.message?.content?.trim() ?? rohtext;
 }
 
-const REFINE_SYSTEM_PROMPT =
-  "Du bist ein Assistent für Handwerksbetriebe. Der folgende Text ist ein Servicereport- bzw. Protokollentwurf. " +
-  "Passe ihn präzise an die Anweisung des Nutzers an. Bleibe professionell und höflich auf Deutsch, höchstens drei Absätze. " +
-  "Erfinde keine neuen persönlichen Daten oder Kundennamen. Gib ausschließlich den überarbeiteten Protokolltext zurück, ohne Einleitung oder Erklärung.";
+const REFINE_SYSTEM_PROMPT = `Du bist ein Assistent für Handwerksbetriebe in Deutschland.
+Der Nutzer liefert eine bestehende Leistungsliste und eine kurze Stilanweisung (z. B. kürzer, formeller, einfacher).
+Passe NUR den Stil an die Anweisung an — Inhalt und Fakten unverändert lassen, nichts erfinden.
+
+Format-Regeln (gleich wie bei der Erst-Erstellung):
+- Jede Tätigkeit = eine eigene Zeile
+- Kurze, präzise Sätze (max. 1 Zeile pro Punkt)
+- Kein Fließtext, keine langen Absätze
+- Kein "Im Rahmen der...", kein "Es wurde festgestellt dass..."
+- Direkt und sachlich
+- Materialien falls vorhanden am Ende als eigene Zeile
+- Keine Nummerierung, keine Bullet-Points (•/-/*)
+- Kein Marketing, keine Dankesfloskeln
+- Keine neuen persönlichen Daten oder Kundennamen erfinden
+- Gib NUR die überarbeitete Leistungsliste zurück, keine Erklärungen`;
 
 export async function refineProtokollText(
   previousText: string,
