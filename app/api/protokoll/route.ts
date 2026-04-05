@@ -18,6 +18,22 @@ const postSchema = z.object({
   auftrag_id: z.coerce.number().int().positive(),
   notiz: z.string().max(20000).optional().nullable(),
   materialien: z.string().max(5000).nullable().optional(),
+  einsatz_von: z
+    .union([z.string().regex(/^\d{2}:\d{2}$/), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (v === "" || v === undefined ? null : v)),
+  einsatz_bis: z
+    .union([z.string().regex(/^\d{2}:\d{2}$/), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (v === "" || v === undefined ? null : v)),
+  anfahrt_km: z.preprocess(
+    (v) => (v === "" || v === undefined ? undefined : v === null ? null : v),
+    z.union([z.coerce.number().int().min(0), z.null()]).optional()
+  ),
+  anfahrt_minuten: z.preprocess(
+    (v) => (v === "" || v === undefined ? undefined : v === null ? null : v),
+    z.union([z.coerce.number().int().min(0), z.null()]).optional()
+  ),
   fotos: z.array(z.string()).max(10),
 });
 
@@ -47,7 +63,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { auftrag_id, notiz, materialien, fotos } = parsed.data;
+    const {
+      auftrag_id,
+      notiz,
+      materialien,
+      einsatz_von,
+      einsatz_bis,
+      anfahrt_km,
+      anfahrt_minuten,
+      fotos,
+    } = parsed.data;
     const pool = getPool();
 
     const [aufRows] = await pool.execute<RowDataPacket[]>(
@@ -136,9 +161,23 @@ export async function POST(request: Request) {
       const erstelltVon =
         session.user.benutzer_id != null ? session.user.benutzer_id : null;
       const [pRes] = await conn.execute<ResultSetHeader>(
-        `INSERT INTO protokolle (auftrag_id, protokoll_nummer, notiz, materialien, ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert, erstellt_von_benutzer_id)
-         VALUES (?, ?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0, ?)`,
-        [auftrag_id, protokollNummer, notizText, materialienText, erstelltVon]
+        `INSERT INTO protokolle (
+           auftrag_id, protokoll_nummer, notiz, materialien,
+           einsatz_von, einsatz_bis, anfahrt_km, anfahrt_minuten,
+           ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert, erstellt_von_benutzer_id
+         )
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0, ?)`,
+        [
+          auftrag_id,
+          protokollNummer,
+          notizText,
+          materialienText,
+          einsatz_von ?? null,
+          einsatz_bis ?? null,
+          anfahrt_km ?? null,
+          anfahrt_minuten ?? null,
+          erstelltVon,
+        ]
       );
       const protokollId = pRes.insertId;
 

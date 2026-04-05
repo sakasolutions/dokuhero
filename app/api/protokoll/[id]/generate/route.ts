@@ -43,6 +43,10 @@ interface LoadRow extends RowDataPacket {
   auftrag_archiviert: number;
   beschreibung: string | null;
   materialien: string | null;
+  einsatz_von: string | null;
+  einsatz_bis: string | null;
+  anfahrt_km: number | null;
+  anfahrt_minuten: number | null;
   kunde_name: string | null;
   kunde_email: string | null;
   kunde_adresse: string | null;
@@ -59,6 +63,15 @@ interface FotoPfadRow extends RowDataPacket {
 }
 
 type RouteContext = { params: { id: string } };
+
+function normalizeHmFromDb(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  const m = /^(\d{1,2}):(\d{2})/.exec(s);
+  if (!m) return null;
+  return `${m[1].padStart(2, "0")}:${m[2]}`;
+}
 
 export async function POST(request: Request, context: RouteContext) {
   try {
@@ -118,6 +131,7 @@ export async function POST(request: Request, context: RouteContext) {
               a.archiviert AS auftrag_archiviert,
               a.beschreibung,
               p.materialien,
+              p.einsatz_von, p.einsatz_bis, p.anfahrt_km, p.anfahrt_minuten,
               k.name AS kunde_name, k.email AS kunde_email,
               k.adresse AS kunde_adresse, k.telefon AS kunde_telefon,
               b.name AS betrieb_name,
@@ -212,6 +226,12 @@ export async function POST(request: Request, context: RouteContext) {
       monteurName: session.user.name ?? null,
       betriebTelefon: row.betrieb_telefon ?? null,
       betriebAdresse: row.betrieb_adresse ?? null,
+      einsatzVon: normalizeHmFromDb(row.einsatz_von),
+      einsatzBis: normalizeHmFromDb(row.einsatz_bis),
+      anfahrtKm:
+        row.anfahrt_km != null ? Number(row.anfahrt_km) : null,
+      anfahrtMinuten:
+        row.anfahrt_minuten != null ? Number(row.anfahrt_minuten) : null,
     });
 
     const pdfUrl = `/uploads/pdfs/${protokollId}.pdf`;

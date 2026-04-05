@@ -25,6 +25,10 @@ interface JoinRow extends RowDataPacket {
   protokoll_nummer: number | null;
   notiz: string | null;
   materialien: string | null;
+  einsatz_von: string | null;
+  einsatz_bis: string | null;
+  anfahrt_km: number | null;
+  anfahrt_minuten: number | null;
   ki_text: string | null;
   pdf_pfad: string | null;
   gesendet_am: Date | null;
@@ -60,6 +64,20 @@ const patchSchema = z.discriminatedUnion("action", [
     action: z.literal("update_notiz"),
     notiz: z.string().max(20000).nullable().optional(),
     materialien: z.string().max(5000).nullable().optional(),
+    einsatz_von: z
+      .union([z.string().regex(/^\d{2}:\d{2}$/), z.literal(""), z.null()])
+      .optional(),
+    einsatz_bis: z
+      .union([z.string().regex(/^\d{2}:\d{2}$/), z.literal(""), z.null()])
+      .optional(),
+    anfahrt_km: z.preprocess(
+      (v) => (v === "" || v === undefined ? undefined : v === null ? null : v),
+      z.union([z.coerce.number().int().min(0), z.null()]).optional()
+    ),
+    anfahrt_minuten: z.preprocess(
+      (v) => (v === "" || v === undefined ? undefined : v === null ? null : v),
+      z.union([z.coerce.number().int().min(0), z.null()]).optional()
+    ),
   }),
 ]);
 
@@ -80,7 +98,9 @@ export async function GET(_request: Request, context: RouteContext) {
     const pool = getPool();
 
     const [prows] = await pool.execute<JoinRow[]>(
-      `SELECT p.id, p.auftrag_id, p.protokoll_nummer, p.notiz, p.materialien, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
+      `SELECT p.id, p.auftrag_id, p.protokoll_nummer, p.notiz, p.materialien,
+              p.einsatz_von, p.einsatz_bis, p.anfahrt_km, p.anfahrt_minuten,
+              p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
               k.id AS kunde_id, k.name AS kunde_name, k.email AS kunde_email,
               k.adresse AS kunde_adresse, k.telefon AS kunde_telefon,
               a.beschreibung AS auftrag_beschreibung
@@ -103,6 +123,10 @@ export async function GET(_request: Request, context: RouteContext) {
       protokoll_nummer: j.protokoll_nummer,
       notiz: j.notiz,
       materialien: j.materialien,
+      einsatz_von: j.einsatz_von,
+      einsatz_bis: j.einsatz_bis,
+      anfahrt_km: j.anfahrt_km,
+      anfahrt_minuten: j.anfahrt_minuten,
       ki_text: j.ki_text,
       pdf_pfad: j.pdf_pfad,
       gesendet_am: j.gesendet_am,
@@ -237,11 +261,47 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     if (action === "update_notiz") {
-      const notizVal = parsed.data.notiz?.trim() || null;
-      const matVal = parsed.data.materialien?.trim() || null;
+      const d = parsed.data;
+      const sets: string[] = [];
+      const vals: Array<string | number | null> = [];
+
+      if (d.notiz !== undefined) {
+        sets.push("notiz = ?");
+        vals.push(d.notiz?.trim() || null);
+      }
+      if (d.materialien !== undefined) {
+        sets.push("materialien = ?");
+        vals.push(d.materialien?.trim() || null);
+      }
+      if (d.einsatz_von !== undefined) {
+        sets.push("einsatz_von = ?");
+        vals.push(d.einsatz_von === "" ? null : d.einsatz_von);
+      }
+      if (d.einsatz_bis !== undefined) {
+        sets.push("einsatz_bis = ?");
+        vals.push(d.einsatz_bis === "" ? null : d.einsatz_bis);
+      }
+      if (d.anfahrt_km !== undefined) {
+        sets.push("anfahrt_km = ?");
+        vals.push(d.anfahrt_km);
+      }
+      if (d.anfahrt_minuten !== undefined) {
+        sets.push("anfahrt_minuten = ?");
+        vals.push(d.anfahrt_minuten);
+      }
+
+      if (sets.length === 0) {
+        return NextResponse.json(
+          { error: "Keine Felder zum Aktualisieren." },
+          { status: 400 }
+        );
+      }
+
+      vals.push(protokollId, session.user.betrieb_id);
+
       const [res] = await pool.execute<ResultSetHeader>(
         `UPDATE protokolle
-         SET notiz = ?, materialien = ?
+         SET ${sets.join(", ")}
          WHERE id = ?
            AND status IN ('entwurf', 'zur_pruefung')
            AND archiviert = 0
@@ -249,7 +309,7 @@ export async function PATCH(request: Request, context: RouteContext) {
              SELECT id FROM auftraege
              WHERE betrieb_id = ? AND archiviert = 0
            )`,
-        [notizVal, matVal, protokollId, session.user.betrieb_id]
+        vals
       );
       if (res.affectedRows === 0) {
         return NextResponse.json(

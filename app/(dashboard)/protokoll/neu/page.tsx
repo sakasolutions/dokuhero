@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
@@ -32,6 +34,43 @@ const PREVIEW_FEEDBACK = {
   formeller: "Bitte formeller formulieren",
   einfacher: "Bitte einfacher und direkter formulieren",
 } as const;
+
+function parseTimeToMinutes(hm: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function formatEinsatzdauerLabel(von: string, bis: string): string | null {
+  const a = parseTimeToMinutes(von);
+  const b = parseTimeToMinutes(bis);
+  if (a === null || b === null) return null;
+  let diff = b - a;
+  if (diff < 0) diff += 24 * 60;
+  const hh = Math.floor(diff / 60);
+  const mm = diff % 60;
+  return `${hh} Std. ${mm} Min.`;
+}
+
+function toTimeInputFromApi(v: unknown): string {
+  if (v == null || v === "") return "";
+  const s = String(v).trim();
+  if (!s) return "";
+  const m = /^(\d{1,2}):(\d{2})/.exec(s);
+  if (!m) return "";
+  return `${m[1].padStart(2, "0")}:${m[2]}`;
+}
+
+function parseOptionalUintInput(s: string): number | null {
+  const t = s.trim();
+  if (t === "") return null;
+  const n = parseInt(t, 10);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
 
 type LimitPayload = {
   limitReached: boolean;
@@ -60,6 +99,11 @@ function ProtokollNeuPageInner() {
   const [fotos, setFotos] = useState<string[]>([]);
   const [notiz, setNotiz] = useState("");
   const [materialien, setMaterialien] = useState("");
+  const [einsatzVon, setEinsatzVon] = useState("");
+  const [einsatzBis, setEinsatzBis] = useState("");
+  const [anfahrtKm, setAnfahrtKm] = useState("");
+  const [anfahrtMinuten, setAnfahrtMinuten] = useState("");
+  const [mitAnfahrt, setMitAnfahrt] = useState(false);
 
   const [protokollId, setProtokollId] = useState<number | null>(null);
   const [kiText, setKiText] = useState("");
@@ -108,6 +152,11 @@ function ProtokollNeuPageInner() {
     null
   );
 
+  const einsatzDauerAnzeige = useMemo(
+    () => formatEinsatzdauerLabel(einsatzVon, einsatzBis),
+    [einsatzVon, einsatzBis]
+  );
+
   useEffect(() => {
     if (!resumeId) return;
 
@@ -120,6 +169,10 @@ function ProtokollNeuPageInner() {
             notiz: string | null;
             materialien: string | null;
             ki_text: string | null;
+            einsatz_von?: string | null;
+            einsatz_bis?: string | null;
+            anfahrt_km?: number | null;
+            anfahrt_minuten?: number | null;
           };
           kunde_name?: string | null;
           kunde_adresse?: string | null;
@@ -152,6 +205,18 @@ function ProtokollNeuPageInner() {
         setProtokollId(Number(resumeId));
         setNotiz(p.notiz ?? "");
         setMaterialien(p.materialien ?? "");
+        setEinsatzVon(toTimeInputFromApi(p.einsatz_von));
+        setEinsatzBis(toTimeInputFromApi(p.einsatz_bis));
+        const km = p.anfahrt_km;
+        const am = p.anfahrt_minuten;
+        setAnfahrtKm(km != null ? String(km) : "");
+        setAnfahrtMinuten(am != null ? String(am) : "");
+        if (
+          (km != null && String(km).trim() !== "") ||
+          (am != null && String(am).trim() !== "")
+        ) {
+          setMitAnfahrt(true);
+        }
 
         if (p.ki_text) {
           setKiText(p.ki_text);
@@ -309,6 +374,12 @@ function ProtokollNeuPageInner() {
         auftrag_id: jAuf.id,
         notiz: notiz.trim() || null,
         materialien: materialien.trim() || null,
+        einsatz_von: einsatzVon.trim() || null,
+        einsatz_bis: einsatzBis.trim() || null,
+        anfahrt_km: mitAnfahrt ? parseOptionalUintInput(anfahrtKm) : null,
+        anfahrt_minuten: mitAnfahrt
+          ? parseOptionalUintInput(anfahrtMinuten)
+          : null,
         fotos,
       }),
     });
@@ -1109,6 +1180,66 @@ function ProtokollNeuPageInner() {
 
         {step === 3 && (
           <div className="space-y-4">
+            <Card className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Einsatzzeit
+              </h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input
+                  id="einsatz-von"
+                  label="Von"
+                  type="time"
+                  value={einsatzVon}
+                  onChange={(e) => setEinsatzVon(e.target.value)}
+                />
+                <Input
+                  id="einsatz-bis"
+                  label="Bis"
+                  type="time"
+                  value={einsatzBis}
+                  onChange={(e) => setEinsatzBis(e.target.value)}
+                />
+              </div>
+              {einsatzDauerAnzeige ? (
+                <p className="text-sm font-medium text-slate-700">
+                  Einsatzdauer: {einsatzDauerAnzeige}
+                </p>
+              ) : null}
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={mitAnfahrt}
+                  onChange={(e) => setMitAnfahrt(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/20"
+                />
+                Mit Anfahrt
+              </label>
+              {mitAnfahrt ? (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Input
+                    id="anfahrt-km"
+                    label="km"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={1}
+                    value={anfahrtKm}
+                    onChange={(e) => setAnfahrtKm(e.target.value)}
+                  />
+                  <Input
+                    id="anfahrt-minuten"
+                    label="Minuten"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={1}
+                    value={anfahrtMinuten}
+                    onChange={(e) => setAnfahrtMinuten(e.target.value)}
+                  />
+                </div>
+              ) : null}
+            </Card>
+
             <h2 className="text-lg font-semibold text-slate-900">Notiz</h2>
             <p className="text-sm text-slate-600">
               Tippe oder sprich deine Notiz…

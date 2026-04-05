@@ -33,6 +33,10 @@ export type ProtokollData = {
   monteurName?: string | null;
   betriebTelefon?: string | null;
   betriebAdresse?: string | null;
+  einsatzVon?: string | null;
+  einsatzBis?: string | null;
+  anfahrtKm?: number | null;
+  anfahrtMinuten?: number | null;
 };
 
 function toFotoDiskPath(fotoRef: string): string {
@@ -130,6 +134,34 @@ function formatErstelltMeta(
   return parts.map((p) => esc(p)).join(" · ");
 }
 
+function normalizeHmForPdf(v: string | null | undefined): string {
+  if (v == null) return "";
+  const s = String(v).trim();
+  const m = /^(\d{1,2}):(\d{2})/.exec(s);
+  if (!m) return "";
+  return `${m[1].padStart(2, "0")}:${m[2]}`;
+}
+
+function parseHmToMinutes(hm: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function formatEinsatzdauerPdf(von: string, bis: string): string | null {
+  const a = parseHmToMinutes(von);
+  const b = parseHmToMinutes(bis);
+  if (a === null || b === null) return null;
+  let diff = b - a;
+  if (diff < 0) diff += 24 * 60;
+  const hh = Math.floor(diff / 60);
+  const mm = diff % 60;
+  return `${hh} Std. ${mm} Min.`;
+}
+
 function buildHtml(
   data: ProtokollData,
   fotoDataUris: string[],
@@ -171,6 +203,38 @@ function buildHtml(
 
   const kundeTelefonRaw = data.kundeTelefon?.trim();
   const kundeTelefonAnzeige = kundeTelefonRaw ? esc(kundeTelefonRaw) : "";
+
+  const evRaw = normalizeHmForPdf(data.einsatzVon);
+  const ebRaw = normalizeHmForPdf(data.einsatzBis);
+  const showEinsatz = evRaw !== "" || ebRaw !== "";
+  const dauerLine =
+    evRaw !== "" && ebRaw !== ""
+      ? formatEinsatzdauerPdf(evRaw, ebRaw)
+      : null;
+  const kmN =
+    data.anfahrtKm != null && !Number.isNaN(Number(data.anfahrtKm))
+      ? Number(data.anfahrtKm)
+      : null;
+  const minN =
+    data.anfahrtMinuten != null && !Number.isNaN(Number(data.anfahrtMinuten))
+      ? Number(data.anfahrtMinuten)
+      : null;
+  const anfahrtParts: string[] = [];
+  if (kmN != null) anfahrtParts.push(`${kmN} km`);
+  if (minN != null) anfahrtParts.push(`${minN} Min.`);
+  const anfahrtLine = anfahrtParts.length > 0 ? anfahrtParts.join(" · ") : null;
+
+  const einsatzzeitBlock = showEinsatz
+    ? `
+    <div class="einsatzzeit-box">
+      <div class="section-title">Einsatzzeit</div>
+      <div class="einsatzzeit-body">
+        <div><span class="einsatzzeit-k">Von:</span> ${evRaw ? esc(evRaw) : "–"}<span class="einsatzzeit-k2">Bis:</span> ${ebRaw ? esc(ebRaw) : "–"}</div>
+        ${dauerLine ? `<div class="einsatzzeit-dauer">Dauer: ${esc(dauerLine)}</div>` : ""}
+        ${anfahrtLine ? `<div class="einsatzzeit-anfahrt">Anfahrt: ${esc(anfahrtLine)}</div>` : ""}
+      </div>
+    </div>`
+    : "";
 
   const fotosPage =
     fotoDataUris.length > 0
@@ -443,6 +507,24 @@ function buildHtml(
     }
 
     .block { page-break-inside: auto; }
+
+    .einsatzzeit-box {
+      margin-bottom: 24px;
+      padding: 14px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+    .einsatzzeit-box .section-title {
+      margin-bottom: 10px;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .einsatzzeit-body { font-size: 10.5pt; color: #1e293b; line-height: 1.65; }
+    .einsatzzeit-k { font-weight: 600; color: #64748b; margin-right: 6px; }
+    .einsatzzeit-k2 { font-weight: 600; color: #64748b; margin-left: 16px; margin-right: 6px; }
+    .einsatzzeit-dauer { margin-top: 8px; }
+    .einsatzzeit-anfahrt { margin-top: 6px; color: #475569; }
   </style>
 </head>
 <body>
@@ -474,6 +556,8 @@ function buildHtml(
         <div class="info-value">${kundeTelefonAnzeige}</div>
       </div>
     </div>
+
+    ${einsatzzeitBlock}
 
     <div class="section block">
       <div class="section-title">Durchgeführte Arbeiten</div>
