@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
 
-const STEPS = 5;
+const STEPS = 6;
 
 /** Body-Feld `feedback` für POST /api/protokoll/[id]/preview (Verfeinerung). */
 const PREVIEW_FEEDBACK = {
@@ -115,7 +115,7 @@ function ProtokollNeuPageInner() {
   const [internBetriebNotified, setInternBetriebNotified] = useState(false);
   const [abschlussWarnung, setAbschlussWarnung] = useState<string | null>(null);
 
-  const [step3Busy, setStep3Busy] = useState(false);
+  const [notizWeiterBusy, setNotizWeiterBusy] = useState(false);
   const [step4Error, setStep4Error] = useState<string | null>(null);
 
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -223,10 +223,10 @@ function ProtokollNeuPageInner() {
         }
 
         const zielStep = p.ki_text
-          ? 4
+          ? 5
           : (data.fotos?.length ?? 0) > 0
-            ? 3
-            : 2;
+            ? 4
+            : 3;
 
         setStep(zielStep);
         setProtokollGestartet(true);
@@ -445,11 +445,11 @@ function ProtokollNeuPageInner() {
     }
   }
 
-  async function proceedToStep4() {
+  async function proceedToKiStep() {
     if (!canSubmit()) return;
     setStep4Error(null);
     setError(null);
-    setStep3Busy(true);
+    setNotizWeiterBusy(true);
     try {
       let id = protokollId;
       if (id == null) {
@@ -467,7 +467,7 @@ function ProtokollNeuPageInner() {
         }
       }
 
-      setStep(4);
+      setStep(5);
       setKiLoading(true);
       await fetchKiPreview(id);
     } catch (e) {
@@ -476,13 +476,13 @@ function ProtokollNeuPageInner() {
       );
     } finally {
       setKiLoading(false);
-      setStep3Busy(false);
+      setNotizWeiterBusy(false);
     }
   }
 
-  async function retryStep4() {
+  async function retryKiStep() {
     if (protokollId == null) {
-      await proceedToStep4();
+      await proceedToKiStep();
       return;
     }
     setStep4Error(null);
@@ -498,7 +498,7 @@ function ProtokollNeuPageInner() {
     }
   }
 
-  const loadPdfForStep5 = useCallback(async (text: string) => {
+  const loadPdfForAbschlussStep = useCallback(async (text: string) => {
     if (protokollId == null) return;
     setStep5Error(null);
     setPdfLoading(true);
@@ -533,13 +533,13 @@ function ProtokollNeuPageInner() {
   useEffect(() => {
     const was = prevStepRef.current;
     prevStepRef.current = step;
-    if (step !== 5 || protokollId == null) return;
-    if (was !== 4) return;
+    if (step !== 6 || protokollId == null) return;
+    if (was !== 5) return;
     setUnterschriftPhase("kunde");
     setKundeUnterschriftDataUri(null);
     setMonteurUnterschriftDataUri(null);
-    void loadPdfForStep5(kiText);
-  }, [step, protokollId, kiText, loadPdfForStep5]);
+    void loadPdfForAbschlussStep(kiText);
+  }, [step, protokollId, kiText, loadPdfForAbschlussStep]);
 
   function initSignatureCanvas(
     canvas: HTMLCanvasElement,
@@ -577,7 +577,7 @@ function ProtokollNeuPageInner() {
   }
 
   useEffect(() => {
-    if (step !== 5 || pdfLoading || abschlussModus != null) return;
+    if (step !== 6 || pdfLoading || abschlussModus != null) return;
     if (monteurUnterschriftDataUri != null) return;
     const t = window.setTimeout(() => initActiveCanvas(), 0);
     return () => window.clearTimeout(t);
@@ -592,7 +592,7 @@ function ProtokollNeuPageInner() {
   ]);
 
   useEffect(() => {
-    if (step !== 5 || pdfLoading || abschlussModus != null) return;
+    if (step !== 6 || pdfLoading || abschlussModus != null) return;
     if (monteurUnterschriftDataUri != null) return;
 
     const canvas =
@@ -823,12 +823,14 @@ function ProtokollNeuPageInner() {
     step === 1
       ? " · Kundendaten"
       : step === 2
-        ? " · Fotos"
+        ? " · Einsatzzeit"
         : step === 3
-          ? " · Notiz"
+          ? " · Fotos"
           : step === 4
-            ? " · KI-Text"
-            : " · Unterschrift & Versand";
+            ? " · Notiz"
+            : step === 5
+              ? " · KI-Text"
+              : " · Abschluss";
 
   if (limitPhase === "loading" || sessionStatus === "loading") {
     return (
@@ -1028,7 +1030,7 @@ function ProtokollNeuPageInner() {
                 type="button"
                 variant="outline"
                 className="mt-3 min-h-11 w-full border-red-200 text-red-800"
-                onClick={() => void retryStep4()}
+                onClick={() => void retryKiStep()}
               >
                 Erneut versuchen
               </Button>
@@ -1041,7 +1043,9 @@ function ProtokollNeuPageInner() {
                 type="button"
                 variant="outline"
                 className="mt-3 min-h-11 w-full border-red-200 text-red-800"
-                onClick={() => protokollId != null && void loadPdfForStep5(kiText)}
+                onClick={() =>
+                  protokollId != null && void loadPdfForAbschlussStep(kiText)
+                }
               >
                 Erneut versuchen
               </Button>
@@ -1156,30 +1160,9 @@ function ProtokollNeuPageInner() {
 
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">Fotos</h2>
-            <FotoUpload value={fotos} onChange={setFotos} maxPhotos={10} />
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                onClick={() => setStep(1)}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                onClick={() => setStep(3)}
-              >
-                Weiter
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Einsatzzeit &amp; Anfahrt
+            </h2>
             <Card className="space-y-4">
               <h3 className="text-sm font-semibold text-slate-900">
                 Einsatzzeit
@@ -1239,7 +1222,52 @@ function ProtokollNeuPageInner() {
                 </div>
               ) : null}
             </Card>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                onClick={() => setStep(1)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                onClick={() => setStep(3)}
+              >
+                Weiter
+              </Button>
+            </div>
+          </div>
+        )}
 
+        {step === 3 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Fotos</h2>
+            <FotoUpload value={fotos} onChange={setFotos} maxPhotos={10} />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                onClick={() => setStep(2)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                onClick={() => setStep(4)}
+              >
+                Weiter
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">Notiz</h2>
             <p className="text-sm text-slate-600">
               Tippe oder sprich deine Notiz…
@@ -1298,17 +1326,17 @@ function ProtokollNeuPageInner() {
                 type="button"
                 variant="outline"
                 className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                onClick={() => setStep(2)}
+                onClick={() => setStep(3)}
               >
                 Zurück
               </Button>
               <Button
                 type="button"
                 className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                disabled={!canSubmit() || step3Busy}
-                onClick={() => void proceedToStep4()}
+                disabled={!canSubmit() || notizWeiterBusy}
+                onClick={() => void proceedToKiStep()}
               >
-                {step3Busy ? (
+                {notizWeiterBusy ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Wird gespeichert…
@@ -1321,7 +1349,7 @@ function ProtokollNeuPageInner() {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">KI-Text</h2>
             {kiLoading ? (
@@ -1392,7 +1420,7 @@ function ProtokollNeuPageInner() {
                     type="button"
                     variant="outline"
                     className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                    onClick={() => setStep(3)}
+                    onClick={() => setStep(4)}
                   >
                     Zurück
                   </Button>
@@ -1400,7 +1428,7 @@ function ProtokollNeuPageInner() {
                     type="button"
                     className="min-h-12 w-full flex-1 text-base sm:w-auto"
                     disabled={!kiText.trim()}
-                    onClick={() => setStep(5)}
+                    onClick={() => setStep(6)}
                   >
                     Weiter zur Vorschau
                   </Button>
@@ -1410,7 +1438,7 @@ function ProtokollNeuPageInner() {
           </div>
         )}
 
-        {step === 5 && (
+        {step === 6 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
               Unterschrift &amp; Versand
@@ -1552,7 +1580,7 @@ function ProtokollNeuPageInner() {
                     setUnterschriftPhase("kunde");
                     setKundeUnterschriftDataUri(null);
                     setMonteurUnterschriftDataUri(null);
-                    setStep(4);
+                    setStep(5);
                   }}
                 >
                   Zurück
