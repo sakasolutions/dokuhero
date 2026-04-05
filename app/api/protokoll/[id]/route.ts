@@ -31,8 +31,11 @@ interface JoinRow extends RowDataPacket {
   erstellt_am: Date;
   status: string;
   archiviert: number;
+  kunde_id: number | null;
   kunde_name: string | null;
   kunde_email: string | null;
+  kunde_adresse: string | null;
+  kunde_telefon: string | null;
   auftrag_beschreibung: string | null;
 }
 
@@ -78,7 +81,8 @@ export async function GET(_request: Request, context: RouteContext) {
 
     const [prows] = await pool.execute<JoinRow[]>(
       `SELECT p.id, p.auftrag_id, p.protokoll_nummer, p.notiz, p.materialien, p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
-              k.name AS kunde_name, k.email AS kunde_email,
+              k.id AS kunde_id, k.name AS kunde_name, k.email AS kunde_email,
+              k.adresse AS kunde_adresse, k.telefon AS kunde_telefon,
               a.beschreibung AS auftrag_beschreibung
        FROM protokolle p
        INNER JOIN auftraege a ON p.auftrag_id = a.id
@@ -116,8 +120,11 @@ export async function GET(_request: Request, context: RouteContext) {
 
     return NextResponse.json({
       protokoll,
+      kunde_id: j.kunde_id,
       kunde_name: j.kunde_name,
       kunde_email: j.kunde_email,
+      kunde_adresse: j.kunde_adresse,
+      kunde_telefon: j.kunde_telefon,
       auftrag_beschreibung: j.auftrag_beschreibung,
       fotos: frows,
       freigabe_erlaubt: sessionMayFreigebenProtokoll(session),

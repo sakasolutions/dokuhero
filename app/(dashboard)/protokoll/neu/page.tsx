@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
@@ -35,8 +41,10 @@ type LimitPayload = {
 
 type AbschlussModus = "email" | "share" | "intern" | null;
 
-export default function ProtokollNeuPage() {
+function ProtokollNeuPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resumeId = searchParams.get("resume");
   const { data: session, status: sessionStatus } = useSession();
   const isInhaber = session?.user?.rolle === "inhaber";
 
@@ -100,6 +108,69 @@ export default function ProtokollNeuPage() {
     null
   );
 
+  useEffect(() => {
+    if (!resumeId) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/protokoll/${resumeId}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          protokoll?: {
+            notiz: string | null;
+            materialien: string | null;
+            ki_text: string | null;
+          };
+          kunde_name?: string | null;
+          kunde_adresse?: string | null;
+          kunde_telefon?: string | null;
+          kunde_email?: string | null;
+          fotos?: unknown[];
+        };
+        const p = data.protokoll;
+        if (!p) return;
+
+        setKundenName(data.kunde_name ?? "");
+
+        const adresse = data.kunde_adresse ?? "";
+        if (adresse.includes(", ")) {
+          const [strasse, rest] = adresse.split(", ");
+          setKundenStrasse(strasse ?? "");
+          const plzStadt = rest ?? "";
+          const spaceIdx = plzStadt.indexOf(" ");
+          if (spaceIdx > 0) {
+            setKundenPlz(plzStadt.substring(0, spaceIdx));
+            setKundenStadt(plzStadt.substring(spaceIdx + 1));
+          }
+        } else {
+          setKundenStrasse(adresse);
+        }
+
+        setKundenTelefon(data.kunde_telefon ?? "");
+        setKundenEmail(data.kunde_email ?? "");
+
+        setProtokollId(Number(resumeId));
+        setNotiz(p.notiz ?? "");
+        setMaterialien(p.materialien ?? "");
+
+        if (p.ki_text) {
+          setKiText(p.ki_text);
+        }
+
+        const zielStep = p.ki_text
+          ? 4
+          : (data.fotos?.length ?? 0) > 0
+            ? 3
+            : 2;
+
+        setStep(zielStep);
+        setProtokollGestartet(true);
+      } catch (e) {
+        console.error("Resume fehlgeschlagen:", e);
+      }
+    })();
+  }, [resumeId]);
+
   const zurueckHref = isInhaber ? "/dashboard" : "/protokolle";
 
   useEffect(() => {
@@ -149,14 +220,12 @@ export default function ProtokollNeuPage() {
     setSaveExitBusy(true);
     setError(null);
     try {
-      let targetId = protokollId;
-      if (targetId == null) {
+      if (protokollId == null) {
         const id = await saveProtokollCore();
         if (id == null) return;
         setProtokollId(id);
-        targetId = id;
       }
-      router.push(`/protokoll/${targetId}`);
+      router.push("/protokolle");
     } finally {
       setSaveExitBusy(false);
     }
@@ -1363,5 +1432,19 @@ export default function ProtokollNeuPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function ProtokollNeuPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto flex min-h-[50vh] max-w-lg items-center justify-center pb-6">
+          <p className="text-slate-600">Laden…</p>
+        </div>
+      }
+    >
+      <ProtokollNeuPageInner />
+    </Suspense>
   );
 }
