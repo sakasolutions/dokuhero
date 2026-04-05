@@ -72,7 +72,7 @@ const patchSchema = z.discriminatedUnion("action", [
       .optional(),
     anfahrt_km: z.preprocess(
       (v) => (v === "" || v === undefined ? undefined : v === null ? null : v),
-      z.union([z.coerce.number().int().min(0), z.null()]).optional()
+      z.union([z.coerce.number().min(0), z.null()]).optional()
     ),
     anfahrt_minuten: z.preprocess(
       (v) => (v === "" || v === undefined ? undefined : v === null ? null : v),

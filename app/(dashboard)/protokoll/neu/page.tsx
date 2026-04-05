@@ -27,13 +27,6 @@ import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
 
 const STEPS = 6;
 
-/** Body-Feld `feedback` für POST /api/protokoll/[id]/preview (Verfeinerung). */
-const PREVIEW_FEEDBACK = {
-  kuerzer: "Bitte kürzer fassen",
-  formeller: "Bitte formeller formulieren",
-  einfacher: "Bitte einfacher und direkter formulieren",
-} as const;
-
 function parseTimeToMinutes(hm: string): number | null {
   const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
   if (!m) return null;
@@ -67,6 +60,15 @@ function parseOptionalUintInput(s: string): number | null {
   const t = s.trim();
   if (t === "") return null;
   const n = parseInt(t, 10);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
+/** km mit Komma oder Punkt als Dezimaltrenner */
+function parseOptionalKmInput(s: string): number | null {
+  const t = s.trim().replace(/\s/g, "").replace(",", ".");
+  if (t === "") return null;
+  const n = parseFloat(t);
   if (!Number.isFinite(n) || n < 0) return null;
   return n;
 }
@@ -375,7 +377,7 @@ function ProtokollNeuPageInner() {
         materialien: materialien.trim() || null,
         einsatz_von: einsatzVon.trim() || null,
         einsatz_bis: einsatzBis.trim() || null,
-        anfahrt_km: mitAnfahrt ? parseOptionalUintInput(anfahrtKm) : null,
+        anfahrt_km: mitAnfahrt ? parseOptionalKmInput(anfahrtKm) : null,
         anfahrt_minuten: mitAnfahrt
           ? parseOptionalUintInput(anfahrtMinuten)
           : null,
@@ -426,24 +428,6 @@ function ProtokollNeuPageInner() {
     await postKiPreview(id, {});
   }
 
-  async function previewMitHinweis(hinweis: string) {
-    if (protokollId == null) return;
-    setStep4Error(null);
-    setKiLoading(true);
-    try {
-      await postKiPreview(protokollId, {
-        feedback: hinweis,
-        previousText: kiText,
-      });
-    } catch (e) {
-      setStep4Error(
-        e instanceof Error ? e.message : "KI-Text konnte nicht erstellt werden."
-      );
-    } finally {
-      setKiLoading(false);
-    }
-  }
-
   async function proceedToKiStep() {
     if (!canSubmit()) return;
     setStep4Error(null);
@@ -477,6 +461,30 @@ function ProtokollNeuPageInner() {
       setKiLoading(false);
       setNotizWeiterBusy(false);
     }
+  }
+
+  /** Materialien aus Schritt 5 vor PDF-Generierung in der DB persistieren. */
+  async function persistMaterialienBeforeVorschau(): Promise<boolean> {
+    if (protokollId == null) return false;
+    const res = await fetch(`/api/protokoll/${protokollId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update_notiz",
+        materialien: materialien.trim() || null,
+      }),
+    });
+    return res.ok;
+  }
+
+  async function handleWeiterZurVorschau() {
+    setError(null);
+    const ok = await persistMaterialienBeforeVorschau();
+    if (!ok) {
+      setError("Änderungen konnten nicht gespeichert werden.");
+      return;
+    }
+    setStep(6);
   }
 
   async function retryKiStep() {
@@ -1225,10 +1233,9 @@ function ProtokollNeuPageInner() {
                     </label>
                     <input
                       id="anfahrt-km"
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      step={1}
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*[.,]?[0-9]*"
                       value={anfahrtKm}
                       onChange={(e) => setAnfahrtKm(e.target.value)}
                       className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
@@ -1244,10 +1251,9 @@ function ProtokollNeuPageInner() {
                     </label>
                     <input
                       id="anfahrt-minuten"
-                      type="number"
+                      type="text"
                       inputMode="numeric"
-                      min={0}
-                      step={1}
+                      pattern="[0-9]*"
                       value={anfahrtMinuten}
                       onChange={(e) => setAnfahrtMinuten(e.target.value)}
                       className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
@@ -1402,54 +1408,22 @@ function ProtokollNeuPageInner() {
               <>
                 <Textarea
                   id="protokoll-ki"
-                  label="Protokolltext"
+                  label="Durchgeführte Arbeiten"
                   value={kiText}
                   onChange={(e) => setKiText(e.target.value)}
                   rows={6}
                   className="min-h-[8rem] text-base"
                 />
-                <p className="text-xs text-slate-500">
-                  Du kannst den Text anpassen
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-12 flex-1 text-base sm:min-w-[140px]"
-                    disabled={
-                      kiLoading || protokollId == null || !kiText.trim()
-                    }
-                    onClick={() => void previewMitHinweis(PREVIEW_FEEDBACK.kuerzer)}
-                  >
-                    Kürzer
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-12 flex-1 text-base sm:min-w-[140px]"
-                    disabled={
-                      kiLoading || protokollId == null || !kiText.trim()
-                    }
-                    onClick={() =>
-                      void previewMitHinweis(PREVIEW_FEEDBACK.formeller)
-                    }
-                  >
-                    Formeller
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-12 flex-1 text-base sm:min-w-[140px]"
-                    disabled={
-                      kiLoading || protokollId == null || !kiText.trim()
-                    }
-                    onClick={() =>
-                      void previewMitHinweis(PREVIEW_FEEDBACK.einfacher)
-                    }
-                  >
-                    Einfacher
-                  </Button>
-                </div>
+                {materialien.trim() !== "" ? (
+                  <Textarea
+                    id="protokoll-materialien-ki"
+                    label="Materialien"
+                    value={materialien}
+                    onChange={(e) => setMaterialien(e.target.value)}
+                    rows={3}
+                    className="min-h-[4.5rem] text-base"
+                  />
+                ) : null}
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Button
                     type="button"
@@ -1463,7 +1437,7 @@ function ProtokollNeuPageInner() {
                     type="button"
                     className="min-h-12 w-full flex-1 text-base sm:w-auto"
                     disabled={!kiText.trim()}
-                    onClick={() => setStep(6)}
+                    onClick={() => void handleWeiterZurVorschau()}
                   >
                     Weiter zur Vorschau
                   </Button>
