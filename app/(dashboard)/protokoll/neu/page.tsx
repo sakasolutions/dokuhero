@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
@@ -1167,23 +1166,39 @@ function ProtokollNeuPageInner() {
               <h3 className="text-sm font-semibold text-slate-900">
                 Einsatzzeit
               </h3>
-              <div className="grid grid-cols-2 gap-2 overflow-hidden [&>*]:min-w-0">
-                <Input
-                  id="einsatz-von"
-                  label="Von"
-                  type="time"
-                  value={einsatzVon}
-                  onChange={(e) => setEinsatzVon(e.target.value)}
-                  className="w-full max-w-full min-w-0 overflow-hidden text-sm px-2"
-                />
-                <Input
-                  id="einsatz-bis"
-                  label="Bis"
-                  type="time"
-                  value={einsatzBis}
-                  onChange={(e) => setEinsatzBis(e.target.value)}
-                  className="w-full max-w-full min-w-0 overflow-hidden text-sm px-2"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="einsatz-von"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Von
+                  </label>
+                  <input
+                    id="einsatz-von"
+                    type="time"
+                    value={einsatzVon}
+                    onChange={(e) => setEinsatzVon(e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    style={{ WebkitAppearance: "none", maxWidth: "100%" }}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="einsatz-bis"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Bis
+                  </label>
+                  <input
+                    id="einsatz-bis"
+                    type="time"
+                    value={einsatzBis}
+                    onChange={(e) => setEinsatzBis(e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    style={{ WebkitAppearance: "none", maxWidth: "100%" }}
+                  />
+                </div>
               </div>
               {einsatzDauerAnzeige ? (
                 <p className="text-sm font-medium text-slate-700">
@@ -1200,27 +1215,45 @@ function ProtokollNeuPageInner() {
                 Mit Anfahrt
               </label>
               {mitAnfahrt ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Input
-                    id="anfahrt-km"
-                    label="km"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    step={1}
-                    value={anfahrtKm}
-                    onChange={(e) => setAnfahrtKm(e.target.value)}
-                  />
-                  <Input
-                    id="anfahrt-minuten"
-                    label="Minuten"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    step={1}
-                    value={anfahrtMinuten}
-                    onChange={(e) => setAnfahrtMinuten(e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label
+                      htmlFor="anfahrt-km"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      km
+                    </label>
+                    <input
+                      id="anfahrt-km"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={1}
+                      value={anfahrtKm}
+                      onChange={(e) => setAnfahrtKm(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      style={{ WebkitAppearance: "none", maxWidth: "100%" }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label
+                      htmlFor="anfahrt-minuten"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Minuten
+                    </label>
+                    <input
+                      id="anfahrt-minuten"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={1}
+                      value={anfahrtMinuten}
+                      onChange={(e) => setAnfahrtMinuten(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      style={{ WebkitAppearance: "none", maxWidth: "100%" }}
+                    />
+                  </div>
                 </div>
               ) : null}
             </Card>
