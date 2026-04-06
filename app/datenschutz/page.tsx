@@ -65,8 +65,9 @@ export default function DatenschutzPage() {
           vorhanden
         </li>
         <li>
-          OpenAI Ireland Ltd. (KI-Texterstellung — es werden nur Stichpunkte
-          übermittelt, keine Personendaten) — Standardvertragsklauseln
+          OpenAI Ireland Ltd. (automatische Protokolltext-Erstellung — es
+          werden nur Stichpunkte übermittelt, keine Personendaten) —
+          Standardvertragsklauseln
         </li>
         <li>Resend Inc. (E-Mail-Versand) — AVV vorhanden</li>
         <li>

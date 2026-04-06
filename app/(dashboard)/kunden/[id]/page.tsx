@@ -261,7 +261,7 @@ export default function KundeDetailPage() {
                         {preview ? (
                           <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
                             <span className="font-medium text-slate-700">
-                              KI-Text:{" "}
+                              Protokolltext:{" "}
                             </span>
                             {preview}
                           </p>

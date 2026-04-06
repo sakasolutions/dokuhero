@@ -461,7 +461,7 @@ function ProtokollNeuPageInner() {
     };
     if (!res.ok) {
       throw new Error(
-        typeof j.error === "string" ? j.error : "KI-Text konnte nicht erstellt werden."
+        typeof j.error === "string" ? j.error : "Protokolltext konnte nicht erstellt werden."
       );
     }
     setKiText(j.kiText ?? "");
@@ -498,7 +498,7 @@ function ProtokollNeuPageInner() {
       await fetchKiPreview(id);
     } catch (e) {
       setStep4Error(
-        e instanceof Error ? e.message : "KI-Text konnte nicht erstellt werden."
+        e instanceof Error ? e.message : "Protokolltext konnte nicht erstellt werden."
       );
     } finally {
       setKiLoading(false);
@@ -611,7 +611,7 @@ function ProtokollNeuPageInner() {
       await fetchKiPreview(protokollId);
     } catch (e) {
       setStep4Error(
-        e instanceof Error ? e.message : "KI-Text konnte nicht erstellt werden."
+        e instanceof Error ? e.message : "Protokolltext konnte nicht erstellt werden."
       );
     } finally {
       setKiLoading(false);
@@ -998,7 +998,7 @@ function ProtokollNeuPageInner() {
           : step === 4
             ? " · Notiz"
             : step === 5
-              ? " · KI-Text"
+              ? " · Protokolltext"
               : " · Abschluss";
 
   if (limitPhase === "loading" || sessionStatus === "loading") {
@@ -1569,7 +1569,7 @@ function ProtokollNeuPageInner() {
 
         {step === 5 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">KI-Text</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Protokolltext</h2>
             {kiLoading ? (
               <div
                 className="flex flex-col items-center justify-center gap-3 py-10 text-slate-600"
@@ -1578,7 +1578,7 @@ function ProtokollNeuPageInner() {
               >
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="text-center text-base">
-                  KI erstellt deinen Protokolltext…
+                  Protokolltext wird erstellt…
                 </p>
               </div>
             ) : (

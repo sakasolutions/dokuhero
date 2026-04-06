@@ -888,7 +888,8 @@ export default function EinstellungenPage() {
                 Team verwalten
               </h2>
               <p className="mt-1 max-w-xl text-sm text-slate-600">
-                Mitarbeiter können Protokolle anlegen und KI-Text generieren.
+                Mitarbeiter können Protokolle anlegen und den Protokolltext
+                erstellen.
               </p>
             </div>
             <Button

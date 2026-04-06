@@ -49,7 +49,7 @@ export async function generateProtokollText(
 
   const text = completion.choices[0]?.message?.content?.trim();
   if (!text) {
-    throw new Error("Keine Antwort von der KI.");
+    throw new Error("Keine Antwort bei der Protokolltext-Erstellung.");
   }
   return text;
 }
@@ -129,7 +129,7 @@ export async function refineProtokollText(
 
   const text = completion.choices[0]?.message?.content?.trim();
   if (!text) {
-    throw new Error("Keine Antwort von der KI.");
+    throw new Error("Keine Antwort bei der Protokolltext-Erstellung.");
   }
   return text;
 }

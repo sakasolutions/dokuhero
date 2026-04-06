@@ -148,7 +148,7 @@ export function PreiseClient({ currentPlan, trialDaysLeft }: Props) {
             {[
               "1 Nutzer",
               "50 Protokolle/Monat",
-              "KI-Protokolltext",
+              "Protokolltext",
               "PDF-Generierung",
               "Automatischer Mail-Versand",
               "Bewertungs-Automatik",

@@ -66,8 +66,8 @@ const steps = [
   {
     n: 2,
     icon: Sparkles,
-    title: "KI schreibt",
-    text: "Unsere KI wandelt deine Stichpunkte in einen\nprofessionellen Protokolltext um.",
+    title: "Protokolltext",
+    text: "Aus deinen Stichpunkten wird ein\nprofessioneller Protokolltext.",
   },
   {
     n: 3,
@@ -88,7 +88,7 @@ const kennstDuDasProbleme = [
 const kennstDuDasLoesungen = [
   "60 Sekunden vor Ort — fertig",
   "Kunde bekommt sofort sein PDF per Mail",
-  "KI schreibt den professionellen Text für dich",
+  "Der professionelle Protokolltext entsteht automatisch",
   "Alles dokumentiert, 10 Jahre rechtssicher",
   "Fotos, Notiz, PDF — alles an einem Ort",
 ] as const;
@@ -103,7 +103,7 @@ const landingFeatures = [
   {
     icon: Sparkles,
     eyebrow: "Kein Tippen nach der Arbeit",
-    title: "KI-Protokolltext",
+    title: "Protokolltext",
     text: "Deine Stichpunkte werden in einen professionellen\nProtokolltext verwandelt — in Sekunden.",
   },
   {
@@ -210,7 +210,9 @@ function HeroMockCard() {
       </div>
       <div className="mt-3 flex items-center gap-1.5 text-left text-sm">
         <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-        <span className="font-medium text-slate-700">KI generiert…</span>
+        <span className="font-medium text-slate-700">
+          Protokolltext wird erstellt…
+        </span>
         <span
           className="landing-mock-cursor-blink inline-block h-4 w-0.5 shrink-0 rounded-sm bg-primary"
           aria-hidden
@@ -362,7 +364,7 @@ export default function LandingPage() {
                 viewport={viewportOnce}
               >
                 <p className="inline-flex min-h-8 items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary md:text-sm">
-                  Neu: KI-Protokolle in 60 Sekunden
+                  Neu: Protokolle in 60 Sekunden
                 </p>
                 <h1 className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-4xl md:mt-6 md:text-4xl lg:text-5xl">
                   Schluss mit Papierkram.

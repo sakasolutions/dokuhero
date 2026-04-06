@@ -179,7 +179,7 @@ export function SprachEingabe({ onTranscript }: Props) {
         </button>
       </div>
       <p className="max-w-[200px] text-center text-xs text-slate-500">
-        Einfach sprechen, KI schreibt mit
+        Tippen oder sprechen
       </p>
       {permissionError ? (
         <p className="max-w-[220px] text-center text-xs text-red-600" role="alert">

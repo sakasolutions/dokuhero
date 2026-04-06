@@ -42,7 +42,7 @@ const PRICE_IDS = {
 
 const starterFeatures = [
   "50 Protokolle/Monat",
-  "KI-Protokolltext",
+  "Protokolltext",
   "PDF-Generierung",
   "Automatischer Mail-Versand",
   "Bewertungs-Automatik",

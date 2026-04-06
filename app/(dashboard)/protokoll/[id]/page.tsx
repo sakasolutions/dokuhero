@@ -898,14 +898,14 @@ export default function ProtokollAnsichtPage() {
 
       <Card>
         <h2 className="text-lg font-semibold text-slate-900">
-          Schritt 1 – KI-Protokolltext
+          Schritt 1 – Protokolltext
         </h2>
         <p className="mt-1 text-sm text-slate-600">
           {kiReadonly
             ? "Dieses Protokoll ist freigegeben – der Text kann nicht mehr geändert werden."
             : chef
-              ? "Erzeuge mit KI einen Text, bearbeite ihn und gehe zur PDF-Erstellung bzw. Freigabe."
-              : "Erzeuge mit KI einen Text, bearbeite ihn, dann Unterschrift des Kunden und Versand per E-Mail."}
+              ? "Erstelle den Protokolltext, bearbeite ihn und gehe zur PDF-Erstellung bzw. Freigabe."
+              : "Erstelle den Protokolltext, bearbeite ihn, dann Unterschrift des Kunden und Versand per E-Mail."}
         </p>
 
         {!hasKiText && !kiReadonly ? (
@@ -921,13 +921,15 @@ export default function ProtokollAnsichtPage() {
               ) : (
                 <RefreshCw className="h-5 w-5" />
               )}
-              {busy === "preview" ? "Text wird erstellt…" : "Text generieren"}
+              {busy === "preview"
+                ? "Protokolltext wird erstellt…"
+                : "Protokolltext erstellen"}
             </Button>
           </div>
         ) : hasKiText ? (
           <div className="mt-6 space-y-4">
             <label htmlFor="ki-text" className="sr-only">
-              KI-Protokolltext
+              Protokolltext
             </label>
             <textarea
               id="ki-text"
@@ -953,7 +955,7 @@ export default function ProtokollAnsichtPage() {
                 }
               >
                 <RefreshCw className="h-5 w-5" />
-                Text neu generieren
+                Neu erstellen
               </Button>
               {showWeiterZuPdf ? (
                 <Button
@@ -1042,11 +1044,11 @@ export default function ProtokollAnsichtPage() {
                     {busy === "preview" ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Wird generiert…
+                        Wird erstellt…
                       </>
                     ) : (
                       <>
-                        Neu generieren
+                        Neu erstellen
                         <span aria-hidden> →</span>
                       </>
                     )}
