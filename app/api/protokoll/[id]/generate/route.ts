@@ -3,11 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import { generatePDF } from "@/lib/pdf";
-import {
-  sendNeuesProtokollInternGespeichertMail,
-  sendProtokollKopieAnBetriebMail,
-  sendProtokollMail,
-} from "@/lib/mail";
+import { sendProtokollKopieAnBetriebMail, sendProtokollMail } from "@/lib/mail";
 import { sessionMayFreigebenProtokoll } from "@/lib/protokoll-freigabe";
 import type { RowDataPacket } from "mysql2";
 import { z } from "zod";
@@ -29,9 +25,6 @@ const bodySchema = z.object({
     },
     z.string().email("Ungültige E-Mail-Adresse").optional()
   ),
-  notifyBetriebIntern: z.boolean().optional().default(false),
-  /** PDF speichern & freigeben, Versand später durch Büro (kein Kunden-Mail, keine interne Abschluss-Mail). */
-  versandOffen: z.boolean().optional().default(false),
 });
 
 interface LoadRow extends RowDataPacket {
@@ -108,19 +101,8 @@ export async function POST(request: Request, context: RouteContext) {
       unterschrift,
       monteurUnterschrift,
       kundeEmail,
-      notifyBetriebIntern,
-      versandOffen,
     } = parsed.data;
 
-    if (versandOffen && (sendMail || notifyBetriebIntern)) {
-      return NextResponse.json(
-        {
-          error:
-            "Die Option „Versand offen“ kann nicht mit E-Mail-Versand oder interner Benachrichtigung kombiniert werden.",
-        },
-        { status: 400 }
-      );
-    }
     const unterschriftVal =
       typeof unterschrift === "string" ? unterschrift.trim() : null;
     const hasUnterschrift =
@@ -133,9 +115,7 @@ export async function POST(request: Request, context: RouteContext) {
       monteurUnterschriftVal != null &&
       monteurUnterschriftVal.startsWith("data:image");
     const needsBeideUnterschriften =
-      notifyBetriebIntern ||
-      versandOffen ||
-      (sendMail && typeof monteurUnterschrift === "string");
+      sendMail && typeof monteurUnterschrift === "string";
     const pool = getPool();
 
     const [rows] = await pool.execute<LoadRow[]>(
@@ -253,8 +233,6 @@ export async function POST(request: Request, context: RouteContext) {
     let emailSent = false;
     let mailError: string | null = null;
     let kopieAnBetriebError: string | null = null;
-    let betriebInternNotified = false;
-    let betriebInternMailError: string | null = null;
 
     if (sendMail) {
       const to = (kundeEmail?.trim() || row.kunde_email?.trim()) ?? "";
@@ -303,10 +281,9 @@ export async function POST(request: Request, context: RouteContext) {
     await pool.execute(
       `UPDATE protokolle
        SET ki_text = ?, pdf_pfad = ?,
-           gesendet_am = CASE WHEN ? = 1 THEN NOW() ELSE gesendet_am END,
-           versand_offen = ?
+           gesendet_am = CASE WHEN ? = 1 THEN NOW() ELSE gesendet_am END
        WHERE id = ?`,
-      [kiText, pdfUrl, emailSent ? 1 : 0, versandOffen ? 1 : 0, protokollId]
+      [kiText, pdfUrl, emailSent ? 1 : 0, protokollId]
     );
 
     if (emailSent || hasUnterschrift) {
@@ -316,51 +293,12 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    if (
-      !sendMail &&
-      !versandOffen &&
-      hasUnterschrift &&
-      hasMonteurUnterschrift &&
-      notifyBetriebIntern
-    ) {
-      const betriebMail = row.betrieb_email?.trim();
-      if (betriebMail) {
-        try {
-          await sendNeuesProtokollInternGespeichertMail(
-            betriebMail,
-            row.betrieb_name,
-            row.kunde_name ?? "",
-            row.kunde_adresse ?? null,
-            normalizeHmFromDb(row.einsatz_von),
-            normalizeHmFromDb(row.einsatz_bis),
-            row.anfahrt_km != null ? Number(row.anfahrt_km) : null,
-            row.anfahrt_minuten != null ? Number(row.anfahrt_minuten) : null,
-            kiText,
-            row.materialien?.trim() ? row.materialien : null,
-            session.user.name ?? null,
-            pdfBuffer,
-            null
-          );
-          betriebInternNotified = true;
-        } catch (e) {
-          console.error("Interne Betriebs-Mail fehlgeschlagen:", e);
-          betriebInternMailError =
-            e instanceof Error
-              ? e.message
-              : "Benachrichtigung an Betrieb fehlgeschlagen.";
-        }
-      }
-    }
-
     return NextResponse.json({
       success: true,
       pdfUrl,
       emailSent,
-      versandOffen: versandOffen === true,
       ...(mailError ? { mailError } : {}),
       ...(kopieAnBetriebError ? { kopieAnBetriebError } : {}),
-      betriebInternNotified,
-      ...(betriebInternMailError ? { betriebInternMailError } : {}),
     });
   } catch (error) {
     console.error("Protokoll generate Fehler:", error);

@@ -117,18 +117,6 @@ export async function GET(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
     }
 
-    let versandOffen = false;
-    try {
-      const [vrows] = await pool.execute<RowDataPacket[]>(
-        `SELECT versand_offen AS vo FROM protokolle WHERE id = ? LIMIT 1`,
-        [protokollId]
-      );
-      const vo = (vrows[0] as { vo?: unknown } | undefined)?.vo;
-      versandOffen = vo === 1 || vo === true;
-    } catch {
-      /* Spalte fehlt ohne Migration add_protokoll_versand_offen.sql */
-    }
-
     const protokoll = {
       id: j.id,
       auftrag_id: j.auftrag_id,
@@ -142,7 +130,6 @@ export async function GET(_request: Request, context: RouteContext) {
       ki_text: j.ki_text,
       pdf_pfad: j.pdf_pfad,
       gesendet_am: j.gesendet_am,
-      versand_offen: versandOffen,
       erstellt_am: j.erstellt_am,
       status: j.status,
       archiviert: j.archiviert,
