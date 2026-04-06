@@ -31,21 +31,11 @@ const DRAFT_KEY_TEMP = "dokuhero_draft_temp";
 const draftKey = (id: number) => `dokuhero_draft_${id}`;
 
 function saveDraftLocal(id: number | null, data: object) {
+  if (!id) return;
   try {
-    const key = id ? draftKey(id) : DRAFT_KEY_TEMP;
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(draftKey(id), JSON.stringify(data));
   } catch {
     /* ignore */
-  }
-}
-
-function loadDraftLocal(id: number | null): Record<string, unknown> | null {
-  try {
-    const key = id ? draftKey(id) : DRAFT_KEY_TEMP;
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
-  } catch {
-    return null;
   }
 }
 
@@ -281,6 +271,14 @@ function ProtokollNeuPageInner() {
       }
     })();
   }, [resumeId]);
+
+  useEffect(() => {
+    try {
+      localStorage.removeItem(DRAFT_KEY_TEMP);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const zurueckHref = isInhaber ? "/dashboard" : "/protokolle";
 
@@ -820,7 +818,7 @@ function ProtokollNeuPageInner() {
   }, [anfahrtKm, anfahrtMinuten]);
 
   useEffect(() => {
-    if (!protokollGestartet) return;
+    if (!protokollGestartet || !protokollId) return;
     saveDraftLocal(protokollId, {
       kundenName,
       kundenStrasse,
@@ -836,34 +834,9 @@ function ProtokollNeuPageInner() {
     kundenPlz,
     kundenStadt,
     kundenTelefon,
+    protokollGestartet,
+    protokollId,
   ]);
-
-  useEffect(() => {
-    if (resumeId) return;
-    if (protokollGestartet) return;
-
-    const draft = loadDraftLocal(null);
-    if (!draft?.kundenName) return;
-
-    if (draft.kundenName) setKundenName(draft.kundenName as string);
-    if (draft.kundenStrasse) setKundenStrasse(draft.kundenStrasse as string);
-    if (draft.kundenPlz) setKundenPlz(draft.kundenPlz as string);
-    if (draft.kundenStadt) setKundenStadt(draft.kundenStadt as string);
-    if (draft.kundenTelefon) setKundenTelefon(draft.kundenTelefon as string);
-    if (draft.notiz) setNotiz(draft.notiz as string);
-    if (draft.materialien) setMaterialien(draft.materialien as string);
-    if (draft.einsatzVon) setEinsatzVon(draft.einsatzVon as string);
-    if (draft.einsatzBis) setEinsatzBis(draft.einsatzBis as string);
-    if (draft.anfahrtKm) setAnfahrtKm(draft.anfahrtKm as string);
-    if (draft.anfahrtMinuten) setAnfahrtMinuten(draft.anfahrtMinuten as string);
-    if (draft.protokollId) setProtokollId(draft.protokollId as number);
-
-    const savedStep = draft.step as number;
-    if (savedStep && savedStep > 1) {
-      setStep(savedStep);
-      setProtokollGestartet(true);
-    }
-  }, []);
 
   useEffect(() => {
     return () => {
