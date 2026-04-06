@@ -209,6 +209,7 @@ function ProtokollNeuPageInner() {
             einsatz_bis?: string | null;
             anfahrt_km?: number | null;
             anfahrt_minuten?: number | null;
+            status?: string;
           };
           kunde_name?: string | null;
           kunde_adresse?: string | null;
@@ -218,6 +219,12 @@ function ProtokollNeuPageInner() {
         };
         const p = data.protokoll;
         if (!p) return;
+
+        if (p.status === "freigegeben") {
+          deleteDraftLocal(Number(resumeId));
+          router.push("/protokolle");
+          return;
+        }
 
         setKundenName(data.kunde_name ?? "");
 
@@ -261,8 +268,8 @@ function ProtokollNeuPageInner() {
         const zielStep = p.ki_text
           ? 5
           : (data.fotos?.length ?? 0) > 0
-            ? 4
-            : 3;
+            ? 3
+            : 2;
 
         setStep(zielStep);
         setProtokollGestartet(true);
