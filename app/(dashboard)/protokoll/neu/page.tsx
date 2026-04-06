@@ -1353,7 +1353,16 @@ function ProtokollNeuPageInner() {
               type="button"
               className="min-h-12 w-full text-base sm:w-auto"
               disabled={!canGoStep2()}
-              onClick={() => setStep(2)}
+              onClick={() => {
+                setStep(2);
+                if (!protokollId) {
+                  saveProtokollCore()
+                    .then((id) => {
+                      if (id) setProtokollId(id);
+                    })
+                    .catch(() => {});
+                }
+              }}
             >
               Weiter
             </Button>
