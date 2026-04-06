@@ -198,6 +198,9 @@ function ProtokollNeuPageInner() {
   const [pdfVorbereitungHinweis, setPdfVorbereitungHinweis] = useState<
     string | null
   >(null);
+  /** Resume: Fehler nach fehlgeschlagenem GET; Retry erhöht Key. */
+  const [resumeFailed, setResumeFailed] = useState(false);
+  const [resumeRetryKey, setResumeRetryKey] = useState(0);
 
   const einsatzDauerAnzeige = useMemo(
     () => formatEinsatzdauerLabel(einsatzVon, einsatzBis),
@@ -205,12 +208,22 @@ function ProtokollNeuPageInner() {
   );
 
   useEffect(() => {
-    if (!resumeId) return;
+    if (!resumeId) {
+      setResumeFailed(false);
+      return;
+    }
+
+    let cancelled = false;
+    setResumeFailed(false);
 
     (async () => {
       try {
         const res = await fetch(`/api/protokoll/${resumeId}`);
-        if (!res.ok) return;
+        if (cancelled) return;
+        if (!res.ok) {
+          setResumeFailed(true);
+          return;
+        }
         const data = (await res.json()) as {
           protokoll?: {
             notiz: string | null;
@@ -228,14 +241,20 @@ function ProtokollNeuPageInner() {
           kunde_email?: string | null;
           fotos?: unknown[];
         };
+        if (cancelled) return;
         const p = data.protokoll;
-        if (!p) return;
+        if (!p) {
+          setResumeFailed(true);
+          return;
+        }
 
         if (p.status === "freigegeben") {
           deleteDraftLocal(Number(resumeId));
           router.push("/protokolle");
           return;
         }
+
+        if (cancelled) return;
 
         setKundenName(data.kunde_name ?? "");
 
@@ -286,9 +305,14 @@ function ProtokollNeuPageInner() {
         setProtokollGestartet(true);
       } catch (e) {
         console.error("Resume fehlgeschlagen:", e);
+        if (!cancelled) setResumeFailed(true);
       }
     })();
-  }, [resumeId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resumeId, resumeRetryKey, router]);
 
   useEffect(() => {
     setSoftHinweis(null);
@@ -1233,6 +1257,72 @@ function ProtokollNeuPageInner() {
               onClick={() => router.push(zurueckHref)}
             >
               {isInhaber ? "Zurück zum Dashboard" : "Zu meinen Protokollen"}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (resumeId && !protokollGestartet && !resumeFailed) {
+    return (
+      <div className="mx-auto min-h-[70vh] max-w-lg pb-6">
+        <div className="mb-4 flex items-center gap-3">
+          <Link
+            href={zurueckHref}
+            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-primary hover:bg-surface"
+            aria-label="Zurück"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Link>
+          <h1 className="text-xl font-bold text-slate-900">Protokoll</h1>
+        </div>
+        <Card className="flex flex-col items-center gap-4 px-6 py-14 text-center shadow-sm">
+          <Loader2
+            className="h-10 w-10 animate-spin text-primary"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <p className="text-sm font-medium text-slate-800">
+            Entwurf wird geladen…
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (resumeId && resumeFailed && !protokollGestartet) {
+    return (
+      <div className="mx-auto min-h-[70vh] max-w-lg pb-6">
+        <div className="mb-4 flex items-center gap-3">
+          <Link
+            href={zurueckHref}
+            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-primary hover:bg-surface"
+            aria-label="Zurück"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Link>
+          <h1 className="text-xl font-bold text-slate-900">Protokoll</h1>
+        </div>
+        <Card className="space-y-5 px-6 py-8 text-center shadow-sm">
+          <p className="text-sm font-medium text-slate-800">
+            Entwurf konnte nicht geladen werden.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:w-auto"
+              onClick={() => setResumeRetryKey((k) => k + 1)}
+            >
+              Erneut versuchen
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full sm:w-auto"
+              onClick={() => router.push("/protokolle")}
+            >
+              Zu meinen Protokollen
             </Button>
           </div>
         </Card>
