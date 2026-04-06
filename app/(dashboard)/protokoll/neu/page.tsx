@@ -1026,23 +1026,6 @@ function ProtokollNeuPageInner() {
     }
   }
 
-  const stepTitle =
-    step === 1
-      ? "Kunde"
-      : step === 2
-        ? "Fotos"
-        : step === 3
-          ? "Notizen"
-          : step === 4
-            ? "Zeiten"
-            : step === 5
-              ? "Text prüfen"
-              : step === 6
-                ? "Vorschau"
-                : step === 7
-                  ? "Unterschrift"
-                  : "Abschluss";
-
   const progressPercent = (step / STEPS) * 100;
 
   if (limitPhase === "loading" || sessionStatus === "loading") {
@@ -1166,75 +1149,67 @@ function ProtokollNeuPageInner() {
     );
   }
 
-  const stepNavRow =
-    "mt-8 flex flex-col gap-3 sm:flex-row sm:items-stretch";
-  const stepNavBack =
-    "min-h-12 w-full flex-1 border-slate-300 text-slate-700 sm:w-auto";
-  const stepNavNext = "min-h-12 w-full flex-1 sm:w-auto";
-
   return (
-    <div className="mx-auto w-full max-w-2xl bg-white pb-[calc(7rem+env(safe-area-inset-bottom,0px))]">
-      <div className="px-0 pt-2 sm:px-0">
-        <div className="mb-3 flex items-center justify-between">
-          <Link
-            href={zurueckHref}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-primary hover:bg-surface"
-            aria-label="Zurück"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+    <div className="mx-auto min-h-[70vh] max-w-2xl pb-24">
+      <div className="mb-4 flex items-center justify-between">
+        <Link
+          href={zurueckHref}
+          className="inline-flex items-center justify-center rounded-lg p-2 text-primary hover:bg-surface"
+          aria-label="Zurück"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
 
-          <h1 className="text-lg font-bold text-slate-900">Protokoll</h1>
+        <h1 className="text-lg font-bold text-slate-900">Protokoll</h1>
 
-          <button
-            type="button"
-            onClick={() => void saveAndExit()}
-            disabled={!canGoStep2() || saveExitBusy}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
-            title={
-              !canGoStep2()
-                ? "Bitte zuerst Kundennamen eingeben"
-                : "Speichern & Zurück"
-            }
-          >
-            {saveExitBusy ? (
-              <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-            ) : (
-              <Save className="h-5 w-5" aria-hidden />
-            )}
-          </button>
-        </div>
-        {saveStatus === "saving" ? (
-          <p className="mb-2 text-center text-xs text-slate-400">Speichert...</p>
-        ) : null}
-        {saveStatus === "saved" ? (
-          <p className="mb-2 text-center text-xs text-green-500">Gespeichert ✓</p>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => void saveAndExit()}
+          disabled={!canGoStep2() || saveExitBusy}
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+          title={
+            !canGoStep2()
+              ? "Bitte zuerst Kundennamen eingeben"
+              : "Speichern & Zurück"
+          }
+        >
+          {saveExitBusy ? (
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+          ) : (
+            <Save className="h-5 w-5" aria-hidden />
+          )}
+        </button>
+      </div>
+      {saveStatus === "saving" ? (
+        <p className="-mt-2 mb-2 text-center text-xs text-slate-400">
+          Speichert...
+        </p>
+      ) : null}
+      {saveStatus === "saved" ? (
+        <p className="-mt-2 mb-2 text-center text-xs text-green-500">
+          Gespeichert ✓
+        </p>
+      ) : null}
 
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
-            {stepTitle}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Schritt {step} von {STEPS}
-          </p>
+      <div className="mb-6 space-y-3">
+        <div
+          className="w-full overflow-hidden rounded-full bg-slate-200"
+          role="progressbar"
+          aria-valuenow={step}
+          aria-valuemin={1}
+          aria-valuemax={STEPS}
+          aria-label={`Fortschritt: Schritt ${step} von ${STEPS}`}
+        >
           <div
-            className="mt-5 w-full overflow-hidden rounded-full bg-slate-200"
-            role="progressbar"
-            aria-valuenow={step}
-            aria-valuemin={1}
-            aria-valuemax={STEPS}
-            aria-label={`Fortschritt: Schritt ${step} von ${STEPS}`}
-          >
-            <div
-              className="h-1.5 rounded-full bg-primary transition-[width] duration-300 ease-out"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+            className="h-1.5 rounded-full bg-primary transition-[width] duration-300 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
+        <p className="text-center text-sm font-medium text-slate-600">
+          Schritt {step} von {STEPS}
+        </p>
       </div>
 
-      <div className="pt-1">
       {(error || step4Error || step5Error) ? (
         <div className="mb-4 space-y-3">
           {error ? (
@@ -1273,9 +1248,10 @@ function ProtokollNeuPageInner() {
         </div>
       ) : null}
 
-      <div className="space-y-5">
+      <Card className="border-slate-200 shadow-md">
         {step === 1 && (
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Kundendaten</h2>
             <div className="space-y-2">
               <label
                 htmlFor="kunde-name"
@@ -1365,44 +1341,42 @@ function ProtokollNeuPageInner() {
                 onChange={(e) => setKundenTelefon(e.target.value)}
               />
             </div>
-            <div className={stepNavRow}>
-              <div className="hidden min-w-0 flex-1 sm:block" aria-hidden />
-              <Button
-                type="button"
-                className={stepNavNext}
-                disabled={!canGoStep2()}
-                onClick={() => {
-                  setStep(2);
-                  if (!protokollId) {
-                    saveProtokollCore()
-                      .then((id) => {
-                        if (id) setProtokollId(id);
-                      })
-                      .catch(() => {});
-                  }
-                }}
-              >
-                Weiter
-              </Button>
-            </div>
+            <Button
+              type="button"
+              className="min-h-12 w-full text-base sm:w-auto"
+              disabled={!canGoStep2()}
+              onClick={() => {
+                setStep(2);
+                if (!protokollId) {
+                  saveProtokollCore()
+                    .then((id) => {
+                      if (id) setProtokollId(id);
+                    })
+                    .catch(() => {});
+                }
+              }}
+            >
+              Weiter
+            </Button>
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Fotos</h2>
             <FotoUpload value={fotos} onChange={setFotos} maxPhotos={10} />
-            <div className={stepNavRow}>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className={stepNavBack}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 onClick={() => setStep(1)}
               >
                 Zurück
               </Button>
               <Button
                 type="button"
-                className={stepNavNext}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 onClick={() => setStep(3)}
               >
                 Weiter
@@ -1412,9 +1386,10 @@ function ProtokollNeuPageInner() {
         )}
 
         {step === 3 && (
-          <div className="space-y-5">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Notiz</h2>
             <p className="text-sm text-slate-600">
-              Tippe oder sprich deine Notiz …
+              Tippe oder sprich deine Notiz…
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <div className="min-w-0 flex-1">
@@ -1438,8 +1413,8 @@ function ProtokollNeuPageInner() {
               />
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-slate-600">
+            <div className="space-y-2 border-t border-slate-200 pt-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Materialien / Positionen
               </p>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -1447,7 +1422,7 @@ function ProtokollNeuPageInner() {
                   <Textarea
                     id="protokoll-materialien"
                     aria-label="Materialien / Positionen"
-                    placeholder="Materialien, Ersatzteile, Positionen …"
+                    placeholder="Materialien, Ersatzteile, Positionen..."
                     value={materialien}
                     onChange={(e) => setMaterialien(e.target.value)}
                     rows={3}
@@ -1464,18 +1439,18 @@ function ProtokollNeuPageInner() {
                 />
               </div>
             </div>
-            <div className={stepNavRow}>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className={stepNavBack}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 onClick={() => setStep(2)}
               >
                 Zurück
               </Button>
               <Button
                 type="button"
-                className={stepNavNext}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={!canSubmit() || notizWeiterBusy}
                 onClick={() => void afterNotizWeiter()}
               >
@@ -1493,9 +1468,12 @@ function ProtokollNeuPageInner() {
         )}
 
         {step === 4 && (
-          <div className="space-y-5">
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-slate-800">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Einsatzzeit &amp; Anfahrt
+            </h2>
+            <Card className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-900">
                 Einsatzzeit
               </h3>
               <div className="grid grid-cols-2 gap-3">
@@ -1586,19 +1564,19 @@ function ProtokollNeuPageInner() {
                   </div>
                 </div>
               ) : null}
-            </div>
-            <div className={stepNavRow}>
+            </Card>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className={stepNavBack}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 onClick={() => setStep(3)}
               >
                 Zurück
               </Button>
               <Button
                 type="button"
-                className={stepNavNext}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={!canSubmit() || notizWeiterBusy}
                 onClick={() => void proceedFromEinsatzToKi()}
               >
@@ -1617,6 +1595,7 @@ function ProtokollNeuPageInner() {
 
         {step === 5 && (
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Protokolltext</h2>
             {kiLoading ? (
               <div
                 className="flex flex-col items-center justify-center gap-3 py-10 text-slate-600"
@@ -1650,11 +1629,11 @@ function ProtokollNeuPageInner() {
                 ) : null}
               </>
             )}
-            <div className={stepNavRow}>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className={stepNavBack}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={kiLoading}
                 onClick={() => setStep(4)}
               >
@@ -1662,7 +1641,7 @@ function ProtokollNeuPageInner() {
               </Button>
               <Button
                 type="button"
-                className={stepNavNext}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={kiLoading || !kiText.trim()}
                 onClick={() => void handleWeiterZurVorschau()}
               >
@@ -1681,6 +1660,7 @@ function ProtokollNeuPageInner() {
 
         {step === 6 && (
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">PDF-Vorschau</h2>
             {pdfLoading ? (
               <div
                 className="flex flex-col items-center justify-center gap-3 py-10 text-slate-600"
@@ -1693,14 +1673,14 @@ function ProtokollNeuPageInner() {
               <iframe
                 title="PDF-Vorschau"
                 src={`${pdfUrl}?t=${pdfBust}`}
-                className="h-[min(55vh,28rem)] w-full rounded-lg border border-slate-200 bg-slate-100"
+                className="h-[400px] w-full rounded-lg border border-slate-200 bg-slate-100"
               />
             ) : null}
-            <div className={stepNavRow}>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className={stepNavBack}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={pdfLoading}
                 onClick={() => {
                   setUnterschriftPhase("kunde");
@@ -1713,7 +1693,7 @@ function ProtokollNeuPageInner() {
               </Button>
               <Button
                 type="button"
-                className={stepNavNext}
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={pdfLoading || !pdfUrl}
                 onClick={() => setStep(7)}
               >
@@ -1732,6 +1712,7 @@ function ProtokollNeuPageInner() {
 
         {step === 7 && (
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Unterschrift</h2>
             {pdfUrl ? (
               <>
                 {monteurUnterschriftDataUri == null &&
@@ -1751,16 +1732,16 @@ function ProtokollNeuPageInner() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11 w-full border-slate-300 text-slate-700"
+                      className="min-h-12 w-full text-base"
                       onClick={clearActiveCanvas}
                     >
                       Löschen
                     </Button>
-                    <div className={stepNavRow}>
+                    <div className="flex flex-col gap-3 sm:flex-row">
                       <Button
                         type="button"
                         variant="outline"
-                        className={stepNavBack}
+                        className="min-h-12 w-full flex-1 text-base sm:w-auto"
                         onClick={() => {
                           setUnterschriftPhase("kunde");
                           setKundeUnterschriftDataUri(null);
@@ -1772,7 +1753,7 @@ function ProtokollNeuPageInner() {
                       </Button>
                       <Button
                         type="button"
-                        className={stepNavNext}
+                        className="min-h-12 w-full flex-1 text-base sm:w-auto"
                         disabled={!kundeCanvasHasInk}
                         onClick={handleKundeUnterschriftWeiter}
                       >
@@ -1802,16 +1783,16 @@ function ProtokollNeuPageInner() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11 w-full border-slate-300 text-slate-700"
+                      className="min-h-12 w-full text-base"
                       onClick={clearActiveCanvas}
                     >
                       Löschen
                     </Button>
-                    <div className={stepNavRow}>
+                    <div className="flex flex-col gap-3 sm:flex-row">
                       <Button
                         type="button"
                         variant="outline"
-                        className={stepNavBack}
+                        className="min-h-12 w-full flex-1 text-base sm:w-auto"
                         onClick={() => {
                           setUnterschriftPhase("kunde");
                           setKundeUnterschriftDataUri(null);
@@ -1823,7 +1804,7 @@ function ProtokollNeuPageInner() {
                       </Button>
                       <Button
                         type="button"
-                        className={stepNavNext}
+                        className="min-h-12 w-full flex-1 text-base sm:w-auto"
                         disabled={!monteurCanvasHasInk}
                         onClick={handleMonteurUnterschriftBestaetigen}
                       >
@@ -1839,6 +1820,9 @@ function ProtokollNeuPageInner() {
 
         {step === 8 && (
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Versand &amp; Abschluss
+            </h2>
             {monteurUnterschriftDataUri != null ? (
               <div className="space-y-3">
                 <Button
@@ -1878,27 +1862,23 @@ function ProtokollNeuPageInner() {
                 >
                   Intern speichern
                 </Button>
-                <div className={stepNavRow}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={stepNavBack}
-                    onClick={() => {
-                      setMonteurUnterschriftDataUri(null);
-                      setUnterschriftPhase("monteur");
-                      setStep(7);
-                    }}
-                  >
-                    Zurück
-                  </Button>
-                  <div className="hidden min-w-0 flex-1 sm:block" aria-hidden />
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-12 w-full text-base text-slate-600"
+                  onClick={() => {
+                    setMonteurUnterschriftDataUri(null);
+                    setUnterschriftPhase("monteur");
+                    setStep(7);
+                  }}
+                >
+                  Zurück
+                </Button>
               </div>
             ) : null}
           </div>
         )}
-      </div>
-      </div>
+      </Card>
     </div>
   );
 }
