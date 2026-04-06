@@ -32,6 +32,7 @@ interface JoinRow extends RowDataPacket {
   ki_text: string | null;
   pdf_pfad: string | null;
   gesendet_am: Date | null;
+  versand_offen: number;
   erstellt_am: Date;
   status: string;
   archiviert: number;
@@ -100,7 +101,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const [prows] = await pool.execute<JoinRow[]>(
       `SELECT p.id, p.auftrag_id, p.protokoll_nummer, p.notiz, p.materialien,
               p.einsatz_von, p.einsatz_bis, p.anfahrt_km, p.anfahrt_minuten,
-              p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
+              p.ki_text, p.pdf_pfad, p.gesendet_am, p.versand_offen, p.erstellt_am, p.status, p.archiviert,
               k.id AS kunde_id, k.name AS kunde_name, k.email AS kunde_email,
               k.adresse AS kunde_adresse, k.telefon AS kunde_telefon,
               a.beschreibung AS auftrag_beschreibung
@@ -130,6 +131,7 @@ export async function GET(_request: Request, context: RouteContext) {
       ki_text: j.ki_text,
       pdf_pfad: j.pdf_pfad,
       gesendet_am: j.gesendet_am,
+      versand_offen: j.versand_offen === 1,
       erstellt_am: j.erstellt_am,
       status: j.status,
       archiviert: j.archiviert,

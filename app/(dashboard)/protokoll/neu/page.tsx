@@ -13,8 +13,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
+  Building2,
   CheckCircle2,
   Loader2,
+  Mail,
   Plus,
   Save,
 } from "lucide-react";
@@ -99,7 +101,7 @@ type LimitPayload = {
   limit: number;
 };
 
-type AbschlussModus = "email" | "share" | "intern" | null;
+type AbschlussModus = "email" | "share" | "intern" | "buero" | null;
 
 type AutosavePayload = {
   notiz?: string;
@@ -1064,7 +1066,11 @@ function ProtokollNeuPageInner() {
     sendMail: boolean,
     kundeUri: string | null,
     monteurUri: string | null,
-    opts: { kundeEmail?: string; notifyBetriebIntern?: boolean } = {}
+    opts: {
+      kundeEmail?: string;
+      notifyBetriebIntern?: boolean;
+      versandOffen?: boolean;
+    } = {}
   ) {
     if (generateBusy || protokollId == null) return null;
     setError(null);
@@ -1081,6 +1087,9 @@ function ProtokollNeuPageInner() {
       }
       if (opts.notifyBetriebIntern === true) {
         body.notifyBetriebIntern = true;
+      }
+      if (opts.versandOffen === true) {
+        body.versandOffen = true;
       }
       const res = await fetch(`/api/protokoll/${protokollId}/generate`, {
         method: "POST",
@@ -1166,6 +1175,27 @@ function ProtokollNeuPageInner() {
       setInternBetriebNotified(j.betriebInternNotified === true);
       deleteDraftLocal(protokollId);
       setAbschlussModus("intern");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
+    }
+  }
+
+  async function handleVersandBuerooffen() {
+    const ku = kundeUnterschriftDataUri;
+    const mu = monteurUnterschriftDataUri;
+    if (!ku || !mu) {
+      setError(
+        "Für den Abschluss fehlen noch Unterschriften (Kunde und Monteur)."
+      );
+      return;
+    }
+    try {
+      const j = await postGenerate(false, ku, mu, { versandOffen: true });
+      if (!j) return;
+      setAbschlussWarnung(null);
+      setInternBetriebNotified(false);
+      deleteDraftLocal(protokollId);
+      setAbschlussModus("buero");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
     }
@@ -1273,9 +1303,11 @@ function ProtokollNeuPageInner() {
                 ? "PDF wurde per E-Mail gesendet."
                 : abschlussModus === "share"
                   ? "Protokoll wurde geteilt."
-                  : internBetriebNotified
-                    ? "Protokoll wurde gespeichert. Der Betrieb (Chef) wurde per E-Mail mit PDF informiert."
-                    : "Protokoll wurde gespeichert."}
+                  : abschlussModus === "buero"
+                    ? "Protokoll wurde gespeichert. Der Versand an den Kunden ist fürs Büro vorgemerkt."
+                    : internBetriebNotified
+                      ? "Protokoll wurde gespeichert. Der Betrieb (Chef) wurde per E-Mail mit PDF informiert."
+                      : "Protokoll wurde gespeichert."}
           </p>
           {abschlussWarnung ? (
             <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -1988,49 +2020,109 @@ function ProtokollNeuPageInner() {
               Versand &amp; Abschluss
             </h2>
             {monteurUnterschriftDataUri != null ? (
-              <div className="space-y-3">
-                {!effectiveKundenEmail() ? (
-                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                    Ohne E-Mail-Adresse ist nur „Intern speichern“ möglich.
-                  </p>
-                ) : null}
-                <Button
-                  type="button"
-                  className="min-h-12 w-full text-base"
-                  disabled={generateBusy || !effectiveKundenEmail()}
-                  onClick={() => void handleEmailSend()}
-                >
-                  Per E-Mail senden
-                </Button>
-                {!kundenEmail?.trim() ? (
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="kunde-email-extra"
-                      className="block text-xs font-medium text-slate-600"
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600">
+                  Wie soll das Protokoll abgeschlossen werden?
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    type="button"
+                    disabled={generateBusy}
+                    onClick={() => void handleIntern()}
+                    className="flex w-full flex-col items-start gap-1 rounded-xl border-2 border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-slate-50/80 disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    <span className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                      <Save
+                        className="h-5 w-5 shrink-0 text-primary"
+                        aria-hidden
+                      />
+                      Nur intern speichern
+                    </span>
+                    <span className="text-sm text-slate-600">
+                      PDF im Betrieb ablegen, optional Benachrichtigung an den
+                      Betrieb
+                    </span>
+                  </button>
+
+                  <div
+                    className={`rounded-xl border-2 p-4 shadow-sm ${
+                      effectiveKundenEmail()
+                        ? "border-slate-200 bg-white"
+                        : "border-slate-200 bg-slate-50"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      disabled={
+                        generateBusy || !effectiveKundenEmail()
+                      }
+                      title={
+                        !effectiveKundenEmail()
+                          ? "Keine E-Mail vorhanden"
+                          : undefined
+                      }
+                      onClick={() => void handleEmailSend()}
+                      className="flex w-full flex-col items-start gap-1 text-left disabled:pointer-events-none disabled:opacity-50"
                     >
-                      E-Mail-Adresse des Kunden (optional)
-                    </label>
-                    <input
-                      id="kunde-email-extra"
-                      type="email"
-                      autoComplete="email"
-                      inputMode="email"
-                      placeholder="name@beispiel.de"
-                      className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      value={kundenEmailExtra}
-                      onChange={(e) => setKundenEmailExtra(e.target.value)}
-                    />
+                      <span className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                        <Mail
+                          className="h-5 w-5 shrink-0 text-primary"
+                          aria-hidden
+                        />
+                        Per E-Mail an Kunden senden
+                      </span>
+                      <span className="text-sm text-slate-600">
+                        PDF per E-Mail an den Kunden, Betrieb erhält Kopie
+                      </span>
+                    </button>
+                    {!effectiveKundenEmail() ? (
+                      <p className="mt-2 text-sm font-medium text-amber-800">
+                        Keine E-Mail vorhanden – bitte unten ergänzen oder
+                        anderen Weg wählen.
+                      </p>
+                    ) : null}
+                    {!kundenEmail?.trim() ? (
+                      <div className="mt-3 space-y-1 border-t border-slate-200 pt-3">
+                        <label
+                          htmlFor="kunde-email-extra"
+                          className="block text-xs font-medium text-slate-600"
+                        >
+                          E-Mail-Adresse des Kunden
+                        </label>
+                        <input
+                          id="kunde-email-extra"
+                          type="email"
+                          autoComplete="email"
+                          inputMode="email"
+                          placeholder="name@beispiel.de"
+                          className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          value={kundenEmailExtra}
+                          onChange={(e) => setKundenEmailExtra(e.target.value)}
+                        />
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-12 w-full border-slate-300 text-base text-slate-700"
-                  disabled={generateBusy}
-                  onClick={() => void handleIntern()}
-                >
-                  Intern speichern
-                </Button>
+
+                  <button
+                    type="button"
+                    disabled={generateBusy}
+                    onClick={() => void handleVersandBuerooffen()}
+                    className="flex w-full flex-col items-start gap-1 rounded-xl border-2 border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-slate-50/80 disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    <span className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                      <Building2
+                        className="h-5 w-5 shrink-0 text-primary"
+                        aria-hidden
+                      />
+                      Büro kümmert sich später
+                    </span>
+                    <span className="text-sm text-slate-600">
+                      Protokoll abschließen; Versand oder Nachbearbeitung
+                      übernimmt das Büro
+                    </span>
+                  </button>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"

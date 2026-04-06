@@ -30,6 +30,8 @@ const bodySchema = z.object({
     z.string().email("Ungültige E-Mail-Adresse").optional()
   ),
   notifyBetriebIntern: z.boolean().optional().default(false),
+  /** PDF speichern & freigeben, Versand später durch Büro (kein Kunden-Mail, keine interne Abschluss-Mail). */
+  versandOffen: z.boolean().optional().default(false),
 });
 
 interface LoadRow extends RowDataPacket {
@@ -107,7 +109,18 @@ export async function POST(request: Request, context: RouteContext) {
       monteurUnterschrift,
       kundeEmail,
       notifyBetriebIntern,
+      versandOffen,
     } = parsed.data;
+
+    if (versandOffen && (sendMail || notifyBetriebIntern)) {
+      return NextResponse.json(
+        {
+          error:
+            "Die Option „Versand offen“ kann nicht mit E-Mail-Versand oder interner Benachrichtigung kombiniert werden.",
+        },
+        { status: 400 }
+      );
+    }
     const unterschriftVal =
       typeof unterschrift === "string" ? unterschrift.trim() : null;
     const hasUnterschrift =
@@ -121,6 +134,7 @@ export async function POST(request: Request, context: RouteContext) {
       monteurUnterschriftVal.startsWith("data:image");
     const needsBeideUnterschriften =
       notifyBetriebIntern ||
+      versandOffen ||
       (sendMail && typeof monteurUnterschrift === "string");
     const pool = getPool();
 
@@ -289,9 +303,10 @@ export async function POST(request: Request, context: RouteContext) {
     await pool.execute(
       `UPDATE protokolle
        SET ki_text = ?, pdf_pfad = ?,
-           gesendet_am = CASE WHEN ? = 1 THEN NOW() ELSE gesendet_am END
+           gesendet_am = CASE WHEN ? = 1 THEN NOW() ELSE gesendet_am END,
+           versand_offen = ?
        WHERE id = ?`,
-      [kiText, pdfUrl, emailSent ? 1 : 0, protokollId]
+      [kiText, pdfUrl, emailSent ? 1 : 0, versandOffen ? 1 : 0, protokollId]
     );
 
     if (emailSent || hasUnterschrift) {
@@ -303,6 +318,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     if (
       !sendMail &&
+      !versandOffen &&
       hasUnterschrift &&
       hasMonteurUnterschrift &&
       notifyBetriebIntern
@@ -340,6 +356,7 @@ export async function POST(request: Request, context: RouteContext) {
       success: true,
       pdfUrl,
       emailSent,
+      versandOffen: versandOffen === true,
       ...(mailError ? { mailError } : {}),
       ...(kopieAnBetriebError ? { kopieAnBetriebError } : {}),
       betriebInternNotified,
