@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
 
-const STEPS = 6;
+const STEPS = 8;
 
 const DRAFT_KEY_TEMP = "dokuhero_draft_temp";
 const draftKey = (id: number) => `dokuhero_draft_${id}`;
@@ -268,8 +268,8 @@ function ProtokollNeuPageInner() {
         const zielStep = p.ki_text
           ? 5
           : (data.fotos?.length ?? 0) > 0
-            ? 3
-            : 2;
+            ? 2
+            : 4;
 
         setStep(zielStep);
         setProtokollGestartet(true);
@@ -478,7 +478,34 @@ function ProtokollNeuPageInner() {
     await postKiPreview(id, {});
   }
 
-  async function proceedToKiStep() {
+  async function afterNotizWeiter() {
+    if (!canSubmit()) return;
+    setStep4Error(null);
+    setError(null);
+    setNotizWeiterBusy(true);
+    try {
+      let id = protokollId;
+      if (id == null) {
+        const newId = await saveProtokollCore();
+        if (newId == null) return;
+        id = newId;
+        setProtokollId(newId);
+        const det = await fetch(`/api/protokoll/${newId}`);
+        if (det.ok) {
+          const dj = (await det.json()) as { kunde_email?: string | null };
+          const em = dj.kunde_email?.trim();
+          setKundenEmail(em && em.length > 0 ? em : null);
+        } else {
+          setKundenEmail(null);
+        }
+      }
+      setStep(4);
+    } finally {
+      setNotizWeiterBusy(false);
+    }
+  }
+
+  async function proceedFromEinsatzToKi() {
     if (!canSubmit()) return;
     setStep4Error(null);
     setError(null);
@@ -513,7 +540,7 @@ function ProtokollNeuPageInner() {
     }
   }
 
-  /** Materialien aus Schritt 5 vor PDF-Generierung in der DB persistieren. */
+  /** Materialien vor PDF-Vorschau in der DB persistieren. */
   async function persistMaterialienBeforeVorschau(): Promise<boolean> {
     if (protokollId == null) return false;
     const res = await fetch(`/api/protokoll/${protokollId}`, {
@@ -609,7 +636,7 @@ function ProtokollNeuPageInner() {
 
   async function retryKiStep() {
     if (protokollId == null) {
-      await proceedToKiStep();
+      await proceedFromEinsatzToKi();
       return;
     }
     setStep4Error(null);
@@ -660,12 +687,16 @@ function ProtokollNeuPageInner() {
   useEffect(() => {
     const was = prevStepRef.current;
     prevStepRef.current = step;
-    if (step !== 6 || protokollId == null) return;
-    if (was !== 5) return;
-    setUnterschriftPhase("kunde");
-    setKundeUnterschriftDataUri(null);
-    setMonteurUnterschriftDataUri(null);
-    void loadPdfForAbschlussStep(kiText);
+    if (step === 6 && was === 5 && protokollId != null) {
+      setUnterschriftPhase("kunde");
+      setKundeUnterschriftDataUri(null);
+      setMonteurUnterschriftDataUri(null);
+      void loadPdfForAbschlussStep(kiText);
+    } else if (step === 7 && was === 6) {
+      setUnterschriftPhase("kunde");
+      setKundeUnterschriftDataUri(null);
+      setMonteurUnterschriftDataUri(null);
+    }
   }, [step, protokollId, kiText, loadPdfForAbschlussStep]);
 
   function initSignatureCanvas(
@@ -704,7 +735,7 @@ function ProtokollNeuPageInner() {
   }
 
   useEffect(() => {
-    if (step !== 6 || pdfLoading || abschlussModus != null) return;
+    if (step !== 7 || pdfLoading || abschlussModus != null) return;
     if (monteurUnterschriftDataUri != null) return;
     const t = window.setTimeout(() => initActiveCanvas(), 0);
     return () => window.clearTimeout(t);
@@ -719,7 +750,7 @@ function ProtokollNeuPageInner() {
   ]);
 
   useEffect(() => {
-    if (step !== 6 || pdfLoading || abschlussModus != null) return;
+    if (step !== 7 || pdfLoading || abschlussModus != null) return;
     if (monteurUnterschriftDataUri != null) return;
 
     const canvas =
@@ -886,6 +917,7 @@ function ProtokollNeuPageInner() {
     const uri = getMonteurSignatureDataUri();
     if (!uri) return;
     setMonteurUnterschriftDataUri(uri);
+    setStep(8);
   }
 
   function effectiveKundenEmail(): string {
@@ -997,16 +1029,20 @@ function ProtokollNeuPageInner() {
 
   const stepLabel =
     step === 1
-      ? " · Kundendaten"
+      ? " · Kunde"
       : step === 2
-        ? " · Einsatzzeit"
+        ? " · Fotos"
         : step === 3
-          ? " · Fotos"
+          ? " · Notizen"
           : step === 4
-            ? " · Notiz"
+            ? " · Zeiten"
             : step === 5
-              ? " · Protokolltext"
-              : " · Abschluss";
+              ? " · Text prüfen"
+              : step === 6
+                ? " · Vorschau"
+                : step === 7
+                  ? " · Unterschrift"
+                  : " · Abschluss";
 
   if (limitPhase === "loading" || sessionStatus === "loading") {
     return (
@@ -1351,6 +1387,113 @@ function ProtokollNeuPageInner() {
 
         {step === 2 && (
           <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Fotos</h2>
+            <FotoUpload value={fotos} onChange={setFotos} maxPhotos={10} />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                onClick={() => setStep(1)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                onClick={() => setStep(3)}
+              >
+                Weiter
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Notiz</h2>
+            <p className="text-sm text-slate-600">
+              Tippe oder sprich deine Notiz…
+            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <div className="min-w-0 flex-1">
+                <Textarea
+                  id="protokoll-notiz"
+                  label="Beschreibung / Befunde"
+                  placeholder="Was wurde gemacht? Befunde, Maßnahmen …"
+                  value={notiz}
+                  onChange={(e) => setNotiz(e.target.value)}
+                  rows={10}
+                  className="min-h-[220px] text-base"
+                />
+              </div>
+              <SprachEingabe
+                onTranscript={(t) =>
+                  setNotiz((n) => {
+                    const cur = n.trim();
+                    return cur ? `${cur} ${t}` : t;
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2 border-t border-slate-200 pt-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Materialien / Positionen
+              </p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="min-w-0 flex-1">
+                  <Textarea
+                    id="protokoll-materialien"
+                    aria-label="Materialien / Positionen"
+                    placeholder="Materialien, Ersatzteile, Positionen..."
+                    value={materialien}
+                    onChange={(e) => setMaterialien(e.target.value)}
+                    rows={3}
+                    className="min-h-[4.5rem] text-base"
+                  />
+                </div>
+                <SprachEingabe
+                  onTranscript={(t) => {
+                    setMaterialien((prev) => {
+                      const p = prev.trim();
+                      return p === "" ? t : `${p}, ${t}`;
+                    });
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                onClick={() => setStep(2)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                disabled={!canSubmit() || notizWeiterBusy}
+                onClick={() => void afterNotizWeiter()}
+              >
+                {notizWeiterBusy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Wird gespeichert…
+                  </>
+                ) : (
+                  "Weiter"
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
               Einsatzzeit &amp; Anfahrt
             </h2>
@@ -1452,105 +1595,6 @@ function ProtokollNeuPageInner() {
                 type="button"
                 variant="outline"
                 className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                onClick={() => setStep(1)}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                onClick={() => setStep(3)}
-              >
-                Weiter
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">Fotos</h2>
-            <FotoUpload value={fotos} onChange={setFotos} maxPhotos={10} />
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                onClick={() => setStep(2)}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                onClick={() => setStep(4)}
-              >
-                Weiter
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">Notiz</h2>
-            <p className="text-sm text-slate-600">
-              Tippe oder sprich deine Notiz…
-            </p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <div className="min-w-0 flex-1">
-                <Textarea
-                  id="protokoll-notiz"
-                  label="Beschreibung / Befunde"
-                  placeholder="Was wurde gemacht? Befunde, Maßnahmen …"
-                  value={notiz}
-                  onChange={(e) => setNotiz(e.target.value)}
-                  rows={10}
-                  className="min-h-[220px] text-base"
-                />
-              </div>
-              <SprachEingabe
-                onTranscript={(t) =>
-                  setNotiz((n) => {
-                    const cur = n.trim();
-                    return cur ? `${cur} ${t}` : t;
-                  })
-                }
-              />
-            </div>
-
-            <div className="space-y-2 border-t border-slate-200 pt-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Materialien / Positionen
-              </p>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                <div className="min-w-0 flex-1">
-                  <Textarea
-                    id="protokoll-materialien"
-                    aria-label="Materialien / Positionen"
-                    placeholder="Materialien, Ersatzteile, Positionen..."
-                    value={materialien}
-                    onChange={(e) => setMaterialien(e.target.value)}
-                    rows={3}
-                    className="min-h-[4.5rem] text-base"
-                  />
-                </div>
-                <SprachEingabe
-                  onTranscript={(t) => {
-                    setMaterialien((prev) => {
-                      const p = prev.trim();
-                      return p === "" ? t : `${p}, ${t}`;
-                    });
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 onClick={() => setStep(3)}
               >
                 Zurück
@@ -1559,12 +1603,12 @@ function ProtokollNeuPageInner() {
                 type="button"
                 className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={!canSubmit() || notizWeiterBusy}
-                onClick={() => void proceedToKiStep()}
+                onClick={() => void proceedFromEinsatzToKi()}
               >
                 {notizWeiterBusy ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird gespeichert…
+                    Protokolltext wird erstellt…
                   </>
                 ) : (
                   "Weiter"
@@ -1633,9 +1677,7 @@ function ProtokollNeuPageInner() {
 
         {step === 6 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Unterschrift &amp; Versand
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">PDF-Vorschau</h2>
             {pdfLoading ? (
               <div
                 className="flex flex-col items-center justify-center gap-3 py-10 text-slate-600"
@@ -1651,10 +1693,41 @@ function ProtokollNeuPageInner() {
                   src={`${pdfUrl}?t=${pdfBust}`}
                   className="h-[400px] w-full rounded-lg border border-slate-200 bg-slate-100"
                 />
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                    onClick={() => {
+                      setUnterschriftPhase("kunde");
+                      setKundeUnterschriftDataUri(null);
+                      setMonteurUnterschriftDataUri(null);
+                      setStep(5);
+                    }}
+                  >
+                    Zurück
+                  </Button>
+                  <Button
+                    type="button"
+                    className="min-h-12 w-full flex-1 text-base sm:w-auto"
+                    onClick={() => setStep(7)}
+                  >
+                    Weiter
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        )}
 
+        {step === 7 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Unterschrift</h2>
+            {pdfUrl ? (
+              <>
                 {monteurUnterschriftDataUri == null &&
                 unterschriftPhase === "kunde" ? (
-                  <div className="space-y-3 border-t border-slate-200 pt-4">
+                  <div className="space-y-3">
                     <h3 className="text-base font-semibold text-slate-900">
                       Unterschrift Kunde
                     </h3>
@@ -1687,7 +1760,7 @@ function ProtokollNeuPageInner() {
 
                 {monteurUnterschriftDataUri == null &&
                 unterschriftPhase === "monteur" ? (
-                  <div className="space-y-3 border-t border-slate-200 pt-4">
+                  <div className="space-y-3">
                     <p className="text-sm font-medium text-green-700">
                       ✓ Kunde hat unterschrieben
                     </p>
@@ -1721,50 +1794,6 @@ function ProtokollNeuPageInner() {
                   </div>
                 ) : null}
 
-                {monteurUnterschriftDataUri != null ? (
-                  <div className="space-y-3 border-t border-slate-200 pt-4">
-                    <Button
-                      type="button"
-                      className="min-h-12 w-full text-base"
-                      disabled={
-                        generateBusy || !effectiveKundenEmail()
-                      }
-                      onClick={() => void handleEmailSend()}
-                    >
-                      Per E-Mail senden
-                    </Button>
-                    {!kundenEmail?.trim() ? (
-                      <div className="space-y-1">
-                        <label
-                          htmlFor="kunde-email-extra"
-                          className="block text-xs font-medium text-slate-600"
-                        >
-                          E-Mail-Adresse des Kunden (optional)
-                        </label>
-                        <input
-                          id="kunde-email-extra"
-                          type="email"
-                          autoComplete="email"
-                          inputMode="email"
-                          placeholder="name@beispiel.de"
-                          className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          value={kundenEmailExtra}
-                          onChange={(e) => setKundenEmailExtra(e.target.value)}
-                        />
-                      </div>
-                    ) : null}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-12 w-full border-slate-300 text-base text-slate-700"
-                      disabled={generateBusy}
-                      onClick={() => void handleIntern()}
-                    >
-                      Intern speichern
-                    </Button>
-                  </div>
-                ) : null}
-
                 <Button
                   type="button"
                   variant="ghost"
@@ -1773,12 +1802,73 @@ function ProtokollNeuPageInner() {
                     setUnterschriftPhase("kunde");
                     setKundeUnterschriftDataUri(null);
                     setMonteurUnterschriftDataUri(null);
-                    setStep(5);
+                    setStep(6);
                   }}
                 >
                   Zurück
                 </Button>
               </>
+            ) : null}
+          </div>
+        )}
+
+        {step === 8 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Versand &amp; Abschluss
+            </h2>
+            {monteurUnterschriftDataUri != null ? (
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="min-h-12 w-full text-base"
+                  disabled={generateBusy || !effectiveKundenEmail()}
+                  onClick={() => void handleEmailSend()}
+                >
+                  Per E-Mail senden
+                </Button>
+                {!kundenEmail?.trim() ? (
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="kunde-email-extra"
+                      className="block text-xs font-medium text-slate-600"
+                    >
+                      E-Mail-Adresse des Kunden (optional)
+                    </label>
+                    <input
+                      id="kunde-email-extra"
+                      type="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      placeholder="name@beispiel.de"
+                      className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      value={kundenEmailExtra}
+                      onChange={(e) => setKundenEmailExtra(e.target.value)}
+                    />
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-12 w-full border-slate-300 text-base text-slate-700"
+                  disabled={generateBusy}
+                  onClick={() => void handleIntern()}
+                >
+                  Intern speichern
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-12 w-full text-base text-slate-600"
+                  onClick={() => {
+                    setMonteurUnterschriftDataUri(null);
+                    setUnterschriftPhase("monteur");
+                    setStep(7);
+                  }}
+                >
+                  Zurück
+                </Button>
+              </div>
             ) : null}
           </div>
         )}
