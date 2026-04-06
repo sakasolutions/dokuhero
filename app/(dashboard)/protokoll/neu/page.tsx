@@ -27,6 +27,37 @@ import { SprachEingabe } from "@/components/protokoll/SprachEingabe";
 
 const STEPS = 6;
 
+const DRAFT_KEY_TEMP = "dokuhero_draft_temp";
+const draftKey = (id: number) => `dokuhero_draft_${id}`;
+
+function saveDraftLocal(id: number | null, data: object) {
+  try {
+    const key = id ? draftKey(id) : DRAFT_KEY_TEMP;
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadDraftLocal(id: number | null): Record<string, unknown> | null {
+  try {
+    const key = id ? draftKey(id) : DRAFT_KEY_TEMP;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function deleteDraftLocal(id: number | null) {
+  try {
+    localStorage.removeItem(id ? draftKey(id) : DRAFT_KEY_TEMP);
+    localStorage.removeItem(DRAFT_KEY_TEMP);
+  } catch {
+    /* ignore */
+  }
+}
+
 function parseTimeToMinutes(hm: string): number | null {
   const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
   if (!m) return null;
@@ -80,6 +111,15 @@ type LimitPayload = {
 };
 
 type AbschlussModus = "email" | "share" | "intern" | null;
+
+type AutosavePayload = {
+  notiz?: string;
+  materialien?: string;
+  einsatzVon?: string;
+  einsatzBis?: string;
+  anfahrtKm?: string;
+  anfahrtMinuten?: string;
+};
 
 function ProtokollNeuPageInner() {
   const router = useRouter();
@@ -152,6 +192,11 @@ function ProtokollNeuPageInner() {
   const [limitInfo, setLimitInfo] = useState<{ count: number; limit: number } | null>(
     null
   );
+
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const einsatzDauerAnzeige = useMemo(
     () => formatEinsatzdauerLabel(einsatzVon, einsatzBis),
@@ -487,6 +532,76 @@ function ProtokollNeuPageInner() {
     setStep(6);
   }
 
+  async function autosave(data: AutosavePayload) {
+    saveDraftLocal(protokollId, {
+      kundenName,
+      kundenStrasse,
+      kundenPlz,
+      kundenStadt,
+      kundenTelefon,
+      notiz,
+      materialien,
+      einsatzVon,
+      einsatzBis,
+      anfahrtKm,
+      anfahrtMinuten,
+      step,
+      protokollId,
+      ...data,
+    });
+
+    if (!protokollId) return;
+
+    const notizVal = data.notiz ?? notiz;
+    const matVal = data.materialien ?? materialien;
+    const evRaw = data.einsatzVon ?? einsatzVon;
+    const ebRaw = data.einsatzBis ?? einsatzBis;
+    const ev = evRaw.trim();
+    const eb = ebRaw.trim();
+    const kmStr = (data.anfahrtKm ?? anfahrtKm).trim();
+    const minStr = (data.anfahrtMinuten ?? anfahrtMinuten).trim();
+    let anfahrtKmNum: number | null = null;
+    if (kmStr !== "") {
+      const n = parseInt(kmStr.replace(",", "."), 10);
+      anfahrtKmNum = Number.isFinite(n) && n >= 0 ? n : null;
+    }
+    let anfahrtMinNum: number | null = null;
+    if (minStr !== "") {
+      const n = parseInt(minStr, 10);
+      anfahrtMinNum = Number.isFinite(n) && n >= 0 ? n : null;
+    }
+
+    try {
+      setSaveStatus("saving");
+      const res = await fetch(`/api/protokoll/${protokollId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_notiz",
+          notiz: notizVal.trim() || null,
+          materialien: matVal.trim() || null,
+          einsatz_von: ev === "" ? null : ev,
+          einsatz_bis: eb === "" ? null : eb,
+          anfahrt_km: anfahrtKmNum,
+          anfahrt_minuten: anfahrtMinNum,
+        }),
+      });
+      if (!res.ok) {
+        setSaveStatus("idle");
+        return;
+      }
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch {
+      setSaveStatus("idle");
+    }
+  }
+
+  function triggerAutosave(data: AutosavePayload) {
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => void autosave(data), 1500);
+  }
+
   async function retryKiStep() {
     if (protokollId == null) {
       await proceedToKiStep();
@@ -684,6 +799,78 @@ function ProtokollNeuPageInner() {
     monteurUnterschriftDataUri,
   ]);
 
+  useEffect(() => {
+    if (!protokollGestartet) return;
+    triggerAutosave({ notiz });
+  }, [notiz]);
+
+  useEffect(() => {
+    if (!protokollGestartet) return;
+    triggerAutosave({ materialien });
+  }, [materialien]);
+
+  useEffect(() => {
+    if (!protokollGestartet) return;
+    triggerAutosave({ einsatzVon, einsatzBis });
+  }, [einsatzVon, einsatzBis]);
+
+  useEffect(() => {
+    if (!protokollGestartet) return;
+    triggerAutosave({ anfahrtKm, anfahrtMinuten });
+  }, [anfahrtKm, anfahrtMinuten]);
+
+  useEffect(() => {
+    if (!protokollGestartet) return;
+    saveDraftLocal(protokollId, {
+      kundenName,
+      kundenStrasse,
+      kundenPlz,
+      kundenStadt,
+      kundenTelefon,
+      step,
+      protokollId,
+    });
+  }, [
+    kundenName,
+    kundenStrasse,
+    kundenPlz,
+    kundenStadt,
+    kundenTelefon,
+  ]);
+
+  useEffect(() => {
+    if (resumeId) return;
+    if (protokollGestartet) return;
+
+    const draft = loadDraftLocal(null);
+    if (!draft?.kundenName) return;
+
+    if (draft.kundenName) setKundenName(draft.kundenName as string);
+    if (draft.kundenStrasse) setKundenStrasse(draft.kundenStrasse as string);
+    if (draft.kundenPlz) setKundenPlz(draft.kundenPlz as string);
+    if (draft.kundenStadt) setKundenStadt(draft.kundenStadt as string);
+    if (draft.kundenTelefon) setKundenTelefon(draft.kundenTelefon as string);
+    if (draft.notiz) setNotiz(draft.notiz as string);
+    if (draft.materialien) setMaterialien(draft.materialien as string);
+    if (draft.einsatzVon) setEinsatzVon(draft.einsatzVon as string);
+    if (draft.einsatzBis) setEinsatzBis(draft.einsatzBis as string);
+    if (draft.anfahrtKm) setAnfahrtKm(draft.anfahrtKm as string);
+    if (draft.anfahrtMinuten) setAnfahrtMinuten(draft.anfahrtMinuten as string);
+    if (draft.protokollId) setProtokollId(draft.protokollId as number);
+
+    const savedStep = draft.step as number;
+    if (savedStep && savedStep > 1) {
+      setStep(savedStep);
+      setProtokollGestartet(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, []);
+
   function clearActiveCanvas() {
     initActiveCanvas();
   }
@@ -802,6 +989,7 @@ function ProtokollNeuPageInner() {
             ? `Kopie an den Betrieb konnte nicht gesendet werden: ${j.kopieAnBetriebError}`
             : null
         );
+        deleteDraftLocal(protokollId);
         setAbschlussModus("email");
       }
     } catch (e) {
@@ -820,6 +1008,7 @@ function ProtokollNeuPageInner() {
         j.betriebInternMailError ? String(j.betriebInternMailError) : null
       );
       setInternBetriebNotified(j.betriebInternNotified === true);
+      deleteDraftLocal(protokollId);
       setAbschlussModus("intern");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
@@ -990,6 +1179,12 @@ function ProtokollNeuPageInner() {
             )}
             Speichern & Zurück
           </Button>
+          {saveStatus === "saving" ? (
+            <span className="text-xs text-slate-400">Speichert...</span>
+          ) : null}
+          {saveStatus === "saved" ? (
+            <span className="text-xs text-green-500">Gespeichert ✓</span>
+          ) : null}
           <h1 className="min-w-0 text-xl font-bold text-slate-900">
             Protokoll
           </h1>
