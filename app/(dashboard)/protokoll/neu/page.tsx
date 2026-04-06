@@ -531,6 +531,7 @@ function ProtokollNeuPageInner() {
   }
 
   async function autosave(data: AutosavePayload) {
+    console.log("🟢 autosave läuft, protokollId:", protokollId);
     saveDraftLocal(protokollId, {
       kundenName,
       kundenStrasse,
@@ -595,7 +596,13 @@ function ProtokollNeuPageInner() {
     }
   }
 
-  function triggerAutosave(data: AutosavePayload) {
+  function triggerAutosave(data: Parameters<typeof autosave>[0]) {
+    console.log(
+      "🔵 triggerAutosave aufgerufen",
+      data,
+      "protokollId:",
+      protokollId
+    );
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(() => void autosave(data), 1500);
   }
