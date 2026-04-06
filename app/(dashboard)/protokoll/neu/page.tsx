@@ -13,7 +13,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
-  Check,
   CheckCircle2,
   Loader2,
   Plus,
@@ -1027,22 +1026,24 @@ function ProtokollNeuPageInner() {
     }
   }
 
-  const stepLabel =
+  const stepTitle =
     step === 1
-      ? " · Kunde"
+      ? "Kunde"
       : step === 2
-        ? " · Fotos"
+        ? "Fotos"
         : step === 3
-          ? " · Notizen"
+          ? "Notizen"
           : step === 4
-            ? " · Zeiten"
+            ? "Zeiten"
             : step === 5
-              ? " · Text prüfen"
+              ? "Text prüfen"
               : step === 6
-                ? " · Vorschau"
+                ? "Vorschau"
                 : step === 7
-                  ? " · Unterschrift"
-                  : " · Abschluss";
+                  ? "Unterschrift"
+                  : "Abschluss";
+
+  const progressPercent = (step / STEPS) * 100;
 
   if (limitPhase === "loading" || sessionStatus === "loading") {
     return (
@@ -1207,32 +1208,27 @@ function ProtokollNeuPageInner() {
         </p>
       ) : null}
 
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-        {Array.from({ length: STEPS }, (_, i) => i + 1).map((s) => (
-          <div key={s} className="flex items-center gap-1.5 sm:gap-2">
-            <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold transition sm:h-11 sm:w-11 sm:text-sm ${
-                step === s
-                  ? "bg-primary text-white ring-2 ring-primary ring-offset-2"
-                  : step > s
-                    ? "bg-primary text-white"
-                    : "bg-slate-200 text-slate-600"
-              }`}
-            >
-              {step > s ? <Check className="h-4 w-4 sm:h-5 sm:w-5" /> : s}
-            </div>
-            {s < STEPS ? (
-              <div
-                className={`h-0.5 w-4 rounded-full sm:h-1 sm:w-6 ${step > s ? "bg-primary/60" : "bg-slate-200"}`}
-              />
-            ) : null}
-          </div>
-        ))}
+      <div className="mb-6 space-y-3">
+        <div
+          className="w-full overflow-hidden rounded-full bg-slate-200"
+          role="progressbar"
+          aria-valuenow={step}
+          aria-valuemin={1}
+          aria-valuemax={STEPS}
+          aria-label={`Fortschritt: Schritt ${step} von ${STEPS}`}
+        >
+          <div
+            className="h-2 rounded-full bg-primary transition-[width] duration-300 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <p className="text-center text-sm font-medium text-slate-600">
+          Schritt {step} von {STEPS}
+        </p>
+        <p className="text-center text-base font-semibold text-slate-900">
+          {stepTitle}
+        </p>
       </div>
-      <p className="mb-6 text-center text-sm font-medium text-slate-600">
-        Schritt {step} von {STEPS}
-        {stepLabel}
-      </p>
 
       {(error || step4Error || step5Error) ? (
         <div className="mb-4 space-y-3">
