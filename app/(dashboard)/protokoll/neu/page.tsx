@@ -186,6 +186,16 @@ function ProtokollNeuPageInner() {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Einmal pro Schritt bestätigte Soft-Hinweise (Telefon, Materialien, Zeiten/Anfahrt). */
+  const softGateOk = useRef({ tel1: false, mat3: false, zeit4: false });
+  const [softHinweis, setSoftHinweis] = useState<null | {
+    step: number;
+    text: string;
+    onFortfahren: () => void;
+  }>(null);
+  const [pdfVorbereitungHinweis, setPdfVorbereitungHinweis] = useState<
+    string | null
+  >(null);
 
   const einsatzDauerAnzeige = useMemo(
     () => formatEinsatzdauerLabel(einsatzVon, einsatzBis),
@@ -279,6 +289,26 @@ function ProtokollNeuPageInner() {
   }, [resumeId]);
 
   useEffect(() => {
+    setSoftHinweis(null);
+    if (step !== 5) setPdfVorbereitungHinweis(null);
+    if (step !== 1) softGateOk.current.tel1 = false;
+    if (step !== 3) softGateOk.current.mat3 = false;
+    if (step !== 4) softGateOk.current.zeit4 = false;
+  }, [step]);
+
+  useEffect(() => {
+    if (step === 5) setPdfVorbereitungHinweis(null);
+  }, [
+    step,
+    kundenName,
+    kundenStrasse,
+    kundenPlz,
+    kundenStadt,
+    notiz,
+    kiText,
+  ]);
+
+  useEffect(() => {
     try {
       localStorage.removeItem(DRAFT_KEY_TEMP);
     } catch {
@@ -328,6 +358,105 @@ function ProtokollNeuPageInner() {
 
   function canSubmit() {
     return canGoStep2();
+  }
+
+  /** Pflicht vor PDF-Vorschau / Unterschrift: vollständige Adresse + Notiz oder Protokolltext. */
+  function validateVorPdfVorschau(): string | null {
+    const missing: string[] = [];
+    if (!kundenName.trim()) missing.push("Name");
+    if (!kundenStrasse.trim()) missing.push("Straße und Hausnummer");
+    if (!kundenPlz.trim()) missing.push("PLZ");
+    if (!kundenStadt.trim()) missing.push("Stadt");
+    if (missing.length > 0) {
+      return `Bitte ergänzen Sie: ${missing.join(", ")}. Das Protokoll braucht eine vollständige Kundenadresse.`;
+    }
+    if (!notiz.trim() && !kiText.trim()) {
+      return "Bitte tragen Sie eine Notiz ein oder nutzen Sie den Protokolltext – ohne Inhalt geht es nicht zur Vorschau.";
+    }
+    return null;
+  }
+
+  function step4BrauchtSoftHinweis(): boolean {
+    const zeitLeer = !einsatzVon.trim() || !einsatzBis.trim();
+    const anfahrtLeer =
+      mitAnfahrt && (!anfahrtKm.trim() || !anfahrtMinuten.trim());
+    return zeitLeer || anfahrtLeer;
+  }
+
+  function getStep4SoftHinweisText(): string {
+    const zeitLeer = !einsatzVon.trim() || !einsatzBis.trim();
+    const anfahrtLeer =
+      mitAnfahrt && (!anfahrtKm.trim() || !anfahrtMinuten.trim());
+    if (zeitLeer && anfahrtLeer) {
+      return "Einsatzzeit und Anfahrt sind unvollständig. Trotzdem fortfahren?";
+    }
+    if (zeitLeer) return "Einsatzzeit fehlt noch. Trotzdem fortfahren?";
+    return "Angaben zur Anfahrt sind unvollständig. Trotzdem fortfahren?";
+  }
+
+  function executeStep1Weiter() {
+    setStep(2);
+    if (!protokollId) {
+      saveProtokollCore()
+        .then((id) => {
+          if (id) setProtokollId(id);
+        })
+        .catch(() => {});
+    }
+  }
+
+  function requestStep1Weiter() {
+    if (softHinweis?.step === 1) return;
+    if (!canGoStep2()) return;
+    if (!kundenTelefon.trim() && !softGateOk.current.tel1) {
+      setSoftHinweis({
+        step: 1,
+        text: "Telefon fehlt noch. Trotzdem fortfahren?",
+        onFortfahren: () => {
+          softGateOk.current.tel1 = true;
+          setSoftHinweis(null);
+          executeStep1Weiter();
+        },
+      });
+      return;
+    }
+    executeStep1Weiter();
+  }
+
+  function requestStep3Weiter() {
+    if (softHinweis?.step === 3) return;
+    if (!canSubmit()) return;
+    if (!materialien.trim() && !softGateOk.current.mat3) {
+      setSoftHinweis({
+        step: 3,
+        text: "Materialien und Positionen sind noch leer. Trotzdem fortfahren?",
+        onFortfahren: () => {
+          softGateOk.current.mat3 = true;
+          setSoftHinweis(null);
+          void afterNotizWeiter();
+        },
+      });
+      return;
+    }
+    void afterNotizWeiter();
+  }
+
+  function requestStep4Weiter() {
+    if (softHinweis?.step === 4) return;
+    if (!canSubmit()) return;
+    if (step4BrauchtSoftHinweis() && !softGateOk.current.zeit4) {
+      setSoftHinweis({
+        step: 4,
+        text: getStep4SoftHinweisText(),
+        onFortfahren: () => {
+          softGateOk.current.zeit4 = true;
+          setSoftHinweis(null);
+          void proceedFromEinsatzToKi();
+        },
+      });
+      return;
+    }
+    void proceedFromEinsatzToKi();
   }
 
   async function saveAndExit() {
@@ -555,6 +684,12 @@ function ProtokollNeuPageInner() {
 
   async function handleWeiterZurVorschau() {
     setError(null);
+    setPdfVorbereitungHinweis(null);
+    const v = validateVorPdfVorschau();
+    if (v) {
+      setPdfVorbereitungHinweis(v);
+      return;
+    }
     const ok = await persistMaterialienBeforeVorschau();
     if (!ok) {
       setError("Änderungen konnten nicht gespeichert werden.");
@@ -980,7 +1115,12 @@ function ProtokollNeuPageInner() {
   async function handleEmailSend() {
     const ku = kundeUnterschriftDataUri;
     const mu = monteurUnterschriftDataUri;
-    if (!ku || !mu) return;
+    if (!ku || !mu) {
+      setError(
+        "Für den Abschluss fehlen noch Unterschriften (Kunde und Monteur)."
+      );
+      return;
+    }
     const to = effectiveKundenEmail();
     if (!to) {
       setError("Bitte eine gültige E-Mail-Adresse des Kunden angeben.");
@@ -1011,7 +1151,12 @@ function ProtokollNeuPageInner() {
   async function handleIntern() {
     const ku = kundeUnterschriftDataUri;
     const mu = monteurUnterschriftDataUri;
-    if (!ku || !mu) return;
+    if (!ku || !mu) {
+      setError(
+        "Für den Abschluss fehlen noch Unterschriften (Kunde und Monteur)."
+      );
+      return;
+    }
     try {
       const j = await postGenerate(false, ku, mu, { notifyBetriebIntern: true });
       if (!j) return;
@@ -1210,11 +1355,39 @@ function ProtokollNeuPageInner() {
         </p>
       </div>
 
-      {(error || step4Error || step5Error) ? (
+      {softHinweis && softHinweis.step === step ? (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+          <p>{softHinweis.text}</p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 flex-1 border-amber-300 text-amber-950"
+              onClick={() => setSoftHinweis(null)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11 flex-1"
+              onClick={softHinweis.onFortfahren}
+            >
+              Trotzdem fortfahren
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {(error || step4Error || step5Error || pdfVorbereitungHinweis) ? (
         <div className="mb-4 space-y-3">
           {error ? (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
+            </p>
+          ) : null}
+          {pdfVorbereitungHinweis ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              {pdfVorbereitungHinweis}
             </p>
           ) : null}
           {step4Error ? (
@@ -1345,16 +1518,7 @@ function ProtokollNeuPageInner() {
               type="button"
               className="min-h-12 w-full text-base sm:w-auto"
               disabled={!canGoStep2()}
-              onClick={() => {
-                setStep(2);
-                if (!protokollId) {
-                  saveProtokollCore()
-                    .then((id) => {
-                      if (id) setProtokollId(id);
-                    })
-                    .catch(() => {});
-                }
-              }}
+              onClick={() => requestStep1Weiter()}
             >
               Weiter
             </Button>
@@ -1452,7 +1616,7 @@ function ProtokollNeuPageInner() {
                 type="button"
                 className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={!canSubmit() || notizWeiterBusy}
-                onClick={() => void afterNotizWeiter()}
+                onClick={() => void requestStep3Weiter()}
               >
                 {notizWeiterBusy ? (
                   <>
@@ -1578,7 +1742,7 @@ function ProtokollNeuPageInner() {
                 type="button"
                 className="min-h-12 w-full flex-1 text-base sm:w-auto"
                 disabled={!canSubmit() || notizWeiterBusy}
-                onClick={() => void proceedFromEinsatzToKi()}
+                onClick={() => void requestStep4Weiter()}
               >
                 {notizWeiterBusy ? (
                   <>
@@ -1642,7 +1806,7 @@ function ProtokollNeuPageInner() {
               <Button
                 type="button"
                 className="min-h-12 w-full flex-1 text-base sm:w-auto"
-                disabled={kiLoading || !kiText.trim()}
+                disabled={kiLoading}
                 onClick={() => void handleWeiterZurVorschau()}
               >
                 {kiLoading ? (
@@ -1825,6 +1989,11 @@ function ProtokollNeuPageInner() {
             </h2>
             {monteurUnterschriftDataUri != null ? (
               <div className="space-y-3">
+                {!effectiveKundenEmail() ? (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                    Ohne E-Mail-Adresse ist nur „Intern speichern“ möglich.
+                  </p>
+                ) : null}
                 <Button
                   type="button"
                   className="min-h-12 w-full text-base"
