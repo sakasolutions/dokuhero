@@ -115,6 +115,9 @@ export default function ProtokollAnsichtPage() {
   const hasInkRef = useRef(false);
   const [stepPdf, setStepPdf] = useState(false);
   const [pdfCacheBust, setPdfCacheBust] = useState(0);
+  const [inhaberHauptTab, setInhaberHauptTab] = useState<
+    "uebersicht" | "leistungen" | "dokument"
+  >("uebersicht");
 
   const [busy, setBusy] = useState<Busy>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
@@ -703,130 +706,253 @@ export default function ProtokollAnsichtPage() {
             Protokollübersicht
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Kunde, Einsatz und Leistung auf einen Blick — PDF unten oder hier
-            direkt laden.
+            Übersicht, Leistungen und Dokument — mobil per Wischen zwischen den
+            Tabs.
           </p>
-          <dl className="mt-4 grid gap-4 border-t border-slate-200/80 pt-4 text-sm sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Kunde
-              </dt>
-              <dd className="mt-1 space-y-1 text-slate-900">
-                <p className="font-medium">{kunde_name?.trim() || "–"}</p>
-                {kunde_adresse?.trim() ? (
-                  <p className="whitespace-pre-wrap text-slate-700">
-                    {kunde_adresse.trim()}
+
+          <div className="mt-4 space-y-4">
+            <div className="-mx-1 overflow-x-auto pb-1">
+              <div
+                className="inline-flex min-w-min gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm"
+                role="tablist"
+                aria-label="Protokoll-Bereiche"
+              >
+                {(
+                  [
+                    ["uebersicht", "Übersicht"],
+                    ["leistungen", "Leistungen"],
+                    ["dokument", "Dokument"],
+                  ] as const
+                ).map(([key, label]) => {
+                  const active = inhaberHauptTab === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      id={`inhaber-tab-${key}`}
+                      aria-controls={`inhaber-panel-${key}`}
+                      onClick={() => setInhaberHauptTab(key)}
+                      className={`shrink-0 rounded-md px-3 py-2 text-sm font-medium transition sm:px-4 ${
+                        active
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {inhaberHauptTab === "uebersicht" ? (
+              <div
+                id="inhaber-panel-uebersicht"
+                role="tabpanel"
+                aria-labelledby="inhaber-tab-uebersicht"
+                className="border-t border-slate-200/80 pt-4"
+              >
+                <dl className="grid gap-4 text-sm sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Kunde
+                    </dt>
+                    <dd className="mt-1 space-y-1 text-slate-900">
+                      <p className="font-medium">{kunde_name?.trim() || "–"}</p>
+                      {kunde_adresse?.trim() ? (
+                        <p className="whitespace-pre-wrap text-slate-700">
+                          {kunde_adresse.trim()}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-slate-500">Keine Adresse</p>
+                      )}
+                      <p className="text-slate-700">
+                        <span className="text-slate-500">Telefon: </span>
+                        {kunde_telefon?.trim() || "–"}
+                      </p>
+                      <p className="text-slate-700">
+                        <span className="text-slate-500">E-Mail: </span>
+                        {kunde_email?.trim() || "–"}
+                      </p>
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-4">
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Einsatzzeit
+                      </dt>
+                      <dd className="mt-1 text-slate-800">
+                        <p>
+                          <span className="text-slate-500">Von: </span>
+                          {normalizeHmFromDb(protokoll.einsatz_von) || "–"}
+                        </p>
+                        <p>
+                          <span className="text-slate-500">Bis: </span>
+                          {normalizeHmFromDb(protokoll.einsatz_bis) || "–"}
+                        </p>
+                        {(() => {
+                          const v = normalizeHmFromDb(protokoll.einsatz_von);
+                          const b = normalizeHmFromDb(protokoll.einsatz_bis);
+                          const d =
+                            v && b ? formatEinsatzdauerLabel(v, b) : null;
+                          return d ? (
+                            <p>
+                              <span className="text-slate-500">Dauer: </span>
+                              {d}
+                            </p>
+                          ) : (
+                            <p className="text-slate-500">Dauer: –</p>
+                          );
+                        })()}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Anfahrt
+                      </dt>
+                      <dd className="mt-1 text-slate-800">
+                        <p>
+                          <span className="text-slate-500">Strecke: </span>
+                          {protokoll.anfahrt_km != null
+                            ? `${protokoll.anfahrt_km} km`
+                            : "–"}
+                        </p>
+                        <p>
+                          <span className="text-slate-500">Zeit: </span>
+                          {protokoll.anfahrt_minuten != null
+                            ? `${protokoll.anfahrt_minuten} Min.`
+                            : "–"}
+                        </p>
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Monteur
+                    </dt>
+                    <dd className="mt-1 text-sm text-slate-800">
+                      {pdfHref ? (
+                        <>
+                          <p>
+                            Name und Unterschrift des Monteurs sind im PDF
+                            dokumentiert (Bereich Unterschriften).
+                          </p>
+                          <p className="mt-1 text-slate-500">
+                            Tab „Dokument“ zur Vorschau öffnen.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-slate-600">
+                          Nach PDF-Erstellung ersichtlich im fertigen Dokument.
+                        </p>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ) : null}
+
+            {inhaberHauptTab === "leistungen" ? (
+              <div
+                id="inhaber-panel-leistungen"
+                role="tabpanel"
+                aria-labelledby="inhaber-tab-leistungen"
+                className="space-y-4 border-t border-slate-200/80 pt-4"
+              >
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Durchgeführte Arbeiten
+                  </h3>
+                  <div className="mt-1 max-h-[min(50vh,24rem)] overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800">
+                    {protokoll.ki_text?.trim() || "–"}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Materialien
+                  </h3>
+                  <div className="mt-1 whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800">
+                    {protokoll.materialien?.trim() || "–"}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Notiz (vom Werker)
+                  </h3>
+                  <div className="mt-1 max-h-[min(40vh,18rem)] overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800">
+                    {protokoll.notiz?.trim() || "–"}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {inhaberHauptTab === "dokument" ? (
+              <div
+                id="inhaber-panel-dokument"
+                role="tabpanel"
+                aria-labelledby="inhaber-tab-dokument"
+                className="space-y-4 border-t border-slate-200/80 pt-4"
+              >
+                {pdfIframeSrc ? (
+                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-inner">
+                    <iframe
+                      title="PDF-Vorschau"
+                      src={pdfIframeSrc}
+                      className="h-[min(65vh,640px)] w-full min-h-[240px] sm:min-h-[320px]"
+                    />
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-600">
+                    Noch kein PDF. Unten unter{" "}
+                    <strong>Schritt 2 – PDF</strong> erzeugen.
                   </p>
+                )}
+
+                {pdfHref ? (
+                  <a
+                    href={pdfHref}
+                    download
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-white shadow-sm hover:opacity-95"
+                  >
+                    <FileDown className="h-5 w-5 shrink-0" aria-hidden />
+                    PDF herunterladen
+                  </a>
                 ) : null}
-                <p className="text-slate-700">
-                  <span className="text-slate-500">E-Mail: </span>
-                  {kunde_email?.trim() || "–"}
-                </p>
-                <p className="text-slate-700">
-                  <span className="text-slate-500">Telefon: </span>
-                  {kunde_telefon?.trim() || "–"}
-                </p>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Einsatzzeit
-              </dt>
-              <dd className="mt-1 text-slate-800">
-                <p>
-                  <span className="text-slate-500">Von: </span>
-                  {normalizeHmFromDb(protokoll.einsatz_von) || "–"}
-                </p>
-                <p>
-                  <span className="text-slate-500">Bis: </span>
-                  {normalizeHmFromDb(protokoll.einsatz_bis) || "–"}
-                </p>
-                {(() => {
-                  const v = normalizeHmFromDb(protokoll.einsatz_von);
-                  const b = normalizeHmFromDb(protokoll.einsatz_bis);
-                  const d = v && b ? formatEinsatzdauerLabel(v, b) : null;
-                  return d ? (
-                    <p>
-                      <span className="text-slate-500">Dauer: </span>
-                      {d}
-                    </p>
-                  ) : null;
-                })()}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Anfahrt
-              </dt>
-              <dd className="mt-1 text-slate-800">
-                <p>
-                  {protokoll.anfahrt_km != null
-                    ? `${protokoll.anfahrt_km} km`
-                    : "– km"}
-                </p>
-                <p>
-                  {protokoll.anfahrt_minuten != null
-                    ? `${protokoll.anfahrt_minuten} Min.`
-                    : "– Min."}
-                </p>
-              </dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Auftrag
-              </dt>
-              <dd className="mt-1 text-slate-800">
-                {auftrag_beschreibung?.trim() || "–"}
-              </dd>
-            </div>
-            {protokoll.notiz?.trim() ? (
-              <div className="sm:col-span-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Notiz (Erfassung)
-                </dt>
-                <dd className="mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-800">
-                  {protokoll.notiz.trim()}
-                </dd>
+
+                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+                  <p className="font-semibold text-slate-900">
+                    Unterschriften
+                  </p>
+                  <p className="mt-1 text-slate-600">
+                    Bilder der Unterschriften werden nicht separat gespeichert —
+                    sie sind im PDF eingebettet (letzte Seite).
+                  </p>
+                  <ul className="mt-3 space-y-1.5 text-slate-800">
+                    <li className="flex gap-2">
+                      <span aria-hidden>✅</span>
+                      <span>
+                        <strong>Kunde:</strong>{" "}
+                        {pdfHref
+                          ? "im PDF enthalten"
+                          : "erscheint nach PDF-Erstellung"}
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span aria-hidden>✅</span>
+                      <span>
+                        <strong>Monteur:</strong>{" "}
+                        {pdfHref
+                          ? "im PDF enthalten"
+                          : "erscheint nach PDF-Erstellung"}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             ) : null}
-            {protokoll.materialien?.trim() ? (
-              <div className="sm:col-span-2">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Materialien
-                </dt>
-                <dd className="mt-1 whitespace-pre-wrap text-slate-800">
-                  {protokoll.materialien.trim()}
-                </dd>
-              </div>
-            ) : null}
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Protokolltext
-              </dt>
-              <dd className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-800">
-                {protokoll.ki_text?.trim()
-                  ? protokoll.ki_text.trim().length > 600
-                    ? `${protokoll.ki_text.trim().slice(0, 600)}…`
-                    : protokoll.ki_text.trim()
-                  : "–"}
-              </dd>
-            </div>
-          </dl>
-          {pdfHref ? (
-            <a
-              href={pdfHref}
-              download
-              className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-white shadow-sm hover:opacity-95 sm:w-auto"
-            >
-              <FileDown className="h-5 w-5 shrink-0" aria-hidden />
-              PDF herunterladen
-            </a>
-          ) : (
-            <p className="mt-4 text-sm text-slate-500">
-              PDF ist noch nicht verfügbar — nach Erstellung erscheint der
-              Download hier und in Schritt 2.
-            </p>
-          )}
+          </div>
         </Card>
       ) : null}
 
@@ -1375,13 +1501,27 @@ export default function ProtokollAnsichtPage() {
 
             {pdfIframeSrc ? (
               <div className="space-y-4">
-                <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-inner">
-                  <iframe
-                    title="PDF-Vorschau"
-                    src={pdfIframeSrc}
-                    className="h-[min(70vh,720px)] w-full min-h-[320px]"
-                  />
-                </div>
+                {isInhaber ? (
+                  <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+                    PDF-Vorschau: Tab{" "}
+                    <button
+                      type="button"
+                      className="font-semibold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+                      onClick={() => setInhaberHauptTab("dokument")}
+                    >
+                      Dokument
+                    </button>{" "}
+                    in der Protokollübersicht oben.
+                  </p>
+                ) : (
+                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-inner">
+                    <iframe
+                      title="PDF-Vorschau"
+                      src={pdfIframeSrc}
+                      className="h-[min(70vh,720px)] w-full min-h-[320px]"
+                    />
+                  </div>
+                )}
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   {!isFreigegeben ? (
                     <Button
