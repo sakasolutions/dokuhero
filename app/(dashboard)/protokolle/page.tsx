@@ -238,20 +238,20 @@ export default function ProtokollePage() {
             return (
               <Card
                 key={p.id}
-                className="flex flex-wrap items-center justify-between gap-3 p-4 shadow-sm transition hover:border-slate-300"
+                className="p-4 shadow-sm transition hover:border-slate-300"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-900">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 font-semibold text-slate-900">
                     {p.kunde_name?.trim() || "–"}
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span>{formatDatumTTMMJJJJ(p.erstellt_am)}</span>
-                    <ProtokollStatusBadge status={p.status} werkerLabels />
-                  </div>
+                  <ProtokollStatusBadge status={p.status} werkerLabels />
                 </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  {formatDatumTTMMJJJJ(p.erstellt_am)}
+                </p>
                 <Link
                   href={actionHref}
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="mt-3 flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   {actionLabel}
                 </Link>
