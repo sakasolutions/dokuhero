@@ -1166,13 +1166,15 @@ function ProtokollNeuPageInner() {
     );
   }
 
-  const footerBtnOutline =
-    "min-h-12 w-full shrink-0 border-slate-300 text-slate-700 sm:min-h-12";
-  const footerBtnPrimary = "min-h-12 w-full shrink-0 sm:min-h-12";
+  const stepNavRow =
+    "mt-8 flex flex-col gap-3 sm:flex-row sm:items-stretch";
+  const stepNavBack =
+    "min-h-12 w-full flex-1 border-slate-300 text-slate-700 sm:w-auto";
+  const stepNavNext = "min-h-12 w-full flex-1 sm:w-auto";
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-white">
-      <div className="mx-auto w-full max-w-2xl shrink-0 px-4 pt-2">
+    <div className="mx-auto w-full max-w-2xl bg-white pb-[calc(7rem+env(safe-area-inset-bottom,0px))]">
+      <div className="px-0 pt-2 sm:px-0">
         <div className="mb-3 flex items-center justify-between">
           <Link
             href={zurueckHref}
@@ -1232,7 +1234,7 @@ function ProtokollNeuPageInner() {
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto px-4 pb-28 pt-1">
+      <div className="pt-1">
       {(error || step4Error || step5Error) ? (
         <div className="mb-4 space-y-3">
           {error ? (
@@ -1363,12 +1365,49 @@ function ProtokollNeuPageInner() {
                 onChange={(e) => setKundenTelefon(e.target.value)}
               />
             </div>
+            <div className={stepNavRow}>
+              <div className="hidden min-w-0 flex-1 sm:block" aria-hidden />
+              <Button
+                type="button"
+                className={stepNavNext}
+                disabled={!canGoStep2()}
+                onClick={() => {
+                  setStep(2);
+                  if (!protokollId) {
+                    saveProtokollCore()
+                      .then((id) => {
+                        if (id) setProtokollId(id);
+                      })
+                      .catch(() => {});
+                  }
+                }}
+              >
+                Weiter
+              </Button>
+            </div>
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-4">
             <FotoUpload value={fotos} onChange={setFotos} maxPhotos={10} />
+            <div className={stepNavRow}>
+              <Button
+                type="button"
+                variant="outline"
+                className={stepNavBack}
+                onClick={() => setStep(1)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className={stepNavNext}
+                onClick={() => setStep(3)}
+              >
+                Weiter
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1424,6 +1463,31 @@ function ProtokollNeuPageInner() {
                   }}
                 />
               </div>
+            </div>
+            <div className={stepNavRow}>
+              <Button
+                type="button"
+                variant="outline"
+                className={stepNavBack}
+                onClick={() => setStep(2)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className={stepNavNext}
+                disabled={!canSubmit() || notizWeiterBusy}
+                onClick={() => void afterNotizWeiter()}
+              >
+                {notizWeiterBusy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Wird gespeichert…
+                  </>
+                ) : (
+                  "Weiter"
+                )}
+              </Button>
             </div>
           </div>
         )}
@@ -1523,6 +1587,31 @@ function ProtokollNeuPageInner() {
                 </div>
               ) : null}
             </div>
+            <div className={stepNavRow}>
+              <Button
+                type="button"
+                variant="outline"
+                className={stepNavBack}
+                onClick={() => setStep(3)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className={stepNavNext}
+                disabled={!canSubmit() || notizWeiterBusy}
+                onClick={() => void proceedFromEinsatzToKi()}
+              >
+                {notizWeiterBusy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Protokolltext wird erstellt…
+                  </>
+                ) : (
+                  "Weiter"
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1561,6 +1650,32 @@ function ProtokollNeuPageInner() {
                 ) : null}
               </>
             )}
+            <div className={stepNavRow}>
+              <Button
+                type="button"
+                variant="outline"
+                className={stepNavBack}
+                disabled={kiLoading}
+                onClick={() => setStep(4)}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className={stepNavNext}
+                disabled={kiLoading || !kiText.trim()}
+                onClick={() => void handleWeiterZurVorschau()}
+              >
+                {kiLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Bitte warten…
+                  </>
+                ) : (
+                  "Weiter zur Vorschau"
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1581,6 +1696,37 @@ function ProtokollNeuPageInner() {
                 className="h-[min(55vh,28rem)] w-full rounded-lg border border-slate-200 bg-slate-100"
               />
             ) : null}
+            <div className={stepNavRow}>
+              <Button
+                type="button"
+                variant="outline"
+                className={stepNavBack}
+                disabled={pdfLoading}
+                onClick={() => {
+                  setUnterschriftPhase("kunde");
+                  setKundeUnterschriftDataUri(null);
+                  setMonteurUnterschriftDataUri(null);
+                  setStep(5);
+                }}
+              >
+                Zurück
+              </Button>
+              <Button
+                type="button"
+                className={stepNavNext}
+                disabled={pdfLoading || !pdfUrl}
+                onClick={() => setStep(7)}
+              >
+                {pdfLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Bitte warten…
+                  </>
+                ) : (
+                  "Weiter"
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1610,6 +1756,29 @@ function ProtokollNeuPageInner() {
                     >
                       Löschen
                     </Button>
+                    <div className={stepNavRow}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={stepNavBack}
+                        onClick={() => {
+                          setUnterschriftPhase("kunde");
+                          setKundeUnterschriftDataUri(null);
+                          setMonteurUnterschriftDataUri(null);
+                          setStep(6);
+                        }}
+                      >
+                        Zurück
+                      </Button>
+                      <Button
+                        type="button"
+                        className={stepNavNext}
+                        disabled={!kundeCanvasHasInk}
+                        onClick={handleKundeUnterschriftWeiter}
+                      >
+                        Weiter
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
 
@@ -1638,6 +1807,29 @@ function ProtokollNeuPageInner() {
                     >
                       Löschen
                     </Button>
+                    <div className={stepNavRow}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={stepNavBack}
+                        onClick={() => {
+                          setUnterschriftPhase("kunde");
+                          setKundeUnterschriftDataUri(null);
+                          setMonteurUnterschriftDataUri(null);
+                          setStep(6);
+                        }}
+                      >
+                        Zurück
+                      </Button>
+                      <Button
+                        type="button"
+                        className={stepNavNext}
+                        disabled={!monteurCanvasHasInk}
+                        onClick={handleMonteurUnterschriftBestaetigen}
+                      >
+                        Bestätigen
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
               </>
@@ -1686,248 +1878,26 @@ function ProtokollNeuPageInner() {
                 >
                   Intern speichern
                 </Button>
+                <div className={stepNavRow}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={stepNavBack}
+                    onClick={() => {
+                      setMonteurUnterschriftDataUri(null);
+                      setUnterschriftPhase("monteur");
+                      setStep(7);
+                    }}
+                  >
+                    Zurück
+                  </Button>
+                  <div className="hidden min-w-0 flex-1 sm:block" aria-hidden />
+                </div>
               </div>
             ) : null}
           </div>
         )}
       </div>
-      </div>
-
-      <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200/90 bg-white/95 px-4 py-3 shadow-[0_-6px_24px_rgba(15,23,42,0.08)] backdrop-blur-sm supports-[backdrop-filter]:bg-white/90"
-        style={{
-          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
-        }}
-      >
-        <div className="mx-auto flex max-w-2xl gap-3">
-          {step === 1 ? (
-            <>
-              <div className="min-w-0 flex-1" aria-hidden />
-              <Button
-                type="button"
-                variant="primary"
-                className={footerBtnPrimary}
-                disabled={!canGoStep2()}
-                onClick={() => {
-                  setStep(2);
-                  if (!protokollId) {
-                    saveProtokollCore()
-                      .then((id) => {
-                        if (id) setProtokollId(id);
-                      })
-                      .catch(() => {});
-                  }
-                }}
-              >
-                Weiter
-              </Button>
-            </>
-          ) : null}
-
-          {step === 2 ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={footerBtnOutline + " flex-1"}
-                onClick={() => setStep(1)}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                className={footerBtnPrimary + " flex-1"}
-                onClick={() => setStep(3)}
-              >
-                Weiter
-              </Button>
-            </>
-          ) : null}
-
-          {step === 3 ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={footerBtnOutline + " flex-1"}
-                onClick={() => setStep(2)}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                className={footerBtnPrimary + " flex-1"}
-                disabled={!canSubmit() || notizWeiterBusy}
-                onClick={() => void afterNotizWeiter()}
-              >
-                {notizWeiterBusy ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird gespeichert…
-                  </>
-                ) : (
-                  "Weiter"
-                )}
-              </Button>
-            </>
-          ) : null}
-
-          {step === 4 ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={footerBtnOutline + " flex-1"}
-                onClick={() => setStep(3)}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                className={footerBtnPrimary + " flex-1"}
-                disabled={!canSubmit() || notizWeiterBusy}
-                onClick={() => void proceedFromEinsatzToKi()}
-              >
-                {notizWeiterBusy ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Protokolltext wird erstellt…
-                  </>
-                ) : (
-                  "Weiter"
-                )}
-              </Button>
-            </>
-          ) : null}
-
-          {step === 5 ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={footerBtnOutline + " flex-1"}
-                disabled={kiLoading}
-                onClick={() => setStep(4)}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                className={footerBtnPrimary + " flex-1"}
-                disabled={kiLoading || !kiText.trim()}
-                onClick={() => void handleWeiterZurVorschau()}
-              >
-                {kiLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Bitte warten…
-                  </>
-                ) : (
-                  "Weiter zur Vorschau"
-                )}
-              </Button>
-            </>
-          ) : null}
-
-          {step === 6 ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={footerBtnOutline + " flex-1"}
-                disabled={pdfLoading}
-                onClick={() => {
-                  setUnterschriftPhase("kunde");
-                  setKundeUnterschriftDataUri(null);
-                  setMonteurUnterschriftDataUri(null);
-                  setStep(5);
-                }}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                className={footerBtnPrimary + " flex-1"}
-                disabled={pdfLoading || !pdfUrl}
-                onClick={() => setStep(7)}
-              >
-                {pdfLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Bitte warten…
-                  </>
-                ) : (
-                  "Weiter"
-                )}
-              </Button>
-            </>
-          ) : null}
-
-          {step === 7 && pdfUrl ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={footerBtnOutline + " flex-1"}
-                onClick={() => {
-                  setUnterschriftPhase("kunde");
-                  setKundeUnterschriftDataUri(null);
-                  setMonteurUnterschriftDataUri(null);
-                  setStep(6);
-                }}
-              >
-                Zurück
-              </Button>
-              {monteurUnterschriftDataUri == null &&
-              unterschriftPhase === "kunde" ? (
-                <Button
-                  type="button"
-                  variant="primary"
-                  className={footerBtnPrimary + " flex-1"}
-                  disabled={!kundeCanvasHasInk}
-                  onClick={handleKundeUnterschriftWeiter}
-                >
-                  Weiter
-                </Button>
-              ) : null}
-              {monteurUnterschriftDataUri == null &&
-              unterschriftPhase === "monteur" ? (
-                <Button
-                  type="button"
-                  variant="primary"
-                  className={footerBtnPrimary + " flex-1"}
-                  disabled={!monteurCanvasHasInk}
-                  onClick={handleMonteurUnterschriftBestaetigen}
-                >
-                  Bestätigen
-                </Button>
-              ) : null}
-            </>
-          ) : null}
-
-          {step === 8 ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className={footerBtnOutline + " flex-1"}
-                onClick={() => {
-                  setMonteurUnterschriftDataUri(null);
-                  setUnterschriftPhase("monteur");
-                  setStep(7);
-                }}
-              >
-                Zurück
-              </Button>
-              <div className="min-w-0 flex-1" aria-hidden />
-            </>
-          ) : null}
-        </div>
       </div>
     </div>
   );
