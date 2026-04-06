@@ -798,24 +798,24 @@ function ProtokollNeuPageInner() {
   ]);
 
   useEffect(() => {
-    if (!protokollGestartet) return;
+    if (!protokollId) return;
     triggerAutosave({ notiz });
-  }, [notiz]);
+  }, [notiz, protokollId]);
 
   useEffect(() => {
-    if (!protokollGestartet) return;
+    if (!protokollId) return;
     triggerAutosave({ materialien });
-  }, [materialien]);
+  }, [materialien, protokollId]);
 
   useEffect(() => {
-    if (!protokollGestartet) return;
+    if (!protokollId) return;
     triggerAutosave({ einsatzVon, einsatzBis });
-  }, [einsatzVon, einsatzBis]);
+  }, [einsatzVon, einsatzBis, protokollId]);
 
   useEffect(() => {
-    if (!protokollGestartet) return;
+    if (!protokollId) return;
     triggerAutosave({ anfahrtKm, anfahrtMinuten });
-  }, [anfahrtKm, anfahrtMinuten]);
+  }, [anfahrtKm, anfahrtMinuten, protokollId]);
 
   useEffect(() => {
     if (!protokollGestartet || !protokollId) return;
@@ -1124,45 +1124,45 @@ function ProtokollNeuPageInner() {
 
   return (
     <div className="mx-auto min-h-[70vh] max-w-2xl pb-6">
-      <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          <Link
-            href={zurueckHref}
-            className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-lg text-primary hover:bg-surface"
-            aria-label="Zurück"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Link>
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-10 shrink-0 gap-2 px-3 py-2 text-sm"
-            disabled={!canGoStep2() || saveExitBusy}
-            title={
-              !canGoStep2()
-                ? "Bitte zuerst Kundennamen eingeben"
-                : undefined
-            }
-            onClick={() => void saveAndExit()}
-          >
-            {saveExitBusy ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-            ) : (
-              <Save className="h-4 w-4 shrink-0" aria-hidden />
-            )}
-            Speichern & Zurück
-          </Button>
-          {saveStatus === "saving" ? (
-            <span className="text-xs text-slate-400">Speichert...</span>
-          ) : null}
-          {saveStatus === "saved" ? (
-            <span className="text-xs text-green-500">Gespeichert ✓</span>
-          ) : null}
-          <h1 className="min-w-0 text-xl font-bold text-slate-900">
-            Protokoll
-          </h1>
-        </div>
+      <div className="mb-4 flex items-center justify-between">
+        <Link
+          href={zurueckHref}
+          className="inline-flex items-center justify-center rounded-lg p-2 text-primary hover:bg-surface"
+          aria-label="Zurück"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+
+        <h1 className="text-lg font-bold text-slate-900">Protokoll</h1>
+
+        <button
+          type="button"
+          onClick={() => void saveAndExit()}
+          disabled={!canGoStep2() || saveExitBusy}
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+          title={
+            !canGoStep2()
+              ? "Bitte zuerst Kundennamen eingeben"
+              : "Speichern & Zurück"
+          }
+        >
+          {saveExitBusy ? (
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+          ) : (
+            <Save className="h-5 w-5" aria-hidden />
+          )}
+        </button>
       </div>
+      {saveStatus === "saving" ? (
+        <p className="-mt-2 mb-2 text-center text-xs text-slate-400">
+          Speichert...
+        </p>
+      ) : null}
+      {saveStatus === "saved" ? (
+        <p className="-mt-2 mb-2 text-center text-xs text-green-500">
+          Gespeichert ✓
+        </p>
+      ) : null}
 
       <div className="mb-6 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         {Array.from({ length: STEPS }, (_, i) => i + 1).map((s) => (
