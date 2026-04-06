@@ -294,7 +294,7 @@ export async function POST(request: Request, context: RouteContext) {
       [kiText, pdfUrl, emailSent ? 1 : 0, protokollId]
     );
 
-    if (emailSent) {
+    if (emailSent || hasUnterschrift) {
       await pool.execute(
         `UPDATE protokolle SET status = 'freigegeben' WHERE id = ?`,
         [protokollId]
