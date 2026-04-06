@@ -18,12 +18,20 @@ import { FotoUpload } from "@/components/protokoll/FotoUpload";
 import { protokollStatusLabel } from "@/lib/protokoll-status-label";
 import type { FotoEintrag, Protokoll } from "@/types";
 
-type ProtokollMitMaterialien = Protokoll & { materialien?: string | null };
+type ProtokollMitMaterialien = Protokoll & {
+  materialien?: string | null;
+  einsatz_von?: string | null;
+  einsatz_bis?: string | null;
+  anfahrt_km?: number | null;
+  anfahrt_minuten?: number | null;
+};
 
 type ApiResponse = {
   protokoll: ProtokollMitMaterialien;
   kunde_name: string | null;
   kunde_email: string | null;
+  kunde_adresse: string | null;
+  kunde_telefon: string | null;
   auftrag_beschreibung: string | null;
   fotos: FotoEintrag[];
   freigabe_erlaubt: boolean;
@@ -39,6 +47,36 @@ function formatDate(d: string | Date | null) {
   } catch {
     return "–";
   }
+}
+
+function normalizeHmFromDb(v: string | null | undefined): string {
+  if (v == null) return "";
+  const s = String(v).trim();
+  if (!s) return "";
+  const m = /^(\d{1,2}):(\d{2})/.exec(s);
+  if (!m) return s;
+  return `${m[1].padStart(2, "0")}:${m[2]}`;
+}
+
+function parseTimeToMinutesHm(hm: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function formatEinsatzdauerLabel(von: string, bis: string): string | null {
+  if (!von.trim() || !bis.trim()) return null;
+  const a = parseTimeToMinutesHm(von);
+  const b = parseTimeToMinutesHm(bis);
+  if (a === null || b === null) return null;
+  let diff = b - a;
+  if (diff < 0) diff += 24 * 60;
+  const hh = Math.floor(diff / 60);
+  const mm = diff % 60;
+  return `${hh} Std. ${mm} Min.`;
 }
 
 type Busy = null | "preview" | "pdf" | "mail" | "reject" | "archiv" | "submit" | "fotos";
@@ -537,8 +575,11 @@ export default function ProtokollAnsichtPage() {
     );
   }
 
-  const zurueckListeHref =
-    session?.user?.rolle === "mitarbeiter" ? "/protokolle" : "/auftraege";
+  const zurueckListeHref = "/protokolle";
+  const zurueckListeLabel =
+    session?.user?.rolle === "mitarbeiter"
+      ? "Zurück zu Meine Protokolle"
+      : "Zurück zu Protokolle";
 
   if (versandErfolg) {
     return (
@@ -555,9 +596,7 @@ export default function ProtokollAnsichtPage() {
             className="mt-8 min-h-12 w-full text-base sm:w-auto"
             onClick={() => router.push(zurueckListeHref)}
           >
-            {session?.user?.rolle === "mitarbeiter"
-              ? "Zurück zu Meine Protokolle"
-              : "Zurück zu Aufträge"}
+            {zurueckListeLabel}
           </Button>
         </Card>
       </div>
@@ -572,9 +611,7 @@ export default function ProtokollAnsichtPage() {
           href={zurueckListeHref}
           className="text-primary hover:text-primary/80 hover:underline"
         >
-          {session?.user?.rolle === "mitarbeiter"
-            ? "Zurück zu Meine Protokolle"
-            : "Zurück zu Aufträgen"}
+          {zurueckListeLabel}
         </Link>
       </div>
     );
@@ -584,6 +621,8 @@ export default function ProtokollAnsichtPage() {
     protokoll,
     kunde_name,
     kunde_email,
+    kunde_adresse,
+    kunde_telefon,
     auftrag_beschreibung,
     fotos,
     freigabe_erlaubt: freigabeRaw,
@@ -623,9 +662,7 @@ export default function ProtokollAnsichtPage() {
         className="inline-flex min-h-12 items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 hover:underline"
       >
         <ArrowLeft className="h-5 w-5" />
-        {session?.user?.rolle === "mitarbeiter"
-          ? "Zurück zu Meine Protokolle"
-          : "Zurück zu Aufträgen"}
+        {zurueckListeLabel}
       </Link>
 
       <div>
@@ -659,6 +696,139 @@ export default function ProtokollAnsichtPage() {
           )}
         </p>
       </div>
+
+      {isInhaber ? (
+        <Card className="border-slate-200 bg-slate-50/80 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Protokollübersicht
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Kunde, Einsatz und Leistung auf einen Blick — PDF unten oder hier
+            direkt laden.
+          </p>
+          <dl className="mt-4 grid gap-4 border-t border-slate-200/80 pt-4 text-sm sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Kunde
+              </dt>
+              <dd className="mt-1 space-y-1 text-slate-900">
+                <p className="font-medium">{kunde_name?.trim() || "–"}</p>
+                {kunde_adresse?.trim() ? (
+                  <p className="whitespace-pre-wrap text-slate-700">
+                    {kunde_adresse.trim()}
+                  </p>
+                ) : null}
+                <p className="text-slate-700">
+                  <span className="text-slate-500">E-Mail: </span>
+                  {kunde_email?.trim() || "–"}
+                </p>
+                <p className="text-slate-700">
+                  <span className="text-slate-500">Telefon: </span>
+                  {kunde_telefon?.trim() || "–"}
+                </p>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Einsatzzeit
+              </dt>
+              <dd className="mt-1 text-slate-800">
+                <p>
+                  <span className="text-slate-500">Von: </span>
+                  {normalizeHmFromDb(protokoll.einsatz_von) || "–"}
+                </p>
+                <p>
+                  <span className="text-slate-500">Bis: </span>
+                  {normalizeHmFromDb(protokoll.einsatz_bis) || "–"}
+                </p>
+                {(() => {
+                  const v = normalizeHmFromDb(protokoll.einsatz_von);
+                  const b = normalizeHmFromDb(protokoll.einsatz_bis);
+                  const d = v && b ? formatEinsatzdauerLabel(v, b) : null;
+                  return d ? (
+                    <p>
+                      <span className="text-slate-500">Dauer: </span>
+                      {d}
+                    </p>
+                  ) : null;
+                })()}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Anfahrt
+              </dt>
+              <dd className="mt-1 text-slate-800">
+                <p>
+                  {protokoll.anfahrt_km != null
+                    ? `${protokoll.anfahrt_km} km`
+                    : "– km"}
+                </p>
+                <p>
+                  {protokoll.anfahrt_minuten != null
+                    ? `${protokoll.anfahrt_minuten} Min.`
+                    : "– Min."}
+                </p>
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Auftrag
+              </dt>
+              <dd className="mt-1 text-slate-800">
+                {auftrag_beschreibung?.trim() || "–"}
+              </dd>
+            </div>
+            {protokoll.notiz?.trim() ? (
+              <div className="sm:col-span-2">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Notiz (Erfassung)
+                </dt>
+                <dd className="mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-800">
+                  {protokoll.notiz.trim()}
+                </dd>
+              </div>
+            ) : null}
+            {protokoll.materialien?.trim() ? (
+              <div className="sm:col-span-2">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Materialien
+                </dt>
+                <dd className="mt-1 whitespace-pre-wrap text-slate-800">
+                  {protokoll.materialien.trim()}
+                </dd>
+              </div>
+            ) : null}
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Protokolltext
+              </dt>
+              <dd className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-800">
+                {protokoll.ki_text?.trim()
+                  ? protokoll.ki_text.trim().length > 600
+                    ? `${protokoll.ki_text.trim().slice(0, 600)}…`
+                    : protokoll.ki_text.trim()
+                  : "–"}
+              </dd>
+            </div>
+          </dl>
+          {pdfHref ? (
+            <a
+              href={pdfHref}
+              download
+              className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-base font-semibold text-white shadow-sm hover:opacity-95 sm:w-auto"
+            >
+              <FileDown className="h-5 w-5 shrink-0" aria-hidden />
+              PDF herunterladen
+            </a>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500">
+              PDF ist noch nicht verfügbar — nach Erstellung erscheint der
+              Download hier und in Schritt 2.
+            </p>
+          )}
+        </Card>
+      ) : null}
 
       {bannerError ? (
         <div

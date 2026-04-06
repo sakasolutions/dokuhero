@@ -314,6 +314,14 @@ export async function POST(request: Request, context: RouteContext) {
             betriebMail,
             row.betrieb_name,
             row.kunde_name ?? "",
+            row.kunde_adresse ?? null,
+            normalizeHmFromDb(row.einsatz_von),
+            normalizeHmFromDb(row.einsatz_bis),
+            row.anfahrt_km != null ? Number(row.anfahrt_km) : null,
+            row.anfahrt_minuten != null ? Number(row.anfahrt_minuten) : null,
+            kiText,
+            row.materialien?.trim() ? row.materialien : null,
+            session.user.name ?? null,
             pdfBuffer,
             null
           );

@@ -270,9 +270,12 @@ export default function ProtokollePage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-slate-900">
+                    <Link
+                      href={`/protokoll/${p.id}`}
+                      className="font-semibold text-slate-900 hover:text-primary hover:underline"
+                    >
                       {p.kunde_name?.trim() || "–"}
-                    </p>
+                    </Link>
                     {fz ? (
                       <p className="mt-0.5 text-xs text-slate-500">{fz}</p>
                     ) : null}

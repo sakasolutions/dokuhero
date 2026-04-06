@@ -8,6 +8,60 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function parseTimeToMinutesHm(hm: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function formatEinsatzdauerLabel(
+  von: string | null,
+  bis: string | null
+): string {
+  if (!von?.trim() || !bis?.trim()) return "–";
+  const a = parseTimeToMinutesHm(von);
+  const b = parseTimeToMinutesHm(bis);
+  if (a === null || b === null) return "–";
+  let diff = b - a;
+  if (diff < 0) diff += 24 * 60;
+  const hh = Math.floor(diff / 60);
+  const mm = diff % 60;
+  return `${hh} Std. ${mm} Min.`;
+}
+
+function textToParagraphsHtml(s: string | null, emptyFallback: string): string {
+  const t = s?.trim();
+  if (!t) {
+    return `<p style="margin:0;color:#64748b;">${escapeHtml(emptyFallback)}</p>`;
+  }
+  const lines = t.split(/\r?\n/).filter((line) => line.trim() !== "");
+  if (lines.length === 0) {
+    return `<p style="margin:0;color:#64748b;">${escapeHtml(emptyFallback)}</p>`;
+  }
+  return lines
+    .map(
+      (line) =>
+        `<p style="margin:0 0 6px;">${escapeHtml(line.trim())}</p>`
+    )
+    .join("");
+}
+
+function addressBlockHtml(adresse: string | null): string {
+  const t = adresse?.trim();
+  if (!t) {
+    return `<span style="color:#64748b;">Keine Adresse hinterlegt</span>`;
+  }
+  return t
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => escapeHtml(line))
+    .join("<br />");
+}
+
 function mailWrapper(
   content: string,
   betriebName: string,
@@ -147,8 +201,16 @@ export async function sendNeuesProtokollInternGespeichertMail(
   betriebEmail: string,
   betriebName: string,
   kundeName: string,
+  kundeAdresse: string | null,
+  einsatzVon: string | null,
+  einsatzBis: string | null,
+  anfahrtKm: number | null,
+  anfahrtMinuten: number | null,
+  leistungen: string | null,
+  materialien: string | null,
+  monteurName: string | null,
   pdfBuffer: Buffer,
-  logoUrl: string | null = null
+  logoUrl: string | null
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
@@ -162,11 +224,63 @@ export async function sendNeuesProtokollInternGespeichertMail(
 
   const resend = new Resend(apiKey);
   const kn = kundeName.trim() || "Kunde";
-  const subject = `Neues Protokoll gespeichert – ${kn}`;
+  const datumHeute = new Date().toLocaleDateString("de-DE", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const subject = `Neues Protokoll – ${kn} – ${datumHeute}`;
 
-  const content = `<p style="margin:0 0 16px;">Hallo,</p>
-<p style="margin:0 0 16px;">ein neues Serviceprotokoll für <strong>${escapeHtml(kn)}</strong> wurde intern gespeichert (ohne automatischen Kunden-Versand).</p>
-<p style="margin:0;">Das PDF finden Sie im Anhang.</p>`;
+  const ev = einsatzVon?.trim() || "–";
+  const eb = einsatzBis?.trim() || "–";
+  const dauer = formatEinsatzdauerLabel(einsatzVon, einsatzBis);
+  const kmStr = anfahrtKm != null ? String(anfahrtKm) : "–";
+  const minStr = anfahrtMinuten != null ? String(anfahrtMinuten) : "–";
+  const monteur = monteurName?.trim() || "–";
+
+  const sectionHead = (t: string) =>
+    `<div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:#64748b;margin:0 0 8px;">${escapeHtml(t)}</div>`;
+
+  const materialBlock =
+    materialien?.trim() !== "" && materialien != null
+      ? `<div style="border-top:1px solid #e2e8f0;padding-top:14px;margin-top:14px;">
+  ${sectionHead("MATERIALIEN")}
+  ${textToParagraphsHtml(materialien, "–")}
+</div>`
+      : "";
+
+  const content = `<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff;">
+  <div style="background:#f8fafc;padding:14px 18px;border-bottom:1px solid #e2e8f0;">
+    ${sectionHead("NEUES PROTOKOLL")}
+    <p style="margin:0;font-size:17px;font-weight:600;color:#0f172a;">${escapeHtml(betriebName)}</p>
+  </div>
+  <div style="padding:18px;">
+    <div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin-bottom:14px;">
+      ${sectionHead("KUNDE")}
+      <p style="margin:0 0 4px;font-weight:600;color:#0f172a;">${escapeHtml(kn)}</p>
+      <p style="margin:0;font-size:14px;color:#334155;line-height:1.5;">${addressBlockHtml(kundeAdresse)}</p>
+    </div>
+    <div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin-bottom:14px;">
+      ${sectionHead("EINSATZ")}
+      <p style="margin:0 0 6px;font-size:14px;"><strong>Datum:</strong> ${escapeHtml(datumHeute)}</p>
+      <p style="margin:0 0 6px;font-size:14px;"><strong>Von:</strong> ${escapeHtml(ev)} &nbsp; <strong>Bis:</strong> ${escapeHtml(eb)}</p>
+      <p style="margin:0 0 6px;font-size:14px;"><strong>Dauer:</strong> ${escapeHtml(dauer)}</p>
+      <p style="margin:0 0 6px;font-size:14px;"><strong>Anfahrt:</strong> ${escapeHtml(kmStr)} km / ${escapeHtml(minStr)} Min.</p>
+      <p style="margin:0;font-size:14px;"><strong>Monteur:</strong> ${escapeHtml(monteur)}</p>
+    </div>
+    <div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin-bottom:14px;">
+      ${sectionHead("DURCHGEFÜHRTE ARBEITEN")}
+      ${textToParagraphsHtml(leistungen, "–")}
+    </div>
+    ${materialBlock}
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0;">
+      <p style="margin:0 0 6px;font-size:14px;">✅ Kunde hat unterschrieben</p>
+      <p style="margin:0 0 6px;font-size:14px;">✅ Monteur hat unterschrieben</p>
+      <p style="margin:0;font-size:14px;color:#64748b;">PDF im Anhang</p>
+    </div>
+  </div>
+</div>`;
 
   const html = mailWrapper(content, betriebName, logoUrl);
 
