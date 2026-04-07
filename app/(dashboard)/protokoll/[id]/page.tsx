@@ -7,6 +7,8 @@ import { useSession } from "next-auth/react";
 import {
   Archive,
   ArrowLeft,
+  Check,
+  ClipboardCopy,
   FileDown,
   Loader2,
   RefreshCw,
@@ -131,6 +133,14 @@ export default function ProtokollAnsichtPage() {
   const [editFieldError, setEditFieldError] = useState<string | null>(null);
   /** Nur Entwurf: neue Fotos vor „Fotos hinzufügen“ (Base64 wie FotoUpload). */
   const [pendingFotos, setPendingFotos] = useState<string[]>([]);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function copyToClipboard(key: string, text: string) {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
 
   const load = useCallback(async () => {
     setError(null);
@@ -638,6 +648,26 @@ export default function ProtokollAnsichtPage() {
     : null;
   const emailDisplay = kunde_email?.trim() ?? "";
 
+  const einsatzVonHm = normalizeHmFromDb(protokoll.einsatz_von);
+  const einsatzBisHm = normalizeHmFromDb(protokoll.einsatz_bis);
+  const einsatzDauerLabel =
+    einsatzVonHm && einsatzBisHm
+      ? formatEinsatzdauerLabel(einsatzVonHm, einsatzBisHm)
+      : null;
+  const einsatzCopyText =
+    einsatzVonHm && einsatzBisHm
+      ? einsatzDauerLabel
+        ? `${einsatzVonHm} – ${einsatzBisHm} (${einsatzDauerLabel})`
+        : `${einsatzVonHm} – ${einsatzBisHm}`
+      : "–";
+  const anfahrtKmStr =
+    protokoll.anfahrt_km != null ? `${protokoll.anfahrt_km} km` : "–";
+  const anfahrtMinStr =
+    protokoll.anfahrt_minuten != null
+      ? `${protokoll.anfahrt_minuten} Min.`
+      : "–";
+  const anfahrtCopyText = `${anfahrtKmStr} / ${anfahrtMinStr}`;
+
   const pStatus = protokoll.status;
   const isArchiviert = Number(protokoll.archiviert) === 1;
   const isFreigegeben = pStatus === "freigegeben";
@@ -760,21 +790,108 @@ export default function ProtokollAnsichtPage() {
                       Kunde
                     </dt>
                     <dd className="mt-1 space-y-1 text-slate-900">
-                      <p className="font-medium">{kunde_name?.trim() || "–"}</p>
+                      <p className="flex items-center gap-2 font-medium">
+                        <span className="min-w-0 flex-1">
+                          {kunde_name?.trim() || "–"}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded p-1 hover:bg-slate-100"
+                          aria-label="Kundenname kopieren"
+                          onClick={() =>
+                            copyToClipboard(
+                              "kunde_name",
+                              kunde_name?.trim() || "–"
+                            )
+                          }
+                        >
+                          {copied === "kunde_name" ? (
+                            <Check
+                              className="h-4 w-4 text-green-500"
+                              aria-hidden
+                            />
+                          ) : (
+                            <ClipboardCopy className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                          )}
+                        </button>
+                      </p>
                       {kunde_adresse?.trim() ? (
-                        <p className="whitespace-pre-wrap text-slate-700">
-                          {kunde_adresse.trim()}
+                        <p className="flex items-start gap-2 text-slate-700">
+                          <span className="min-w-0 flex-1 whitespace-pre-wrap">
+                            {kunde_adresse.trim()}
+                          </span>
+                          <button
+                            type="button"
+                            className="shrink-0 rounded p-1 hover:bg-slate-100"
+                            aria-label="Adresse kopieren"
+                            onClick={() =>
+                              copyToClipboard("adresse", kunde_adresse.trim())
+                            }
+                          >
+                            {copied === "adresse" ? (
+                              <Check
+                                className="h-4 w-4 text-green-500"
+                                aria-hidden
+                              />
+                            ) : (
+                              <ClipboardCopy className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                            )}
+                          </button>
                         </p>
                       ) : (
                         <p className="text-sm text-slate-500">Keine Adresse</p>
                       )}
-                      <p className="text-slate-700">
-                        <span className="text-slate-500">Telefon: </span>
-                        {kunde_telefon?.trim() || "–"}
+                      <p className="flex items-center gap-2 text-slate-700">
+                        <span className="min-w-0 flex-1">
+                          <span className="text-slate-500">Telefon: </span>
+                          {kunde_telefon?.trim() || "–"}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded p-1 hover:bg-slate-100"
+                          aria-label="Telefon kopieren"
+                          onClick={() =>
+                            copyToClipboard(
+                              "telefon",
+                              kunde_telefon?.trim() || "–"
+                            )
+                          }
+                        >
+                          {copied === "telefon" ? (
+                            <Check
+                              className="h-4 w-4 text-green-500"
+                              aria-hidden
+                            />
+                          ) : (
+                            <ClipboardCopy className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                          )}
+                        </button>
                       </p>
-                      <p className="text-slate-700">
-                        <span className="text-slate-500">E-Mail: </span>
-                        {kunde_email?.trim() || "–"}
+                      <p className="flex items-center gap-2 text-slate-700">
+                        <span className="min-w-0 flex-1">
+                          <span className="text-slate-500">E-Mail: </span>
+                          {kunde_email?.trim() || "–"}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded p-1 hover:bg-slate-100"
+                          aria-label="E-Mail kopieren"
+                          onClick={() =>
+                            copyToClipboard(
+                              "email",
+                              kunde_email?.trim() || "–"
+                            )
+                          }
+                        >
+                          {copied === "email" ? (
+                            <Check
+                              className="h-4 w-4 text-green-500"
+                              aria-hidden
+                            />
+                          ) : (
+                            <ClipboardCopy className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                          )}
+                        </button>
                       </p>
                     </dd>
                   </div>
@@ -783,48 +900,80 @@ export default function ProtokollAnsichtPage() {
                       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Einsatzzeit
                       </dt>
-                      <dd className="mt-1 text-slate-800">
-                        <p>
-                          <span className="text-slate-500">Von: </span>
-                          {normalizeHmFromDb(protokoll.einsatz_von) || "–"}
-                        </p>
-                        <p>
-                          <span className="text-slate-500">Bis: </span>
-                          {normalizeHmFromDb(protokoll.einsatz_bis) || "–"}
-                        </p>
-                        {(() => {
-                          const v = normalizeHmFromDb(protokoll.einsatz_von);
-                          const b = normalizeHmFromDb(protokoll.einsatz_bis);
-                          const d =
-                            v && b ? formatEinsatzdauerLabel(v, b) : null;
-                          return d ? (
+                      <dd className="mt-1 flex items-start justify-between gap-2 text-slate-800">
+                        <div className="min-w-0 flex-1">
+                          <p>
+                            <span className="text-slate-500">Von: </span>
+                            {einsatzVonHm || "–"}
+                          </p>
+                          <p>
+                            <span className="text-slate-500">Bis: </span>
+                            {einsatzBisHm || "–"}
+                          </p>
+                          {einsatzDauerLabel ? (
                             <p>
                               <span className="text-slate-500">Dauer: </span>
-                              {d}
+                              {einsatzDauerLabel}
                             </p>
                           ) : (
                             <p className="text-slate-500">Dauer: –</p>
-                          );
-                        })()}
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded p-1 hover:bg-slate-100"
+                          aria-label="Einsatzzeit kopieren"
+                          onClick={() =>
+                            copyToClipboard("einsatz", einsatzCopyText)
+                          }
+                        >
+                          {copied === "einsatz" ? (
+                            <Check
+                              className="h-4 w-4 text-green-500"
+                              aria-hidden
+                            />
+                          ) : (
+                            <ClipboardCopy className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                          )}
+                        </button>
                       </dd>
                     </div>
                     <div>
                       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Anfahrt
                       </dt>
-                      <dd className="mt-1 text-slate-800">
-                        <p>
-                          <span className="text-slate-500">Strecke: </span>
-                          {protokoll.anfahrt_km != null
-                            ? `${protokoll.anfahrt_km} km`
-                            : "–"}
-                        </p>
-                        <p>
-                          <span className="text-slate-500">Zeit: </span>
-                          {protokoll.anfahrt_minuten != null
-                            ? `${protokoll.anfahrt_minuten} Min.`
-                            : "–"}
-                        </p>
+                      <dd className="mt-1 flex items-start justify-between gap-2 text-slate-800">
+                        <div className="min-w-0 flex-1">
+                          <p>
+                            <span className="text-slate-500">Strecke: </span>
+                            {protokoll.anfahrt_km != null
+                              ? `${protokoll.anfahrt_km} km`
+                              : "–"}
+                          </p>
+                          <p>
+                            <span className="text-slate-500">Zeit: </span>
+                            {protokoll.anfahrt_minuten != null
+                              ? `${protokoll.anfahrt_minuten} Min.`
+                              : "–"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded p-1 hover:bg-slate-100"
+                          aria-label="Anfahrt kopieren"
+                          onClick={() =>
+                            copyToClipboard("anfahrt", anfahrtCopyText)
+                          }
+                        >
+                          {copied === "anfahrt" ? (
+                            <Check
+                              className="h-4 w-4 text-green-500"
+                              aria-hidden
+                            />
+                          ) : (
+                            <ClipboardCopy className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                          )}
+                        </button>
                       </dd>
                     </div>
                   </div>
