@@ -7,7 +7,7 @@ import { FileText, Loader2 } from "lucide-react";
 import { ProtokollStatusBadge } from "@/components/ProtokollStatusBadge";
 import { Card } from "@/components/ui/Card";
 
-type ProtokollTab = "alle" | "zur_pruefung" | "entwurf" | "freigegeben";
+type ProtokollTab = "alle" | "entwurf" | "freigegeben";
 
 type ProtokollListeItem = {
   id: number;
@@ -77,15 +77,15 @@ export default function ProtokollePage() {
     };
   }, [sessionStatus]);
 
-  const countZurFreigabe = useMemo(
-    () => alle.filter((p) => p.status === "zur_pruefung").length,
-    [alle]
-  );
-
   const gefiltertTab = useMemo(() => {
     if (tab === "alle") return alle;
+    if (tab === "entwurf" && isInhaber) {
+      return alle.filter(
+        (p) => p.status === "entwurf" || p.status === "zur_pruefung"
+      );
+    }
     return alle.filter((p) => p.status === tab);
-  }, [alle, tab]);
+  }, [alle, tab, isInhaber]);
 
   const gefiltert = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -108,19 +108,11 @@ export default function ProtokollePage() {
     );
   }
 
-  const tabs: { key: ProtokollTab; label: string; showFreigabeBadge?: boolean }[] =
-    isInhaber
-      ? [
-          { key: "alle", label: "Alle" },
-          { key: "zur_pruefung", label: "Zur Freigabe", showFreigabeBadge: true },
-          { key: "entwurf", label: "Entwürfe" },
-          { key: "freigegeben", label: "Freigegeben" },
-        ]
-      : [
-          { key: "alle", label: "Alle" },
-          { key: "entwurf", label: "In Bearbeitung" },
-          { key: "freigegeben", label: "Abgeschlossen" },
-        ];
+  const tabs: { key: ProtokollTab; label: string }[] = [
+    { key: "alle", label: "Alle" },
+    { key: "entwurf", label: "In Bearbeitung" },
+    { key: "freigegeben", label: "Abgeschlossen" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -163,7 +155,7 @@ export default function ProtokollePage() {
             role="tablist"
             aria-label="Protokoll-Filter"
           >
-            {tabs.map(({ key, label, showFreigabeBadge }) => {
+            {tabs.map(({ key, label }) => {
               const active = tab === key;
               return (
                 <button
@@ -172,24 +164,13 @@ export default function ProtokollePage() {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setTab(key)}
-                  className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition sm:px-4 ${
+                  className={`shrink-0 rounded-md px-3 py-2 text-sm font-medium transition sm:px-4 ${
                     active
                       ? "bg-primary text-white shadow-sm"
                       : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  <span>{label}</span>
-                  {showFreigabeBadge ? (
-                    <span
-                      className={`inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums ${
-                        active
-                          ? "bg-white/20 text-white"
-                          : "bg-orange-100 text-orange-900 ring-1 ring-orange-200"
-                      }`}
-                    >
-                      {countZurFreigabe}
-                    </span>
-                  ) : null}
+                  {label}
                 </button>
               );
             })}
@@ -213,7 +194,7 @@ export default function ProtokollePage() {
             <p className="mt-1 max-w-sm text-sm text-slate-600">
               {isMitarbeiter
                 ? "Lege unter „Protokoll“ dein erstes Protokoll an."
-                : "Sobald du Aufträge protokollierst, erscheinen sie hier mit Status und Freigabe-Übersicht."}
+                : "Sobald du Aufträge protokollierst, erscheinen sie hier nach Status."}
             </p>
           </div>
         </Card>
@@ -292,30 +273,20 @@ export default function ProtokollePage() {
                     {formatDatumTTMMJJJJ(p.erstellt_am)}
                   </p>
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                    {p.status === "zur_pruefung" ? (
-                      <Link
-                        href={`/protokoll/${p.id}`}
-                        className="inline-flex items-center justify-center rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                      >
-                        Freigeben
-                      </Link>
-                    ) : null}
-                    {p.status === "freigegeben" && p.pdf_pfad ? (
-                      <a
-                        href={p.pdf_pfad}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                      >
-                        PDF
-                      </a>
-                    ) : null}
                     {p.status === "entwurf" ? (
                       <Link
                         href={`/protokoll/neu?resume=${p.id}`}
                         className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                       >
                         Ansehen
+                      </Link>
+                    ) : null}
+                    {p.status === "zur_pruefung" || p.status === "freigegeben" ? (
+                      <Link
+                        href={`/protokoll/${p.id}`}
+                        className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      >
+                        Öffnen
                       </Link>
                     ) : null}
                   </div>
