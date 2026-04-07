@@ -117,9 +117,7 @@ export default function ProtokollAnsichtPage() {
   const hasInkRef = useRef(false);
   const [stepPdf, setStepPdf] = useState(false);
   const [pdfCacheBust, setPdfCacheBust] = useState(0);
-  const [inhaberHauptTab, setInhaberHauptTab] = useState<
-    "uebersicht" | "leistungen" | "dokument"
-  >("uebersicht");
+  const [inhaberPdfVorschau, setInhaberPdfVorschau] = useState(false);
 
   const [busy, setBusy] = useState<Busy>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
@@ -233,6 +231,7 @@ export default function ProtokollAnsichtPage() {
 
   useEffect(() => {
     setVersandErfolg(false);
+    setInhaberPdfVorschau(false);
   }, [id]);
 
   useEffect(() => {
@@ -671,24 +670,23 @@ export default function ProtokollAnsichtPage() {
   if (hasAnfahrtKm) anfahrtDisplayParts.push(`${anfahrtKmNum} km`);
   if (hasAnfahrtMin) anfahrtDisplayParts.push(`${anfahrtMinNum} Min.`);
   const anfahrtDisplayLine = anfahrtDisplayParts.join(" · ");
-  const hasEinsatzDisplay = Boolean(einsatzVonHm && einsatzBisHm);
-  const showInhaberMetaColumn = hasEinsatzDisplay || hasAnfahrtDisplay;
+  const showEinsatzZeile =
+    Boolean(
+      (protokoll.einsatz_von != null &&
+        String(protokoll.einsatz_von).trim() !== "") ||
+        (protokoll.einsatz_bis != null &&
+          String(protokoll.einsatz_bis).trim() !== "")
+    );
+  const einsatzZeileText = `Von: ${einsatzVonHm || "–"} Bis: ${einsatzBisHm || "–"}${
+    einsatzDauerLabel ? ` · Dauer: ${einsatzDauerLabel}` : ""
+  }`;
   const materialienRaw = protokoll.materialien?.trim() ?? "";
-  const materialienList =
-    materialienRaw.length > 0
-      ? materialienRaw
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter(Boolean)
-      : [];
-  const materialienListFinal =
-    materialienList.length > 0
-      ? materialienList
-      : materialienRaw
-        ? [materialienRaw]
-        : [];
   const kiTextAnzeige = protokoll.ki_text?.trim() || "";
-  const notizAnzeige = protokoll.notiz?.trim() || "";
+  const mapsHref = kunde_adresse?.trim()
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        kunde_adresse.trim()
+      )}`
+    : null;
   const telHref = kunde_telefon?.trim()
     ? `tel:${kunde_telefon.trim().replace(/\s/g, "")}`
     : null;
@@ -756,310 +754,323 @@ export default function ProtokollAnsichtPage() {
       </div>
 
       {isInhaber ? (
-        <div className="space-y-0">
-          <div className="border-b border-slate-200">
-            <div
-              className="-mb-px flex gap-8 overflow-x-auto"
-              role="tablist"
-              aria-label="Protokoll-Bereiche"
-            >
-              {(
-                [
-                  ["uebersicht", "Übersicht"],
-                  ["leistungen", "Leistungen"],
-                  ["dokument", "Dokument"],
-                ] as const
-              ).map(([key, label]) => {
-                const active = inhaberHauptTab === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    id={`inhaber-tab-${key}`}
-                    aria-controls={`inhaber-panel-${key}`}
-                    onClick={() => setInhaberHauptTab(key)}
-                    className={`shrink-0 border-b-2 px-0.5 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 ${
-                      active
-                        ? "border-primary text-slate-900"
-                        : "border-transparent text-slate-500 hover:text-slate-800"
-                    }`}
+        <div
+          className="max-h-[min(85vh,56rem)] overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-6"
+          aria-label="Protokolldetails"
+        >
+          <section>
+            {pdfHref ? (
+              <>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                  <a
+                    href={pdfHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-center text-base font-semibold text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    <FileDown className="h-5 w-5 shrink-0" aria-hidden />
+                    PDF herunterladen
+                  </a>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-12 shrink-0 border-slate-300 px-5 text-base font-medium text-slate-800"
+                    onClick={() => setInhaberPdfVorschau((v) => !v)}
+                  >
+                    {inhaberPdfVorschau
+                      ? "Vorschau ausblenden"
+                      : "Vorschau"}
+                  </Button>
+                </div>
+                {inhaberPdfVorschau && pdfIframeSrc ? (
+                  <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                    <iframe
+                      title="PDF-Vorschau"
+                      src={pdfIframeSrc}
+                      className="h-[min(60vh,560px)] w-full min-h-[220px] sm:min-h-[280px]"
+                    />
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-sm text-slate-500">Noch kein PDF erstellt</p>
+            )}
+          </section>
 
-          {inhaberHauptTab === "uebersicht" ? (
-            <div
-              id="inhaber-panel-uebersicht"
-              role="tabpanel"
-              aria-labelledby="inhaber-tab-uebersicht"
-              className="grid gap-8 pt-8 sm:grid-cols-2 sm:gap-10"
-            >
-              <div className="min-w-0 space-y-4">
-                <div className="group relative pr-9">
-                  <p className="text-2xl font-bold tracking-tight text-slate-900">
-                    {kunde_name?.trim() || "–"}
+          <hr className="my-6 border-slate-100" />
+
+          <section>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Kunde
+            </h2>
+            <div className="space-y-3">
+              {kunde_name?.trim() ? (
+                <div className="group relative flex items-start justify-between gap-3 pr-1">
+                  <p className="min-w-0 flex-1 text-base font-semibold text-slate-900">
+                    {kunde_name.trim()}
                   </p>
                   <button
                     type="button"
-                    className="absolute right-0 top-0.5 rounded-md p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                    className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
                     aria-label="Kundenname kopieren"
                     onClick={() =>
-                      copyToClipboard(
-                        "kunde_name",
-                        kunde_name?.trim() || "–"
-                      )
+                      copyToClipboard("inh_name", kunde_name.trim())
                     }
                   >
-                    {copied === "kunde_name" ? (
+                    {copied === "inh_name" ? (
                       <Check className="h-4 w-4 text-green-500" aria-hidden />
                     ) : (
                       <ClipboardCopy className="h-4 w-4" />
                     )}
                   </button>
                 </div>
-                {kunde_adresse?.trim() ? (
-                  <div className="group relative pr-9">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-500">
-                      {kunde_adresse.trim()}
-                    </p>
-                    <button
-                      type="button"
-                      className="absolute right-0 top-0 rounded-md p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
-                      aria-label="Adresse kopieren"
-                      onClick={() =>
-                        copyToClipboard("adresse", kunde_adresse.trim())
-                      }
-                    >
-                      {copied === "adresse" ? (
-                        <Check className="h-4 w-4 text-green-500" aria-hidden />
-                      ) : (
-                        <ClipboardCopy className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-400">Keine Adresse</p>
-                )}
-                <div className="group relative flex items-start gap-2 pr-9">
-                  <div className="min-w-0 flex-1 space-y-1.5 text-sm">
-                    <p>
-                      {telHref ? (
-                        <a
-                          href={telHref}
-                          className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
-                        >
-                          {kunde_telefon?.trim()}
-                        </a>
-                      ) : (
-                        <span className="text-slate-500">Telefon: –</span>
-                      )}
-                    </p>
-                    <p>
-                      {kunde_email?.trim() ? (
-                        <a
-                          href={`mailto:${kunde_email.trim()}`}
-                          className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
-                        >
-                          {kunde_email.trim()}
-                        </a>
-                      ) : (
-                        <span className="text-slate-500">E-Mail: –</span>
-                      )}
-                    </p>
-                  </div>
+              ) : null}
+              {kunde_adresse?.trim() && mapsHref ? (
+                <div className="group relative flex items-start justify-between gap-3 pr-1">
+                  <a
+                    href={mapsHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-w-0 flex-1 text-sm text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-primary"
+                  >
+                    {kunde_adresse.trim()}
+                  </a>
                   <button
                     type="button"
-                    className="absolute right-0 top-0 rounded-md p-1 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
-                    aria-label="Telefon und E-Mail kopieren"
+                    className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                    aria-label="Adresse kopieren"
                     onClick={() =>
-                      copyToClipboard(
-                        "kontakt_block",
-                        [
-                          kunde_telefon?.trim() &&
-                            `Telefon: ${kunde_telefon.trim()}`,
-                          kunde_email?.trim() && `E-Mail: ${kunde_email.trim()}`,
-                        ]
-                          .filter(Boolean)
-                          .join("\n") || "–"
-                      )
+                      copyToClipboard("inh_adr", kunde_adresse.trim())
                     }
                   >
-                    {copied === "kontakt_block" ? (
+                    {copied === "inh_adr" ? (
                       <Check className="h-4 w-4 text-green-500" aria-hidden />
                     ) : (
                       <ClipboardCopy className="h-4 w-4" />
                     )}
                   </button>
                 </div>
-              </div>
+              ) : null}
+              {kunde_telefon?.trim() && telHref ? (
+                <div className="group relative flex items-center justify-between gap-3 pr-1">
+                  <a
+                    href={telHref}
+                    className="min-w-0 flex-1 text-sm font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+                  >
+                    {kunde_telefon.trim()}
+                  </a>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                    aria-label="Telefon kopieren"
+                    onClick={() =>
+                      copyToClipboard("inh_tel", kunde_telefon.trim())
+                    }
+                  >
+                    {copied === "inh_tel" ? (
+                      <Check className="h-4 w-4 text-green-500" aria-hidden />
+                    ) : (
+                      <ClipboardCopy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              ) : null}
+              {kunde_email?.trim() ? (
+                <div className="group relative flex items-center justify-between gap-3 pr-1">
+                  <a
+                    href={`mailto:${kunde_email.trim()}`}
+                    className="min-w-0 flex-1 truncate text-sm font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+                  >
+                    {kunde_email.trim()}
+                  </a>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                    aria-label="E-Mail kopieren"
+                    onClick={() =>
+                      copyToClipboard("inh_mail", kunde_email.trim())
+                    }
+                  >
+                    {copied === "inh_mail" ? (
+                      <Check className="h-4 w-4 text-green-500" aria-hidden />
+                    ) : (
+                      <ClipboardCopy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </section>
 
-              {showInhaberMetaColumn ? (
-                <div className="min-w-0 space-y-6 sm:text-right">
-                  {hasEinsatzDisplay ? (
-                    <div className="space-y-1 sm:ml-auto sm:max-w-xs">
-                      {einsatzDauerLabel ? (
-                        <p className="text-2xl font-bold tracking-tight text-slate-900">
-                          {einsatzDauerLabel}
-                        </p>
-                      ) : null}
-                      <p
-                        className={
-                          einsatzDauerLabel
-                            ? "text-sm text-slate-500"
-                            : "text-xl font-bold text-slate-900"
+          {showEinsatzZeile || hasAnfahrtDisplay ? (
+            <>
+              <hr className="my-6 border-slate-100" />
+              <section>
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Einsatz
+                </h2>
+                <div className="space-y-3">
+                  {showEinsatzZeile ? (
+                    <div className="group relative flex items-start justify-between gap-3 pr-1">
+                      <p className="min-w-0 flex-1 text-sm text-slate-900">
+                        {einsatzZeileText}
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                        aria-label="Einsatz kopieren"
+                        onClick={() =>
+                          copyToClipboard("inh_einsatz", einsatzZeileText)
                         }
                       >
-                        {einsatzVonHm} – {einsatzBisHm} Uhr
-                      </p>
+                        {copied === "inh_einsatz" ? (
+                          <Check
+                            className="h-4 w-4 text-green-500"
+                            aria-hidden
+                          />
+                        ) : (
+                          <ClipboardCopy className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   ) : null}
                   {hasAnfahrtDisplay ? (
-                    <p className="text-base font-semibold text-slate-800 sm:ml-auto sm:max-w-xs">
-                      {anfahrtDisplayLine}
-                    </p>
+                    <div className="group relative flex items-start justify-between gap-3 pr-1">
+                      <p className="min-w-0 flex-1 text-sm text-slate-900">
+                        Anfahrt: {anfahrtDisplayLine}
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                        aria-label="Anfahrt kopieren"
+                        onClick={() =>
+                          copyToClipboard(
+                            "inh_anfahrt",
+                            `Anfahrt: ${anfahrtDisplayLine}`
+                          )
+                        }
+                      >
+                        {copied === "inh_anfahrt" ? (
+                          <Check
+                            className="h-4 w-4 text-green-500"
+                            aria-hidden
+                          />
+                        ) : (
+                          <ClipboardCopy className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   ) : null}
                 </div>
-              ) : null}
-            </div>
+              </section>
+            </>
           ) : null}
 
-          {inhaberHauptTab === "leistungen" ? (
-            <div
-              id="inhaber-panel-leistungen"
-              role="tabpanel"
-              aria-labelledby="inhaber-tab-leistungen"
-              className="space-y-6 pt-8"
-            >
-              <section className="group relative rounded-xl border border-slate-200 bg-white p-5 pr-12">
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 rounded-md p-1.5 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
-                  aria-label="Protokolltext kopieren"
-                  onClick={() =>
-                    copyToClipboard("leistung_ki", kiTextAnzeige || "–")
-                  }
-                >
-                  {copied === "leistung_ki" ? (
-                    <Check className="h-4 w-4 text-green-500" aria-hidden />
-                  ) : (
-                    <ClipboardCopy className="h-4 w-4" />
-                  )}
-                </button>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Durchgeführte Arbeiten
-                </h3>
-                <div className="mt-3 max-h-[min(50vh,28rem)] overflow-y-auto text-base leading-relaxed text-slate-800">
-                  {kiTextAnzeige ? (
-                    <p className="whitespace-pre-wrap">{kiTextAnzeige}</p>
-                  ) : (
-                    <p className="text-slate-400">–</p>
-                  )}
-                </div>
-              </section>
+          <hr className="my-6 border-slate-100" />
 
-              <section className="group relative rounded-xl border border-slate-200 bg-white p-5 pr-12">
+          <section className="group relative">
+            <button
+              type="button"
+              className="absolute right-0 top-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+              aria-label="Protokolltext kopieren"
+              onClick={() =>
+                copyToClipboard("inh_ki", kiTextAnzeige || "–")
+              }
+            >
+              {copied === "inh_ki" ? (
+                <Check className="h-4 w-4 text-green-500" aria-hidden />
+              ) : (
+                <ClipboardCopy className="h-4 w-4" />
+              )}
+            </button>
+            <h2 className="mb-3 pr-10 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Leistungen
+            </h2>
+            {kiTextAnzeige ? (
+              <pre className="max-h-[min(50vh,28rem)] overflow-y-auto whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-slate-900">
+                {kiTextAnzeige}
+              </pre>
+            ) : (
+              <p className="text-sm text-slate-500">
+                Noch kein Protokolltext erstellt
+              </p>
+            )}
+          </section>
+
+          {materialienRaw ? (
+            <>
+              <hr className="my-6 border-slate-100" />
+              <section className="group relative">
                 <button
                   type="button"
-                  className="absolute right-3 top-3 rounded-md p-1.5 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                  className="absolute right-0 top-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
                   aria-label="Materialien kopieren"
                   onClick={() =>
-                    copyToClipboard(
-                      "leistung_mat",
-                      materialienListFinal.length > 0
-                        ? materialienListFinal.join("\n")
-                        : "–"
-                    )
+                    copyToClipboard("inh_mat", materialienRaw)
                   }
                 >
-                  {copied === "leistung_mat" ? (
+                  {copied === "inh_mat" ? (
                     <Check className="h-4 w-4 text-green-500" aria-hidden />
                   ) : (
                     <ClipboardCopy className="h-4 w-4" />
                   )}
                 </button>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <h2 className="mb-3 pr-10 text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Materialien
-                </h3>
-                {materialienListFinal.length > 0 ? (
-                  <ul className="mt-3 list-inside list-disc space-y-1.5 text-sm text-slate-800">
-                    {materialienListFinal.map((line, i) => (
-                      <li key={i} className="pl-0.5">
-                        {line}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-slate-400">–</p>
-                )}
-              </section>
-
-              <section className="group relative rounded-xl border border-slate-200 bg-slate-50 p-5 pr-12">
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 rounded-md p-1.5 text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
-                  aria-label="Notiz kopieren"
-                  onClick={() =>
-                    copyToClipboard("leistung_notiz", notizAnzeige || "–")
-                  }
-                >
-                  {copied === "leistung_notiz" ? (
-                    <Check className="h-4 w-4 text-green-500" aria-hidden />
-                  ) : (
-                    <ClipboardCopy className="h-4 w-4" />
-                  )}
-                </button>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Notiz (vom Werker)
-                </h3>
-                <div className="mt-3 max-h-[min(40vh,20rem)] overflow-y-auto text-sm leading-relaxed text-slate-600">
-                  {notizAnzeige ? (
-                    <p className="whitespace-pre-wrap">{notizAnzeige}</p>
-                  ) : (
-                    <p className="text-slate-400">–</p>
-                  )}
+                </h2>
+                <div className="max-h-[min(40vh,24rem)] overflow-y-auto whitespace-pre-wrap text-sm text-slate-900">
+                  {materialienRaw}
                 </div>
               </section>
-            </div>
+            </>
           ) : null}
 
-          {inhaberHauptTab === "dokument" ? (
-            <div
-              id="inhaber-panel-dokument"
-              role="tabpanel"
-              aria-labelledby="inhaber-tab-dokument"
-              className="space-y-4 pt-8"
-            >
-              {pdfHref ? (
-                <a
-                  href={pdfHref}
-                  download
-                  className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-base font-semibold text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  <FileDown className="h-5 w-5 shrink-0" aria-hidden />
-                  PDF herunterladen
-                </a>
-              ) : null}
-              {pdfIframeSrc ? (
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-                  <iframe
-                    title="PDF-Vorschau"
-                    src={pdfIframeSrc}
-                    className="h-[min(65vh,640px)] w-full min-h-[240px] sm:min-h-[320px]"
-                  />
+          {fotos.length > 0 ? (
+            <>
+              <hr className="my-6 border-slate-100" />
+              <section>
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Fotos ({fotos.length})
+                </h2>
+                <div className="grid grid-cols-3 gap-2">
+                  {fotos.map((f) => (
+                    <a
+                      key={f.id}
+                      href={f.datei_pfad}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="aspect-square overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={f.datei_pfad}
+                        alt={f.dateiname}
+                        className="h-full w-full object-cover"
+                      />
+                    </a>
+                  ))}
                 </div>
-              ) : (
-                <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
-                  Für dieses Protokoll liegt noch kein PDF vor.
-                </p>
-              )}
-            </div>
+              </section>
+            </>
           ) : null}
+
+          <hr className="my-6 border-slate-100" />
+
+          <section>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Monteur
+            </h2>
+            <div className="space-y-2 text-sm text-slate-900">
+              <p>
+                <span className="text-slate-500">Monteur: </span>
+                Im PDF dokumentiert
+              </p>
+              <p>
+                <span className="text-slate-500">Unterschriften: </span>
+                Im PDF dokumentiert
+              </p>
+            </div>
+          </section>
         </div>
       ) : null}
 
@@ -1277,7 +1288,7 @@ export default function ProtokollAnsichtPage() {
             </div>
           ) : null}
         </Card>
-      ) : fotos.length > 0 ? (
+      ) : fotos.length > 0 && !isInhaber ? (
         <div className="overflow-visible">
           <h2 className="mb-2 text-sm font-semibold text-slate-500">Fotos</h2>
           <div className="grid grid-cols-2 gap-2 overflow-visible sm:grid-cols-3">
@@ -1612,27 +1623,13 @@ export default function ProtokollAnsichtPage() {
 
             {pdfIframeSrc ? (
               <div className="space-y-4">
-                {isInhaber ? (
-                  <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
-                    PDF-Vorschau: Tab{" "}
-                    <button
-                      type="button"
-                      className="font-semibold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
-                      onClick={() => setInhaberHauptTab("dokument")}
-                    >
-                      Dokument
-                    </button>{" "}
-                    in der Protokollübersicht oben.
-                  </p>
-                ) : (
-                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-inner">
-                    <iframe
-                      title="PDF-Vorschau"
-                      src={pdfIframeSrc}
-                      className="h-[min(70vh,720px)] w-full min-h-[320px]"
-                    />
-                  </div>
-                )}
+                <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-inner">
+                  <iframe
+                    title="PDF-Vorschau"
+                    src={pdfIframeSrc}
+                    className="h-[min(70vh,720px)] w-full min-h-[320px]"
+                  />
+                </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   {!isFreigegeben ? (
                     <Button
