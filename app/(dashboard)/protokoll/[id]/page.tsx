@@ -1132,7 +1132,7 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
-      {!(isInhaber && protokoll.status === "freigegeben") && (
+      {!isInhaber && (
       <Card className="overflow-visible">
         <div className="space-y-4 overflow-visible">
           {(pStatus === "entwurf" || pStatus === "zur_pruefung") &&
@@ -1254,7 +1254,7 @@ export default function ProtokollAnsichtPage() {
       </Card>
       )}
 
-      {isEntwurf && !isArchiviert ? (
+      {isEntwurf && !isArchiviert && !isInhaber ? (
         <Card className="overflow-visible">
           <h2 className="text-lg font-semibold text-slate-900">Fotos</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -1343,7 +1343,7 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
-      {!(isInhaber && protokoll.status === "freigegeben") && (
+      {!isInhaber && (
       <Card>
         <h2 className="text-lg font-semibold text-slate-900">
           Schritt 1 – Protokolltext
@@ -1622,7 +1622,7 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
-      {!(isInhaber && protokoll.status === "freigegeben") && stepPdf ? (
+      {!isInhaber && stepPdf ? (
         <Card>
           <h2 className="text-lg font-semibold text-slate-900">
             Schritt 2 – PDF
