@@ -2264,7 +2264,31 @@ function ProtokollNeuPageInner() {
                   Zurück
                 </Button>
               </div>
-            ) : null}
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-amber-800">
+                    Bitte Unterschriften erneut einholen.
+                  </p>
+                  <p className="mt-1 text-xs text-amber-700">
+                    Unterschriften müssen bei jedem Neustart erneut erfasst
+                    werden.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  className="min-h-12 w-full text-base"
+                  onClick={() => {
+                    setUnterschriftPhase("kunde");
+                    setKundeUnterschriftDataUri(null);
+                    setMonteurUnterschriftDataUri(null);
+                    setStep(7);
+                  }}
+                >
+                  Unterschriften einholen
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Card>
