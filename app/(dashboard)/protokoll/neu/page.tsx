@@ -869,9 +869,8 @@ function ProtokollNeuPageInner() {
         setProtokollGestartet(true);
 
         if (zielStep === 6) {
-          const pdfPfad = p.pdf_pfad?.trim();
-          if (pdfPfad) {
-            setPdfUrl(pdfPfad);
+          if (p.pdf_pfad) {
+            setPdfUrl(p.pdf_pfad);
             setPdfBust(Date.now());
           } else if (p.ki_text) {
             void loadPdfForAbschlussStep(p.ki_text);
