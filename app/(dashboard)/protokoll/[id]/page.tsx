@@ -81,6 +81,30 @@ function formatEinsatzdauerLabel(von: string, bis: string): string | null {
   return `${hh} Std. ${mm} Min.`;
 }
 
+/** Adresse wie „Straße, PLZ Stadt“ → Straße / PLZ / Stadt */
+function parseKundeAdresseFuerChef(raw: string | null | undefined): {
+  strasse: string | null;
+  plz: string | null;
+  stadt: string | null;
+} {
+  const t = raw?.trim();
+  if (!t) return { strasse: null, plz: null, stadt: null };
+  const parts = t.split(", ");
+  if (parts.length < 2) {
+    return { strasse: t, plz: null, stadt: null };
+  }
+  const strasse = parts[0]?.trim() || null;
+  const rest = parts.slice(1).join(", ").trim();
+  if (!rest) return { strasse, plz: null, stadt: null };
+  const idx = rest.indexOf(" ");
+  if (idx <= 0) {
+    return { strasse, plz: rest, stadt: null };
+  }
+  const plz = rest.slice(0, idx).trim() || null;
+  const stadt = rest.slice(idx + 1).trim() || null;
+  return { strasse, plz, stadt };
+}
+
 type Busy = null | "preview" | "pdf" | "mail" | "reject" | "archiv" | "submit" | "fotos";
 
 const REGENERATE_PRESETS: { label: string; text: string }[] = [
@@ -665,23 +689,13 @@ export default function ProtokollAnsichtPage() {
     anfahrtKmNum != null && !Number.isNaN(anfahrtKmNum) && anfahrtKmNum > 0;
   const hasAnfahrtMin =
     anfahrtMinNum != null && !Number.isNaN(anfahrtMinNum) && anfahrtMinNum > 0;
-  const hasAnfahrtDisplay = hasAnfahrtKm || hasAnfahrtMin;
-  const anfahrtDisplayParts: string[] = [];
-  if (hasAnfahrtKm) anfahrtDisplayParts.push(`${anfahrtKmNum} km`);
-  if (hasAnfahrtMin) anfahrtDisplayParts.push(`${anfahrtMinNum} Min.`);
-  const anfahrtDisplayLine = anfahrtDisplayParts.join(" · ");
-  const showEinsatzZeile =
-    Boolean(
-      (protokoll.einsatz_von != null &&
-        String(protokoll.einsatz_von).trim() !== "") ||
-        (protokoll.einsatz_bis != null &&
-          String(protokoll.einsatz_bis).trim() !== "")
-    );
-  const einsatzZeileText = `Von: ${einsatzVonHm || "–"} Bis: ${einsatzBisHm || "–"}${
-    einsatzDauerLabel ? ` · Dauer: ${einsatzDauerLabel}` : ""
-  }`;
+  const showChefEinsatzSection =
+    Boolean(einsatzVonHm || einsatzBisHm || einsatzDauerLabel) ||
+    hasAnfahrtKm ||
+    hasAnfahrtMin;
   const materialienRaw = protokoll.materialien?.trim() ?? "";
   const kiTextAnzeige = protokoll.ki_text?.trim() || "";
+  const kundeAddrParts = parseKundeAdresseFuerChef(kunde_adresse);
   const mapsHref = kunde_adresse?.trim()
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
         kunde_adresse.trim()
@@ -825,25 +839,74 @@ export default function ProtokollAnsichtPage() {
                   </button>
                 </div>
               ) : null}
-              {kunde_adresse?.trim() && mapsHref ? (
+              {kundeAddrParts.strasse && mapsHref ? (
                 <div className="group relative flex items-start justify-between gap-3 pr-1">
-                  <a
-                    href={mapsHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="min-w-0 flex-1 text-sm text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-primary"
-                  >
-                    {kunde_adresse.trim()}
-                  </a>
+                  <p className="min-w-0 flex-1 text-sm text-slate-900">
+                    <span className="text-slate-500">
+                      Straße &amp; Hausnummer:{" "}
+                    </span>
+                    <a
+                      href={mapsHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+                    >
+                      {kundeAddrParts.strasse}
+                    </a>
+                  </p>
                   <button
                     type="button"
                     className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
-                    aria-label="Adresse kopieren"
+                    aria-label="Straße und Hausnummer kopieren"
                     onClick={() =>
-                      copyToClipboard("inh_adr", kunde_adresse.trim())
+                      copyToClipboard("inh_str", kundeAddrParts.strasse ?? "")
                     }
                   >
-                    {copied === "inh_adr" ? (
+                    {copied === "inh_str" ? (
+                      <Check className="h-4 w-4 text-green-500" aria-hidden />
+                    ) : (
+                      <ClipboardCopy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              ) : null}
+              {kundeAddrParts.plz ? (
+                <div className="group relative flex items-center justify-between gap-3 pr-1">
+                  <p className="min-w-0 flex-1 text-sm text-slate-900">
+                    <span className="text-slate-500">PLZ: </span>
+                    {kundeAddrParts.plz}
+                  </p>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                    aria-label="PLZ kopieren"
+                    onClick={() =>
+                      copyToClipboard("inh_plz", kundeAddrParts.plz ?? "")
+                    }
+                  >
+                    {copied === "inh_plz" ? (
+                      <Check className="h-4 w-4 text-green-500" aria-hidden />
+                    ) : (
+                      <ClipboardCopy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              ) : null}
+              {kundeAddrParts.stadt ? (
+                <div className="group relative flex items-center justify-between gap-3 pr-1">
+                  <p className="min-w-0 flex-1 text-sm text-slate-900">
+                    <span className="text-slate-500">Stadt: </span>
+                    {kundeAddrParts.stadt}
+                  </p>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                    aria-label="Stadt kopieren"
+                    onClick={() =>
+                      copyToClipboard("inh_stadt", kundeAddrParts.stadt ?? "")
+                    }
+                  >
+                    {copied === "inh_stadt" ? (
                       <Check className="h-4 w-4 text-green-500" aria-hidden />
                     ) : (
                       <ClipboardCopy className="h-4 w-4" />
@@ -853,12 +916,15 @@ export default function ProtokollAnsichtPage() {
               ) : null}
               {kunde_telefon?.trim() && telHref ? (
                 <div className="group relative flex items-center justify-between gap-3 pr-1">
-                  <a
-                    href={telHref}
-                    className="min-w-0 flex-1 text-sm font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
-                  >
-                    {kunde_telefon.trim()}
-                  </a>
+                  <p className="min-w-0 flex-1 text-sm text-slate-900">
+                    <span className="text-slate-500">Telefon: </span>
+                    <a
+                      href={telHref}
+                      className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+                    >
+                      {kunde_telefon.trim()}
+                    </a>
+                  </p>
                   <button
                     type="button"
                     className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
@@ -877,12 +943,15 @@ export default function ProtokollAnsichtPage() {
               ) : null}
               {kunde_email?.trim() ? (
                 <div className="group relative flex items-center justify-between gap-3 pr-1">
-                  <a
-                    href={`mailto:${kunde_email.trim()}`}
-                    className="min-w-0 flex-1 truncate text-sm font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
-                  >
-                    {kunde_email.trim()}
-                  </a>
+                  <p className="min-w-0 flex-1 truncate text-sm text-slate-900">
+                    <span className="text-slate-500">E-Mail: </span>
+                    <a
+                      href={`mailto:${kunde_email.trim()}`}
+                      className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+                    >
+                      {kunde_email.trim()}
+                    </a>
+                  </p>
                   <button
                     type="button"
                     className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
@@ -902,7 +971,7 @@ export default function ProtokollAnsichtPage() {
             </div>
           </section>
 
-          {showEinsatzZeile || hasAnfahrtDisplay ? (
+          {showChefEinsatzSection ? (
             <>
               <hr className="my-6 border-slate-100" />
               <section>
@@ -910,20 +979,24 @@ export default function ProtokollAnsichtPage() {
                   Einsatz
                 </h2>
                 <div className="space-y-3">
-                  {showEinsatzZeile ? (
-                    <div className="group relative flex items-start justify-between gap-3 pr-1">
+                  {einsatzVonHm ? (
+                    <div className="group relative flex items-center justify-between gap-3 pr-1">
                       <p className="min-w-0 flex-1 text-sm text-slate-900">
-                        {einsatzZeileText}
+                        <span className="text-slate-500">Beginn: </span>
+                        {einsatzVonHm} Uhr
                       </p>
                       <button
                         type="button"
                         className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
-                        aria-label="Einsatz kopieren"
+                        aria-label="Beginn kopieren"
                         onClick={() =>
-                          copyToClipboard("inh_einsatz", einsatzZeileText)
+                          copyToClipboard(
+                            "inh_beginn",
+                            `Beginn: ${einsatzVonHm} Uhr`
+                          )
                         }
                       >
-                        {copied === "inh_einsatz" ? (
+                        {copied === "inh_beginn" ? (
                           <Check
                             className="h-4 w-4 text-green-500"
                             aria-hidden
@@ -934,10 +1007,67 @@ export default function ProtokollAnsichtPage() {
                       </button>
                     </div>
                   ) : null}
-                  {hasAnfahrtDisplay ? (
-                    <div className="group relative flex items-start justify-between gap-3 pr-1">
+                  {einsatzBisHm ? (
+                    <div className="group relative flex items-center justify-between gap-3 pr-1">
                       <p className="min-w-0 flex-1 text-sm text-slate-900">
-                        Anfahrt: {anfahrtDisplayLine}
+                        <span className="text-slate-500">Ende: </span>
+                        {einsatzBisHm} Uhr
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                        aria-label="Ende kopieren"
+                        onClick={() =>
+                          copyToClipboard(
+                            "inh_ende",
+                            `Ende: ${einsatzBisHm} Uhr`
+                          )
+                        }
+                      >
+                        {copied === "inh_ende" ? (
+                          <Check
+                            className="h-4 w-4 text-green-500"
+                            aria-hidden
+                          />
+                        ) : (
+                          <ClipboardCopy className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  ) : null}
+                  {einsatzDauerLabel ? (
+                    <div className="group relative flex items-center justify-between gap-3 pr-1">
+                      <p className="min-w-0 flex-1 text-sm text-slate-900">
+                        <span className="text-slate-500">Dauer: </span>
+                        {einsatzDauerLabel}
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                        aria-label="Dauer kopieren"
+                        onClick={() =>
+                          copyToClipboard(
+                            "inh_dauer",
+                            `Dauer: ${einsatzDauerLabel}`
+                          )
+                        }
+                      >
+                        {copied === "inh_dauer" ? (
+                          <Check
+                            className="h-4 w-4 text-green-500"
+                            aria-hidden
+                          />
+                        ) : (
+                          <ClipboardCopy className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  ) : null}
+                  {hasAnfahrtKm ? (
+                    <div className="group relative flex items-center justify-between gap-3 pr-1">
+                      <p className="min-w-0 flex-1 text-sm text-slate-900">
+                        <span className="text-slate-500">Anfahrt: </span>
+                        {anfahrtKmNum} km
                       </p>
                       <button
                         type="button"
@@ -945,12 +1075,40 @@ export default function ProtokollAnsichtPage() {
                         aria-label="Anfahrt kopieren"
                         onClick={() =>
                           copyToClipboard(
-                            "inh_anfahrt",
-                            `Anfahrt: ${anfahrtDisplayLine}`
+                            "inh_anfahrt_km",
+                            `Anfahrt: ${anfahrtKmNum} km`
                           )
                         }
                       >
-                        {copied === "inh_anfahrt" ? (
+                        {copied === "inh_anfahrt_km" ? (
+                          <Check
+                            className="h-4 w-4 text-green-500"
+                            aria-hidden
+                          />
+                        ) : (
+                          <ClipboardCopy className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  ) : null}
+                  {hasAnfahrtMin ? (
+                    <div className="group relative flex items-center justify-between gap-3 pr-1">
+                      <p className="min-w-0 flex-1 text-sm text-slate-900">
+                        <span className="text-slate-500">Fahrzeit: </span>
+                        {anfahrtMinNum} Min.
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 rounded p-1 text-slate-400 opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                        aria-label="Fahrzeit kopieren"
+                        onClick={() =>
+                          copyToClipboard(
+                            "inh_fahrzeit",
+                            `Fahrzeit: ${anfahrtMinNum} Min.`
+                          )
+                        }
+                      >
+                        {copied === "inh_fahrzeit" ? (
                           <Check
                             className="h-4 w-4 text-green-500"
                             aria-hidden
@@ -1053,24 +1211,6 @@ export default function ProtokollAnsichtPage() {
               </section>
             </>
           ) : null}
-
-          <hr className="my-6 border-slate-100" />
-
-          <section>
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Monteur
-            </h2>
-            <div className="space-y-2 text-sm text-slate-900">
-              <p>
-                <span className="text-slate-500">Monteur: </span>
-                Im PDF dokumentiert
-              </p>
-              <p>
-                <span className="text-slate-500">Unterschriften: </span>
-                Im PDF dokumentiert
-              </p>
-            </div>
-          </section>
         </div>
       ) : null}
 
