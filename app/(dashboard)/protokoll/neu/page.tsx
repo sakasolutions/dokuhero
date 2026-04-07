@@ -876,6 +876,14 @@ function ProtokollNeuPageInner() {
             void loadPdfForAbschlussStep(p.ki_text);
           }
         }
+        if (zielStep === 7) {
+          if (p.pdf_pfad) {
+            setPdfUrl(p.pdf_pfad);
+            setPdfBust(Date.now());
+          } else if (p.ki_text) {
+            void loadPdfForAbschlussStep(p.ki_text);
+          }
+        }
       } catch (e) {
         console.error("Resume fehlgeschlagen:", e);
         if (!cancelled) setResumeFailed(true);
@@ -908,6 +916,25 @@ function ProtokollNeuPageInner() {
       setMonteurUnterschriftDataUri(null);
     }
   }, [step, protokollId, kiText, loadPdfForAbschlussStep, pdfUrl]);
+
+  useEffect(() => {
+    if (
+      step === 7 &&
+      !pdfUrl &&
+      !pdfLoading &&
+      kiText &&
+      protokollId != null
+    ) {
+      void loadPdfForAbschlussStep(kiText);
+    }
+  }, [
+    step,
+    pdfUrl,
+    pdfLoading,
+    kiText,
+    protokollId,
+    loadPdfForAbschlussStep,
+  ]);
 
   function initSignatureCanvas(
     canvas: HTMLCanvasElement,
@@ -2007,7 +2034,15 @@ function ProtokollNeuPageInner() {
         {step === 7 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">Unterschrift</h2>
-            {pdfUrl ? (
+            {pdfLoading ? (
+              <div
+                className="flex flex-col items-center justify-center gap-3 py-10 text-slate-600"
+                role="status"
+              >
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p>PDF wird erstellt…</p>
+              </div>
+            ) : pdfUrl ? (
               <>
                 {monteurUnterschriftDataUri == null &&
                 unterschriftPhase === "kunde" ? (
@@ -2122,9 +2157,7 @@ function ProtokollNeuPageInner() {
                   </div>
                 ) : null}
               </>
-            ) : (
-              <p className="text-sm text-slate-600">PDF wird geladen...</p>
-            )}
+            ) : null}
           </div>
         )}
 
