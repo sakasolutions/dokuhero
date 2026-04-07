@@ -2012,6 +2012,20 @@ function ProtokollNeuPageInner() {
                 {monteurUnterschriftDataUri == null &&
                 unterschriftPhase === "kunde" ? (
                   <div className="space-y-3">
+                    {pdfUrl &&
+                    kundeUnterschriftDataUri === null &&
+                    monteurUnterschriftDataUri === null &&
+                    unterschriftPhase === "kunde" ? (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                        <p className="text-sm font-medium text-amber-800">
+                          Bitte beide Unterschriften erneut einholen.
+                        </p>
+                        <p className="mt-1 text-xs text-amber-700">
+                          Aus Sicherheitsgründen müssen Unterschriften bei jedem
+                          Sitzungsstart neu erfasst werden.
+                        </p>
+                      </div>
+                    ) : null}
                     <h3 className="text-base font-semibold text-slate-900">
                       Unterschrift Kunde
                     </h3>
@@ -2108,7 +2122,9 @@ function ProtokollNeuPageInner() {
                   </div>
                 ) : null}
               </>
-            ) : null}
+            ) : (
+              <p className="text-sm text-slate-600">PDF wird geladen...</p>
+            )}
           </div>
         )}
 
