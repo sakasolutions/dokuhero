@@ -1132,6 +1132,7 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
+      {!(isInhaber && protokoll.status === "freigegeben") && (
       <Card className="overflow-visible">
         <div className="space-y-4 overflow-visible">
           {(pStatus === "entwurf" || pStatus === "zur_pruefung") &&
@@ -1251,6 +1252,7 @@ export default function ProtokollAnsichtPage() {
           )}
         </div>
       </Card>
+      )}
 
       {isEntwurf && !isArchiviert ? (
         <Card className="overflow-visible">
@@ -1341,6 +1343,7 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
+      {!(isInhaber && protokoll.status === "freigegeben") && (
       <Card>
         <h2 className="text-lg font-semibold text-slate-900">
           Schritt 1 – Protokolltext
@@ -1504,6 +1507,7 @@ export default function ProtokollAnsichtPage() {
           </div>
         ) : null}
       </Card>
+      )}
 
       {showWerkerUnterschriftFlow ? (
         <Button
@@ -1618,7 +1622,7 @@ export default function ProtokollAnsichtPage() {
         </div>
       ) : null}
 
-      {stepPdf ? (
+      {!(isInhaber && protokoll.status === "freigegeben") && stepPdf ? (
         <Card>
           <h2 className="text-lg font-semibold text-slate-900">
             Schritt 2 – PDF
