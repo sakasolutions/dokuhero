@@ -206,129 +206,6 @@ function ProtokollNeuPageInner() {
   );
 
   useEffect(() => {
-    if (!resumeId) {
-      setResumeFailed(false);
-      return;
-    }
-
-    let cancelled = false;
-    setResumeFailed(false);
-
-    (async () => {
-      try {
-        const res = await fetch(`/api/protokoll/${resumeId}`);
-        if (cancelled) return;
-        if (!res.ok) {
-          setResumeFailed(true);
-          return;
-        }
-        const data = (await res.json()) as {
-          protokoll?: {
-            notiz: string | null;
-            materialien: string | null;
-            ki_text: string | null;
-            einsatz_von?: string | null;
-            einsatz_bis?: string | null;
-            anfahrt_km?: number | null;
-            anfahrt_minuten?: number | null;
-            status?: string;
-            current_step?: number | null;
-          };
-          kunde_name?: string | null;
-          kunde_adresse?: string | null;
-          kunde_telefon?: string | null;
-          kunde_email?: string | null;
-          fotos?: unknown[];
-        };
-        if (cancelled) return;
-        const p = data.protokoll;
-        if (!p) {
-          setResumeFailed(true);
-          return;
-        }
-
-        if (p.status === "freigegeben") {
-          deleteDraftLocal(Number(resumeId));
-          router.push("/protokolle");
-          return;
-        }
-
-        if (cancelled) return;
-
-        setKundenName(data.kunde_name ?? "");
-
-        const adresse = data.kunde_adresse ?? "";
-        if (adresse.includes(", ")) {
-          const [strasse, rest] = adresse.split(", ");
-          setKundenStrasse(strasse ?? "");
-          const plzStadt = rest ?? "";
-          const spaceIdx = plzStadt.indexOf(" ");
-          if (spaceIdx > 0) {
-            setKundenPlz(plzStadt.substring(0, spaceIdx));
-            setKundenStadt(plzStadt.substring(spaceIdx + 1));
-          }
-        } else {
-          setKundenStrasse(adresse);
-        }
-
-        setKundenTelefon(data.kunde_telefon ?? "");
-        setKundenEmail(data.kunde_email ?? "");
-
-        setProtokollId(Number(resumeId));
-        setNotiz(p.notiz ?? "");
-        setMaterialien(p.materialien ?? "");
-        setEinsatzVon(toTimeInputFromApi(p.einsatz_von));
-        setEinsatzBis(toTimeInputFromApi(p.einsatz_bis));
-        const km = p.anfahrt_km;
-        const am = p.anfahrt_minuten;
-        setAnfahrtKm(km != null ? String(km) : "");
-        setAnfahrtMinuten(am != null ? String(am) : "");
-        if (
-          (km != null && String(km).trim() !== "") ||
-          (am != null && String(am).trim() !== "")
-        ) {
-          setMitAnfahrt(true);
-        }
-
-        if (p.ki_text) {
-          setKiText(p.ki_text);
-        }
-
-        const rawCs = p.current_step;
-        const csNum =
-          typeof rawCs === "number"
-            ? rawCs
-            : typeof rawCs === "string"
-              ? parseInt(rawCs, 10)
-              : NaN;
-        const hasSavedStep =
-          Number.isFinite(csNum) &&
-          Number.isInteger(csNum) &&
-          csNum >= 1 &&
-          csNum <= STEPS;
-
-        const zielStep = hasSavedStep
-          ? csNum
-          : p.ki_text
-            ? 5
-            : (data.fotos?.length ?? 0) > 0
-              ? 2
-              : 4;
-
-        setStep(zielStep);
-        setProtokollGestartet(true);
-      } catch (e) {
-        console.error("Resume fehlgeschlagen:", e);
-        if (!cancelled) setResumeFailed(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [resumeId, resumeRetryKey, router]);
-
-  useEffect(() => {
     if (!protokollGestartet || protokollId == null) return;
     void (async () => {
       try {
@@ -878,19 +755,160 @@ function ProtokollNeuPageInner() {
   }, [protokollId]);
 
   useEffect(() => {
+    if (!resumeId) {
+      setResumeFailed(false);
+      return;
+    }
+
+    let cancelled = false;
+    setResumeFailed(false);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/protokoll/${resumeId}`);
+        if (cancelled) return;
+        if (!res.ok) {
+          setResumeFailed(true);
+          return;
+        }
+        const data = (await res.json()) as {
+          protokoll?: {
+            notiz: string | null;
+            materialien: string | null;
+            ki_text: string | null;
+            einsatz_von?: string | null;
+            einsatz_bis?: string | null;
+            anfahrt_km?: number | null;
+            anfahrt_minuten?: number | null;
+            status?: string;
+            current_step?: number | null;
+            pdf_pfad?: string | null;
+          };
+          kunde_name?: string | null;
+          kunde_adresse?: string | null;
+          kunde_telefon?: string | null;
+          kunde_email?: string | null;
+          fotos?: unknown[];
+        };
+        if (cancelled) return;
+        const p = data.protokoll;
+        if (!p) {
+          setResumeFailed(true);
+          return;
+        }
+
+        if (p.status === "freigegeben") {
+          deleteDraftLocal(Number(resumeId));
+          router.push("/protokolle");
+          return;
+        }
+
+        if (cancelled) return;
+
+        setKundenName(data.kunde_name ?? "");
+
+        const adresse = data.kunde_adresse ?? "";
+        if (adresse.includes(", ")) {
+          const [strasse, rest] = adresse.split(", ");
+          setKundenStrasse(strasse ?? "");
+          const plzStadt = rest ?? "";
+          const spaceIdx = plzStadt.indexOf(" ");
+          if (spaceIdx > 0) {
+            setKundenPlz(plzStadt.substring(0, spaceIdx));
+            setKundenStadt(plzStadt.substring(spaceIdx + 1));
+          }
+        } else {
+          setKundenStrasse(adresse);
+        }
+
+        setKundenTelefon(data.kunde_telefon ?? "");
+        setKundenEmail(data.kunde_email ?? "");
+
+        setProtokollId(Number(resumeId));
+        setNotiz(p.notiz ?? "");
+        setMaterialien(p.materialien ?? "");
+        setEinsatzVon(toTimeInputFromApi(p.einsatz_von));
+        setEinsatzBis(toTimeInputFromApi(p.einsatz_bis));
+        const km = p.anfahrt_km;
+        const am = p.anfahrt_minuten;
+        setAnfahrtKm(km != null ? String(km) : "");
+        setAnfahrtMinuten(am != null ? String(am) : "");
+        if (
+          (km != null && String(km).trim() !== "") ||
+          (am != null && String(am).trim() !== "")
+        ) {
+          setMitAnfahrt(true);
+        }
+
+        if (p.ki_text) {
+          setKiText(p.ki_text);
+        }
+
+        const rawCs = p.current_step;
+        const csNum =
+          typeof rawCs === "number"
+            ? rawCs
+            : typeof rawCs === "string"
+              ? parseInt(rawCs, 10)
+              : NaN;
+        const hasSavedStep =
+          Number.isFinite(csNum) &&
+          Number.isInteger(csNum) &&
+          csNum >= 1 &&
+          csNum <= STEPS;
+
+        const zielStep = hasSavedStep
+          ? csNum
+          : p.ki_text
+            ? 5
+            : (data.fotos?.length ?? 0) > 0
+              ? 2
+              : 4;
+
+        setStep(zielStep);
+        setProtokollGestartet(true);
+
+        if (zielStep === 6) {
+          const pdfPfad = p.pdf_pfad?.trim();
+          if (pdfPfad) {
+            setPdfUrl(pdfPfad);
+            setPdfBust(Date.now());
+          } else if (p.ki_text) {
+            void loadPdfForAbschlussStep(p.ki_text);
+          }
+        }
+      } catch (e) {
+        console.error("Resume fehlgeschlagen:", e);
+        if (!cancelled) setResumeFailed(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resumeId, resumeRetryKey, router, loadPdfForAbschlussStep]);
+
+  useEffect(() => {
     const was = prevStepRef.current;
     prevStepRef.current = step;
     if (step === 6 && was === 5 && protokollId != null) {
       setUnterschriftPhase("kunde");
       setKundeUnterschriftDataUri(null);
       setMonteurUnterschriftDataUri(null);
+    }
+    if (
+      step === 6 &&
+      (was === 5 || was === 6) &&
+      protokollId != null &&
+      !pdfUrl
+    ) {
       void loadPdfForAbschlussStep(kiText);
     } else if (step === 7 && was === 6) {
       setUnterschriftPhase("kunde");
       setKundeUnterschriftDataUri(null);
       setMonteurUnterschriftDataUri(null);
     }
-  }, [step, protokollId, kiText, loadPdfForAbschlussStep]);
+  }, [step, protokollId, kiText, loadPdfForAbschlussStep, pdfUrl]);
 
   function initSignatureCanvas(
     canvas: HTMLCanvasElement,
