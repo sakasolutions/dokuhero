@@ -35,6 +35,7 @@ interface JoinRow extends RowDataPacket {
   erstellt_am: Date;
   status: string;
   archiviert: number;
+  current_step: number | null;
   kunde_id: number | null;
   kunde_name: string | null;
   kunde_email: string | null;
@@ -78,6 +79,7 @@ const patchSchema = z.discriminatedUnion("action", [
       (v) => (v === "" || v === undefined ? undefined : v === null ? null : v),
       z.union([z.coerce.number().int().min(0), z.null()]).optional()
     ),
+    current_step: z.coerce.number().int().min(1).max(8).optional(),
   }),
 ]);
 
@@ -100,7 +102,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const [prows] = await pool.execute<JoinRow[]>(
       `SELECT p.id, p.auftrag_id, p.protokoll_nummer, p.notiz, p.materialien,
               p.einsatz_von, p.einsatz_bis, p.anfahrt_km, p.anfahrt_minuten,
-              p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert,
+              p.ki_text, p.pdf_pfad, p.gesendet_am, p.erstellt_am, p.status, p.archiviert, p.current_step,
               k.id AS kunde_id, k.name AS kunde_name, k.email AS kunde_email,
               k.adresse AS kunde_adresse, k.telefon AS kunde_telefon,
               a.beschreibung AS auftrag_beschreibung
@@ -133,6 +135,7 @@ export async function GET(_request: Request, context: RouteContext) {
       erstellt_am: j.erstellt_am,
       status: j.status,
       archiviert: j.archiviert,
+      current_step: j.current_step,
     };
 
     const [frows] = await pool.execute<FotoRow[]>(
@@ -288,6 +291,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       if (d.anfahrt_minuten !== undefined) {
         sets.push("anfahrt_minuten = ?");
         vals.push(d.anfahrt_minuten);
+      }
+      if (d.current_step !== undefined) {
+        sets.push("current_step = ?");
+        vals.push(d.current_step);
       }
 
       if (sets.length === 0) {

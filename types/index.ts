@@ -80,6 +80,8 @@ export interface Protokoll {
   status: ProtokollStatus;
   /** 1 = archiviert */
   archiviert?: number;
+  /** Wizard-Schritt 1–8; null/undefined bei Altbestand vor Migration */
+  current_step?: number | null;
 }
 
 export interface FotoEintrag {

@@ -232,6 +232,7 @@ function ProtokollNeuPageInner() {
             anfahrt_km?: number | null;
             anfahrt_minuten?: number | null;
             status?: string;
+            current_step?: number | null;
           };
           kunde_name?: string | null;
           kunde_adresse?: string | null;
@@ -293,11 +294,26 @@ function ProtokollNeuPageInner() {
           setKiText(p.ki_text);
         }
 
-        const zielStep = p.ki_text
-          ? 5
-          : (data.fotos?.length ?? 0) > 0
-            ? 2
-            : 4;
+        const rawCs = p.current_step;
+        const csNum =
+          typeof rawCs === "number"
+            ? rawCs
+            : typeof rawCs === "string"
+              ? parseInt(rawCs, 10)
+              : NaN;
+        const hasSavedStep =
+          Number.isFinite(csNum) &&
+          Number.isInteger(csNum) &&
+          csNum >= 1 &&
+          csNum <= STEPS;
+
+        const zielStep = hasSavedStep
+          ? csNum
+          : p.ki_text
+            ? 5
+            : (data.fotos?.length ?? 0) > 0
+              ? 2
+              : 4;
 
         setStep(zielStep);
         setProtokollGestartet(true);
@@ -311,6 +327,24 @@ function ProtokollNeuPageInner() {
       cancelled = true;
     };
   }, [resumeId, resumeRetryKey, router]);
+
+  useEffect(() => {
+    if (!protokollGestartet || protokollId == null) return;
+    void (async () => {
+      try {
+        await fetch(`/api/protokoll/${protokollId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update_notiz",
+            current_step: step,
+          }),
+        });
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [step, protokollId, protokollGestartet]);
 
   useEffect(() => {
     setSoftHinweis(null);
@@ -774,6 +808,7 @@ function ProtokollNeuPageInner() {
           einsatz_bis: eb === "" ? null : eb,
           anfahrt_km: anfahrtKmNum,
           anfahrt_minuten: anfahrtMinNum,
+          current_step: step,
         }),
       });
       if (!res.ok) {

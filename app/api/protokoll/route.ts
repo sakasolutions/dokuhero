@@ -164,9 +164,9 @@ export async function POST(request: Request) {
         `INSERT INTO protokolle (
            auftrag_id, protokoll_nummer, notiz, materialien,
            einsatz_von, einsatz_bis, anfahrt_km, anfahrt_minuten,
-           ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert, erstellt_von_benutzer_id
+           ki_text, pdf_pfad, gesendet_am, erstellt_am, status, archiviert, erstellt_von_benutzer_id, current_step
          )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NOW(), 'entwurf', 0, ?, 1)`,
         [
           auftrag_id,
           protokollNummer,
