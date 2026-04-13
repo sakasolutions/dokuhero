@@ -1,0 +1,83 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import OpenAI, { toFile } from "openai";
+import { authOptions } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
+const MAX_BYTES = 25 * 1024 * 1024;
+
+export async function POST(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    }
+
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) {
+      return NextResponse.json(
+        { error: "OPENAI_API_KEY ist nicht gesetzt." },
+        { status: 500 }
+      );
+    }
+
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json({ error: "Ungültige FormData" }, { status: 400 });
+    }
+
+    const entry = formData.get("audio") ?? formData.get("file");
+    if (!entry || !(entry instanceof Blob)) {
+      return NextResponse.json(
+        { error: "Audio fehlt (Feld „audio“)." },
+        { status: 400 }
+      );
+    }
+    if (entry.size === 0) {
+      return NextResponse.json({ error: "Leere Aufnahme." }, { status: 400 });
+    }
+    if (entry.size > MAX_BYTES) {
+      return NextResponse.json({ error: "Aufnahme zu groß." }, { status: 400 });
+    }
+
+    const buffer = Buffer.from(await entry.arrayBuffer());
+    const mime = entry.type || "audio/webm";
+    const ext = mime.includes("webm") ? "webm" : "webm";
+
+    const openai = new OpenAI({ apiKey: key });
+    const file = await toFile(buffer, `recording.${ext}`, { type: mime });
+    const transcription = await openai.audio.transcriptions.create({
+      file,
+      model: "whisper-1",
+      language: "de",
+    });
+
+    const roh = transcription.text?.trim() ?? "";
+    if (!roh) {
+      return NextResponse.json({ text: "" });
+    }
+
+    const bereinigt = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `Du bereinigst gesprochene Baustellen-Notizen: Füllwörter entfernen, Grammatik, kurze Stichpunkte, technische Infos behalten. Nur der Text.`,
+        },
+        { role: "user", content: roh },
+      ],
+    });
+    const text =
+      bereinigt.choices[0]?.message?.content?.trim() ?? roh;
+    return NextResponse.json({ text });
+  } catch (e) {
+    console.error("[whisper]", e);
+    const msg = e instanceof Error ? e.message : "Transkription fehlgeschlagen.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
