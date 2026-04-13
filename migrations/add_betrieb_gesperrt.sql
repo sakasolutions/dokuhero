@@ -1,2 +1,0 @@
-ALTER TABLE betriebe
-  ADD COLUMN gesperrt TINYINT(1) NOT NULL DEFAULT 0;

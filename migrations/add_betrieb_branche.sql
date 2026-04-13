@@ -1,2 +1,0 @@
-ALTER TABLE betriebe
-  ADD COLUMN branche VARCHAR(100) NULL AFTER telefon;

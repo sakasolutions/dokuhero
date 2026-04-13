@@ -11,7 +11,7 @@ const font = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "DokuHero",
-  description: "Auftragsprotokoll und Bewertungen für kleine Betriebe",
+  description: "Dokumentation für Handwerk und Betrieb – DokuHero.",
 };
 
 export default function RootLayout({

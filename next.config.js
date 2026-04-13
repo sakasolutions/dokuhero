@@ -1,12 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    serverActions: {
-      bodySizeLimit: "25mb",
-    },
-    serverComponentsExternalPackages: ["puppeteer"],
-  },
 };
 
 module.exports = nextConfig;
